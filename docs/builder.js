@@ -1,0 +1,442 @@
+/* SavComponents docs — Component builder (#builder): every option of one component on a single page, with a live preview
+   (style, light/dark, phone/tablet/desktop, background) and code ready to copy: HTML, JavaScript, TypeScript, React, Vue
+   and a whole page. The settings live in the address (#builder?c=range&cfg=…), so a link brings them back. */
+(() => {
+  'use strict';
+  const D = () => window.SavDocs; // docs.js loads after this file: read it only when the page is drawn
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const STYLES = { soft: 'Soft', tilt: 'Tilt', sharp: 'Sharp', brutal: 'Brutal', glass: 'Glass' };
+  const DEVICES = [['desktop', 'monitor', 'Desktop'], ['tablet', 'tablet', 'Tablet'], ['phone', 'smartphone', 'Phone']];
+  const BGS = { page: 'Page', surface: 'Surface', dots: 'Dots', colour: 'Colourful' };
+  const VARIANTS = ['primary', 'neutral', 'success', 'warning', 'danger'];
+  const SIZES = { sm: 'S', md: 'M', lg: 'L' };
+  const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const dec = (s) => { try { return JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))); } catch { return null; } };
+  const camel = (s) => (String(s).replace(/[^a-zA-Z0-9]+(.)?/g, (_, c) => (c ? c.toUpperCase() : '')).replace(/^[^a-zA-Z_$]+/, '') || 'el');
+  const pascal = (s) => { const c = camel(s); return c.charAt(0).toUpperCase() + c.slice(1); };
+  /* The starting point of each component: its playground settings, or else the first example of its page
+     (the element's attributes become options, what is inside becomes the editable "Inside (HTML)"). */
+  const firstTag = (d) => (String(d.tag).match(/sav-[a-z-]+/) || [''])[0];
+  const dedent = (h) => {
+    const lines = String(h).replace(/^\s*\n/, '').replace(/\s+$/, '').split('\n');
+    const ind = Math.min(...lines.filter((l) => l.trim()).map((l) => l.match(/^ */)[0].length));
+    return lines.map((l) => l.slice(Number.isFinite(ind) ? ind : 0)).join('\n').trim();
+  };
+  const BASES = new Map();
+  function baseOf(d) {
+    if (BASES.has(d.id)) return BASES.get(d.id);
+    let b = null;
+    if (d.play) b = { tag: d.play.tag, tags: d.play.tags, attrs: { ...(d.play.attrs || {}) }, text: d.play.text, children: d.play.children || '' };
+    else if (d.id === 'toast') b = { call: 'toast', tag: 'sav-button', attrs: { variant: 'success' }, text: 'Changes saved', children: '' };
+    else {
+      const t = firstTag(d);
+      for (const x of (t && d.demos) || []) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = x.html;
+        const el = tpl.content.querySelector(t);
+        if (!el) continue;
+        const attrs = {};
+        for (const a of el.attributes) if (!/^(id|style|class|slot)$|^on|^data-/.test(a.name)) attrs[a.name] = a.value === '' ? true : a.value;
+        b = { tag: t, attrs, text: undefined, children: dedent(el.innerHTML) };
+        break;
+      }
+    }
+    BASES.set(d.id, b);
+    return b;
+  }
+  const comps = () => D().docs.filter((d) => baseOf(d));
+  /** overlays are closed at first: the code gets a button that opens them */
+  const OPENER = { dialog: 'Open the dialog', drawer: 'Open the drawer' };
+  const lit = (v) => (typeof v === 'boolean' || (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v)) ? String(v) : `'${String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`);
+  const camelKey = (k) => k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  /** the toast is a function: Sav.toast('message', { options }) */
+  function toastCall() {
+    const o = Object.entries(S.attrs).filter(([, v]) => isOn(v)).map(([k, v]) => `${camelKey(k)}: ${lit(v)}`);
+    return `Sav.toast(${lit(S.text || '')}${o.length ? `, { ${o.join(', ')} }` : ''})`;
+  }
+  const isOn = (v) => v !== '' && v !== false && v !== null && v !== undefined;
+
+  let iconIdx = null; // names and search words of every icon, read once from the icon set
+  let iconNames = null; // the same names as a set, once loaded: a half-typed name is not an icon yet
+  const iconIndex = () => (iconIdx ||= fetch(Sav.iconBase + 'index.json').then((r) => r.json()).then((j) => j.icons || {})
+    .catch(() => Object.fromEntries(Object.keys(Sav.icons).map((n) => [n, []]))).then((all) => { iconNames = new Set([...Object.keys(all), ...Object.keys(Sav.icons)]); return all; }));
+  let S = null; // the settings of the component on screen
+  let cur = null; // its documentation entry
+
+  /* ------------------------------------------------------------ what can be changed */
+
+  function knobs(d) {
+    const ks = D().knobsFor(d, ['value', 'name', 'href', 'target', 'type']);
+    const have = new Set(ks.map((k) => k.name));
+    // every attribute of the starting example can be edited, even when the table does not list it as an option
+    for (const [k, v] of Object.entries(baseOf(d).attrs || {})) if (!have.has(k)) ks.push({ name: k, type: typeof v === 'boolean' ? 'bool' : 'text', desc: '', values: '' });
+    for (const k of ks) {
+      if (k.type !== 'text') continue;
+      if (/icon name/.test(k.values)) k.kind = 'icon';
+      else if (/\bnumber\b/.test(k.values) && !/date|string/.test(k.values)) k.kind = 'number';
+    }
+    return ks;
+  }
+  /** CSS custom properties listed in the attribute table (rows "--size · --color", "CSS") */
+  function tokenKnobs(d) {
+    const out = [];
+    for (const [names, values, desc] of d.attrs || []) {
+      if (!/CSS/.test(values) && !/^--/.test(names)) continue;
+      for (const n of names.split(' · ').map((x) => x.trim())) if (/^--[a-z0-9-]+$/.test(n) && !out.some((o) => o.name === n)) out.push({ name: n, colour: /colou?r|bg|background|empty|fill|ink/.test(n), desc: D().plain(desc) });
+    }
+    return out;
+  }
+  function eventsOf(d) {
+    const out = [];
+    for (const [names, desc] of d.events || []) for (const n of names.split(' · ').map((x) => x.trim())) if (/^[a-z][a-z-]*$/.test(n)) out.push({ name: n, desc: D().plain(desc) });
+    return out;
+  }
+  const siteStyle = () => D().store.get('savc-style', 'tilt');
+  const siteMode = () => (document.documentElement.classList.contains('sav-theme-dark') ? 'dark' : 'light');
+  function fresh(d) {
+    const ev = eventsOf(d);
+    const b = baseOf(d);
+    return { c: d.id, tag: b.tag, attrs: { ...b.attrs }, text: b.text, children: b.children || '', tokens: {},
+      events: ev.some((e) => e.name === 'change') ? ['change'] : ev.slice(0, 1).map((e) => e.name), id: '', style: siteStyle(), mode: siteMode(), device: 'desktop', bg: 'page' };
+  }
+
+  /* ------------------------------------------------------------ settings that come from outside (a shared link, a saved item) */
+
+  /** The HTML inside the component, without scripts, frames or event handlers: a link can carry any text. */
+  function safeHtml(html) {
+    const t = document.createElement('template');
+    t.innerHTML = String(html || '');
+    t.content.querySelectorAll('script, iframe, object, embed, link, meta, style, base, form, frame, frameset').forEach((n) => n.remove());
+    t.content.querySelectorAll('*').forEach((el) => {
+      for (const a of [...el.attributes]) if (/^on/i.test(a.name) || /^\s*(javascript|data|vbscript):/i.test(a.value) && /^(href|src|action|formaction|xlink:href|srcdoc)$/i.test(a.name) || a.name === 'srcdoc') el.removeAttribute(a.name);
+    });
+    return t.innerHTML;
+  }
+  function clean(st, d) {
+    const out = {};
+    const b = baseOf(d);
+    const tags = [b.tag, ...(b.tags || []).map((t) => t.tag)];
+    if (tags.includes(st.tag)) out.tag = st.tag;
+    if (st.attrs && typeof st.attrs === 'object') {
+      out.attrs = {};
+      for (const [k, v] of Object.entries(st.attrs)) if (/^[a-z][a-z0-9-]{0,40}$/.test(k) && !/^on/.test(k) && !['style', 'id', 'slot'].includes(k) && (typeof v === 'string' || typeof v === 'boolean' || typeof v === 'number')) out.attrs[k] = typeof v === 'number' ? String(v) : v;
+    }
+    if (typeof st.text === 'string') out.text = st.text.slice(0, 500);
+    if (typeof st.children === 'string') out.children = safeHtml(st.children).slice(0, 4000);
+    if (st.tokens && typeof st.tokens === 'object') {
+      out.tokens = {};
+      for (const [k, v] of Object.entries(st.tokens)) if (/^--[a-z0-9-]{1,60}$/.test(k) && typeof v === 'string' && v.length <= 80 && !/[;{}<>]|url\(|expression/i.test(v)) out.tokens[k] = v;
+    }
+    if (Array.isArray(st.events)) out.events = st.events.filter((e) => typeof e === 'string' && /^[a-z][a-z-]{0,40}$/.test(e)).slice(0, 12);
+    if (typeof st.id === 'string' && /^[A-Za-z][\w-]{0,59}$/.test(st.id)) out.id = st.id;
+    if (STYLES[st.style]) out.style = st.style;
+    if (['light', 'dark'].includes(st.mode)) out.mode = st.mode;
+    if (DEVICES.some(([v]) => v === st.device)) out.device = st.device;
+    if (BGS[st.bg]) out.bg = st.bg;
+    return out;
+  }
+
+  /* ------------------------------------------------------------ code */
+
+  const elId = () => (S.id || (S.events.length || OPENER[cur.id] ? cur.id : ''));
+  /** the HTML inside, one element per line, indented under its tag (examples keep their own line breaks) */
+  const kidsBlock = (kids, indent) => (kids.includes('\n') ? kids.split('\n') : kids.split(/(?=<(?!\/))/)).map((l) => (l.trim() ? indent + l.replace(/\s+$/, '') : '')).filter((l, i, a) => l || (i && a[i - 1])).join('\n');
+  function attrList(forReact = false) {
+    const a = [];
+    if (elId()) a.push(['id', elId()]);
+    for (const [k, v] of Object.entries(S.attrs)) if (isOn(v)) a.push([k, v]);
+    const style = Object.entries(S.tokens).filter(([, v]) => v);
+    if (style.length) a.push(['style', forReact ? style : style.map(([k, v]) => `${k}: ${v}`).join('; ')]);
+    return a;
+  }
+  function markup(pretty = true, indent = '') {
+    if (baseOf(cur).call === 'toast') return `${indent}<sav-button onclick="${esc(toastCall())}">Show the toast</sav-button>`;
+    const opener = OPENER[cur.id] ? `${indent}<sav-button onclick="document.getElementById('${elId()}').show()">${OPENER[cur.id]}</sav-button>${pretty ? '\n' : ''}` : '';
+    return opener + element(pretty, indent);
+  }
+  function element(pretty, indent) {
+    const a = attrList().map(([k, v]) => (v === true ? k : `${k}="${esc(v)}"`));
+    const one = `<${S.tag}${a.map((x) => ' ' + x).join('')}>`;
+    const open = pretty && one.length > 84 ? `<${S.tag}\n${a.map((x) => indent + '  ' + x).join('\n')}\n${indent}>` : one;
+    const text = S.text !== undefined ? esc(S.text) : '';
+    const kids = (S.children || '').trim();
+    const inner = pretty && kids ? `${text}\n${kidsBlock(kids, indent + '  ')}\n${indent}` : text + kids;
+    return `${indent}${open}${inner}</${S.tag}>`;
+  }
+  function styleNote() {
+    return S.style !== 'soft' ? `<!-- ${STYLES[S.style]} style: add class="sav-style-${S.style}" to <html> or to a container around it -->\n` : '';
+  }
+  function jsCode(ts = false) {
+    if (baseOf(cur).call === 'toast') return `${ts ? 'declare const Sav: { toast(message: string, options?: object): HTMLElement };\n\n' : ''}// Call it when something happens, for example after saving. It returns the sav-alert it shows.\n${toastCall()};`;
+    const v = camel(elId() || cur.id), id = elId();
+    const opens = OPENER[cur.id] ? `\n\n// open and close it from your code\n${v}.show();\n${v}.hide();` : '';
+    const evs = eventsOf(cur).filter((e) => S.events.includes(e.name));
+    if (!evs.length && !opens) return `// Tick one or more events in “Events” to get the code that listens to them.\n// The element: document.querySelector('${S.tag}')`;
+    const head = ts ? `const ${v} = document.getElementById('${id}') as HTMLElement;\n` : `const ${v} = document.getElementById('${id}');\n`;
+    const head2 = ts && opens ? `const ${v} = document.getElementById('${id}') as HTMLElement & { show(): void; hide(): void };\n` : head;
+    return head2 + evs.map((e) => `\n${e.desc ? `// ${e.desc}\n` : ''}${v}.addEventListener('${e.name}', (event${ts ? ': Event' : ''}) => {\n${ts ? `  const { detail } = event as CustomEvent;\n  console.log('${e.name}', detail);` : `  console.log('${e.name}', event.detail);`}\n});`).join('\n') + opens;
+  }
+  function reactCode() {
+    if (baseOf(cur).call === 'toast') return `// Sav comes from sav.js, loaded once in the page.\nexport function SaveButton() {\n  return <sav-button onClick={() => ${toastCall()}}>Show the toast</sav-button>;\n}`;
+    const evs = eventsOf(cur).filter((e) => S.events.includes(e.name));
+    const opener = OPENER[cur.id];
+    const attrs = attrList(true).filter(([k]) => k !== 'id').map(([k, v]) => (k === 'style' ? `style={{ ${v.map(([n, x]) => `'${n}': '${x}'`).join(', ')} }}` : v === true ? `${k}=""` : `${k}="${esc(v)}"`));
+    if (evs.length || opener) attrs.unshift('ref={ref}');
+    const text = S.text !== undefined ? esc(S.text) : '';
+    const kids = (S.children || '').trim();
+    const tagEl = `<${S.tag}${attrs.length > 2 ? '\n' + attrs.map((a) => '      ' + a).join('\n') + '\n    ' : attrs.map((a) => ' ' + a).join('')}>${text}${kids ? '\n' + kidsBlock(kids, '      ') + '\n    ' : ''}</${S.tag}>`;
+    const el = opener ? `<>\n    <sav-button onClick={() => ref.current.show()}>${opener}</sav-button>\n    ${tagEl}\n    </>` : tagEl;
+    const name = 'My' + pascal(cur.id);
+    if (opener && !evs.length) return `import { useRef } from 'react';\n\nexport function ${name}() {\n  const ref = useRef(null);\n  return (\n    ${el}\n  );\n}`;
+    if (!evs.length) return `// React 19 passes attributes to custom elements as they are.\nexport function ${name}() {\n  return (\n    ${el}\n  );\n}`;
+    return `import { useEffect, useRef } from 'react';\n\n// Library events are read with addEventListener (names with a dash, like sav-select, need it in every React version).\nexport function ${name}() {\n  const ref = useRef(null);\n  useEffect(() => {\n    const el = ref.current;\n${evs.map((e) => `    const on${pascal(e.name)} = (event) => console.log('${e.name}', event.detail);\n    el.addEventListener('${e.name}', on${pascal(e.name)});`).join('\n')}\n    return () => {\n${evs.map((e) => `      el.removeEventListener('${e.name}', on${pascal(e.name)});`).join('\n')}\n    };\n  }, []);\n  return (\n    ${el}\n  );\n}`;
+  }
+  function vueCode() {
+    if (baseOf(cur).call === 'toast') return `<script setup>\n// Sav comes from sav.js, loaded once in the page.\nfunction showToast() {\n  window.${toastCall()};\n}\n</script>\n\n<template>\n  <sav-button @click="showToast">Show the toast</sav-button>\n</template>`;
+    const evs = eventsOf(cur).filter((e) => S.events.includes(e.name));
+    const a = attrList().filter(([k]) => k !== 'id').map(([k, v]) => (v === true ? k : `${k}="${esc(v)}"`)).concat(evs.map((e) => `@${e.name}="on${pascal(e.name)}"`));
+    const text = S.text !== undefined ? esc(S.text) : '';
+    const kids = (S.children || '').trim();
+    if (OPENER[cur.id]) a.unshift('ref="box"');
+    const tagEl = `<${S.tag}${a.length > 2 ? '\n' + a.map((x) => '    ' + x).join('\n') + '\n  ' : a.map((x) => ' ' + x).join('')}>${text}${kids ? '\n' + kidsBlock(kids, '    ') + '\n  ' : ''}</${S.tag}>`;
+    const el = OPENER[cur.id] ? `<sav-button @click="$refs.box.show()">${OPENER[cur.id]}</sav-button>\n  ${tagEl}` : tagEl;
+    const script = evs.length ? `<script setup>\n${evs.map((e) => `function on${pascal(e.name)}(event) {\n  console.log('${e.name}', event.detail);\n}`).join('\n\n')}\n</script>\n\n` : '';
+    return `<!-- vite.config.js: vue({ template: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('sav-') } } }) -->\n${script}<template>\n  ${el}\n</template>`;
+  }
+  function pageCode() {
+    const cls = [`sav-theme-${S.mode}`, S.style !== 'soft' ? `sav-style-${S.style}` : ''].filter(Boolean).join(' ');
+    const js = S.events.length ? `\n  <script>\n${jsCode().split('\n').map((l) => (l ? '    ' + l : l)).join('\n')}\n  </script>` : '';
+    return `<!doctype html>\n<html lang="en" class="${cls}">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>My ${cur.name.toLowerCase()}</title>\n  <link rel="stylesheet" href="${D().libUrl}/sav.css">\n  <script src="${D().libUrl}/sav.js" defer></script>\n</head>\n<body class="sav-base" style="padding: 2rem">\n${markup(true, '  ')}${js}\n</body>\n</html>\n`;
+  }
+  const TABS = [['html', 'HTML', 'html'], ['js', 'JavaScript', 'js'], ['ts', 'TypeScript', 'ts'], ['react', 'React', 'jsx'], ['vue', 'Vue', 'vue'], ['page', 'Whole page', 'html']];
+  const codeFor = (k) => ({ html: () => styleNote() + markup(), js: () => jsCode(), ts: () => jsCode(true), react: reactCode, vue: vueCode, page: pageCode }[k]());
+
+  /* ------------------------------------------------------------ the page */
+
+  function html() {
+    const groups = [...new Set(comps().map((d) => d.group))];
+    return `<div class="doc-head"><sav-label class="eyebrow">Start</sav-label><h1>Component builder</h1>
+      <p class="lead">Choose a component, change every option with the controls and see it live in any style, colour mode and screen size. The code below is ready to paste: HTML, and JavaScript, TypeScript, React or Vue when you listen to events.</p></div>
+      <div class="bld">
+        <div class="bld-top layered">
+          <div class="bld-choose">
+            <sav-select id="bldPick" searchable sheet-on-mobile aria-label="Component" class="bld-pick-select">${groups.map((g) => `<optgroup label="${esc(g)}">${comps().filter((d) => d.group === g).map((d) => `<option value="${d.id}" data-icon="${esc(d.icon)}">${esc(d.name)}</option>`).join('')}</optgroup>`).join('')}</sav-select>
+            <sav-button square appearance="soft" variant="neutral" id="bldPrev" label="Previous component"><sav-icon name="chevron-left"></sav-icon></sav-button>
+            <sav-button square appearance="soft" variant="neutral" id="bldNext" label="Next component"><sav-icon name="chevron-right"></sav-icon></sav-button>
+            <span class="muted small bld-count" id="bldCount"></span>
+          </div>
+          <div class="bld-bar">
+            <sav-radio-group appearance="buttons" size="sm" id="bldDevice" aria-label="Screen size">${DEVICES.map(([v, ic, l]) => `<sav-radio value="${v}" title="${l}"><sav-icon name="${ic}"></sav-icon><span class="bld-hide-sm">${l}</span></sav-radio>`).join('')}</sav-radio-group>
+            <sav-select size="sm" id="bldStyle" aria-label="Style of the preview" sheet-on-mobile>${Object.entries(STYLES).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</sav-select>
+            <sav-radio-group appearance="buttons" size="sm" id="bldMode" aria-label="Colour mode"><sav-radio value="light" title="Light"><sav-icon name="sun"></sav-icon></sav-radio><sav-radio value="dark" title="Dark"><sav-icon name="moon"></sav-icon></sav-radio></sav-radio-group>
+            <sav-select size="sm" id="bldBg" aria-label="Background of the preview" sheet-on-mobile>${Object.entries(BGS).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</sav-select>
+            <span class="bld-sp"></span>
+            <sav-button size="sm" appearance="ghost" variant="neutral" id="bldReset"><sav-icon slot="prefix" name="refresh"></sav-icon>Reset</sav-button>
+            <sav-button size="sm" appearance="soft" id="bldShare"><sav-icon slot="prefix" name="link"></sav-icon>Copy link</sav-button>
+          </div>
+        </div>
+        <div class="bld-cols">
+        <section class="bld-main">
+          <div class="bld-stage" id="bldStage"><div class="bld-frame" id="bldFrame"><div class="bld-preview" id="bldPreview"></div></div></div>
+        </section>
+        <aside class="bld-panel layered" aria-label="Options"><div class="bld-scroll" id="bldPanel"></div></aside>
+        </div>
+        <div class="bld-code layered">
+          <div class="bld-code-head"><b id="bldTitle"></b><span class="row"><a class="muted small" id="bldDocs" href="#">Documentation</a><sav-button size="sm" appearance="ghost" variant="neutral" id="bldSaveNew" hidden>Save as new</sav-button><sav-button size="sm" appearance="soft" icon="save" id="playSave" hidden>Save to my components</sav-button><sav-button size="sm" appearance="outline" variant="neutral" id="bldDownload"><sav-icon slot="prefix" name="download"></sav-icon>Download page</sav-button></span></div>
+          <sav-alert variant="neutral" class="bld-setup">Once per page, before the components: <code>&lt;link rel="stylesheet" href="${esc(D().libUrl)}/sav.css"&gt;</code> and <code>&lt;script src="${esc(D().libUrl)}/sav.js" defer&gt;&lt;/script&gt;</code>. The “Whole page” tab has them already.</sav-alert>
+          <sav-tabs class="code-tabs boxed" id="bldTabs">${TABS.map(([k, l]) => `<sav-tab label="${l}" name="${k}"><div data-code="${k}"></div></sav-tab>`).join('')}</sav-tabs>
+        </div>
+      </div>`;
+  }
+
+  const tip = (t) => (t ? ` <sav-info-tip size="sm" placement="left" sheet-on-mobile content="${esc(t)}"></sav-info-tip>` : '');
+  const lbl = (name, t) => `<span slot="label" class="knob-l">${esc(name)}${tip(t)}</span>`;
+  const T = (n) => D().titleCase(n);
+  const SHAPE_SVG = {
+    '_': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16" stroke-dasharray="2 3"/></svg>',
+    tilt: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" transform="rotate(-10 12 12)"/></svg>',
+    squared: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>',
+    rounded: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="4.5"/></svg>',
+  };
+
+  function field(k) {
+    const v = S.attrs[k.name];
+    const name = T(k.name);
+    if (k.type === 'bool') return `<sav-switch size="sm" data-a="${k.name}" ${isOn(v) ? 'checked' : ''}>${esc(name)}${tip(k.desc)}</sav-switch>`;
+    if (k.type === 'enum') {
+      const val = isOn(v) ? v : '_';
+      if (k.name === 'variant') return `<sav-radio-group class="bld-swatches" appearance="buttons" size="sm" data-a="variant" value="${esc(val)}">${lbl('Colour', k.desc || 'The colour of the component, from the theme.')}<sav-radio value="_" title="Default">Auto</sav-radio>${(k.options.includes('protected') ? [...VARIANTS, 'protected'] : VARIANTS).map((o) => `<sav-radio value="${o}" title="${T(o)}"><span class="bld-sw" style="--c: var(--sav-color-${o})"></span><span class="sr-only">${T(o)}</span></sav-radio>`).join('')}</sav-radio-group>`;
+      if (k.name === 'shape') return `<sav-radio-group class="bld-shapes" appearance="buttons" size="sm" data-a="shape" value="${esc(val)}">${lbl('Shape', k.desc)}${['_', ...k.options].map((o) => `<sav-radio value="${o}" title="${o === '_' ? 'Like the page style' : T(o)}">${SHAPE_SVG[o] || ''}<span>${o === '_' ? 'Page' : T(o)}</span></sav-radio>`).join('')}</sav-radio-group>`;
+      if (k.name === 'size' && k.options.every((o) => SIZES[o])) return `<sav-radio-group appearance="buttons" size="sm" data-a="size" value="${esc(val)}">${lbl('Size', k.desc)}<sav-radio value="_">Auto</sav-radio>${k.options.map((o) => `<sav-radio value="${o}" title="${T(o)}">${SIZES[o]}</sav-radio>`).join('')}</sav-radio-group>`;
+      if (k.options.length <= 3) return `<sav-radio-group appearance="buttons" size="sm" data-a="${k.name}" value="${esc(val)}">${lbl(name, k.desc)}<sav-radio value="_">Default</sav-radio>${k.options.map((o) => `<sav-radio value="${o}">${esc(T(o))}</sav-radio>`).join('')}</sav-radio-group>`;
+      return `<sav-select size="sm" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}" sheet-on-mobile placeholder="Default">${lbl(name, k.desc)}<option value="">Default</option>${k.options.map((o) => `<option value="${o}">${esc(T(o))}</option>`).join('')}</sav-select>`;
+    }
+    if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}" placeholder="Default">${lbl(name, k.desc)}</sav-number-input>`;
+    // icons: a search among the whole icon set, each suggestion with its drawing and name; the chosen one shows next to the label
+    if (k.kind === 'icon') return `<sav-search size="sm" data-a="${k.name}" data-icons no-filter max="12" value="${esc(isOn(v) ? v : '')}" placeholder="Search icons: star, heart, bell…">`
+      + `<span slot="label" class="knob-l">${esc(name)}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${isOn(v) ? '' : 'hidden'}></sav-icon></span></sav-search>`;
+    return `<sav-input size="sm" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}">${lbl(name, k.desc)}</sav-input>`;
+  }
+  function tokenField(t) {
+    const v = S.tokens[t.name] || '';
+    if (t.colour) return `<div class="bld-color ${v ? 'on' : ''}"><label><input type="color" data-t="${t.name}" value="${/^#[0-9a-f]{6}$/i.test(v) ? v : '#66cbff'}"><span class="knob-l">${esc(t.label || t.name)}${tip(t.desc)}</span></label><button type="button" class="bld-x" data-clear="${t.name}" aria-label="Back to the default">${D().icon('x')}</button></div>`;
+    if (t.range) return `<div class="bld-tok ${v ? 'on' : ''}"><sav-range size="sm" data-t="${t.name}" data-unit="${t.range[3]}" min="${t.range[0]}" max="${t.range[1]}" step="${t.range[2]}" value="${parseFloat(v) || t.range[4]}" show-value unit="${t.range[3]}">${lbl(t.label, t.desc)}</sav-range><button type="button" class="bld-x" data-clear="${t.name}" aria-label="Back to the default">${D().icon('x')}</button></div>`;
+    return `<sav-input size="sm" data-t="${t.name}" value="${esc(v)}" placeholder="Default" clearable>${lbl(t.name, t.desc)}</sav-input>`;
+  }
+  const GENERAL_TOKENS = [
+    { name: '--sav-color-primary', colour: true, label: 'Main colour', desc: 'Its own main colour instead of the theme one (--sav-color-primary). Hover, soft and outline shades follow.' },
+    { name: '--sav-radius', range: [0, 24, 1, 'px', 8], label: 'Corner radius', desc: 'Roundness of the corners (--sav-radius). Tilt and Sharp start from square corners.' },
+    { name: '--sav-border-width', range: [0, 4, 1, 'px', 1], label: 'Border width', desc: 'Thickness of borders (--sav-border-width).' },
+  ];
+
+  function section(title, icon, body, open = true) {
+    return body ? `<sav-details appearance="plain" summary="${esc(title)}" ${open ? 'open' : ''}><sav-icon slot="prefix" name="${icon}"></sav-icon><div class="bld-sec">${body}</div></sav-details>` : '';
+  }
+  function renderPanel() {
+    const d = cur, ks = knobs(d);
+    const texts = ks.filter((k) => k.type === 'text'), enums = ks.filter((k) => k.type === 'enum'), bools = ks.filter((k) => k.type === 'bool');
+    const evs = eventsOf(d);
+    $('#bldPanel').innerHTML = `<div class="bld-panel-head"><span class="bld-ic">${D().icon(d.icon)}</span><span><b>${esc(d.name)}</b><code>${esc(S.tag)}</code></span></div>
+      <sav-accordion appearance="plain" class="bld-acc">
+      ${baseOf(d).tags ? section('Version', 'layers', `<sav-radio-group appearance="buttons" size="sm" data-tag value="${S.tag}" aria-label="Version">${baseOf(d).tags.map((t) => `<sav-radio value="${t.tag}">${esc(t.label)}</sav-radio>`).join('')}</sav-radio-group>`) : ''}
+      ${section('Content and values', 'text-cursor-input', (baseOf(d).text !== undefined ? `<sav-input size="sm" data-text value="${esc(S.text || '')}">${lbl('Text', 'What is written inside the component.')}</sav-input>` : '')
+        + texts.map(field).join('')
+        + (baseOf(d).children ? `<sav-textarea size="sm" data-children rows="4" value="${esc(S.children)}">${lbl('Inside (HTML)', 'The elements inside the component, such as the options of a list. Edit them freely.')}</sav-textarea>` : ''))}
+      ${section('Look', 'palette', enums.map(field).join(''))}
+      ${section('Behaviour', 'toggle-right', bools.length ? `<div class="bld-bools">${bools.map(field).join('')}</div>` : '')}
+      ${section('Colours and sizes', 'paintbrush', GENERAL_TOKENS.map(tokenField).join('') + tokenKnobs(d).map(tokenField).join(''), false)}
+      ${section('Events and id', 'code-xml', `<sav-input size="sm" data-id value="${esc(S.id)}" placeholder="${esc(d.id)}">${lbl('Element id', 'The id used by the JavaScript to find the element. Without one, ' + d.id + ' is used when you listen to events.')}</sav-input>`
+        + (evs.length ? `<div class="bld-evs"><span class="knob-l">Listen to${tip('Each ticked event gets a listener in the JavaScript, TypeScript, React and Vue code.')}</span>${evs.map((e) => `<sav-checkbox size="sm" data-ev="${e.name}" ${S.events.includes(e.name) ? 'checked' : ''}><code>${esc(e.name)}</code>${tip(e.desc)}</sav-checkbox>`).join('')}</div>` : '<p class="muted small">This component fires no events of its own.</p>'), false)}
+      </sav-accordion>`;
+  }
+
+  function update(save = true) {
+    const st = $('#bldStage');
+    if (!st) return;
+    $('#bldPreview').innerHTML = markup(false);
+    st.className = `bld-stage bg-${S.bg} dev-${S.device}`;
+    const fr = $('#bldFrame');
+    fr.className = `bld-frame sav-theme-${S.mode}${S.style !== 'soft' ? ' sav-style-' + S.style : ' sav-style-soft'}${S.bg === 'colour' ? ' bg-colour' : ''}`;
+    for (const [k, , lang] of TABS) $(`[data-code="${k}"]`).innerHTML = D().codeBlock(codeFor(k), lang, k === 'page' ? `${cur.id}.html` : k === 'react' ? `My${pascal(cur.id)}.jsx` : k === 'vue' ? `My${pascal(cur.id)}.vue` : '');
+    $('#bldTitle').textContent = `${cur.name} — your code`;
+    $('#bldDocs').href = '#' + cur.id;
+    const pick = $('#bldPick'); if (pick && pick.value !== cur.id) pick.value = cur.id;
+    const all = comps(), at = all.indexOf(cur);
+    $('#bldCount').textContent = `${at + 1} of ${all.length}`;
+    if (save) history.replaceState(null, '', `#builder?c=${cur.id}&cfg=${enc(S)}`);
+  }
+
+  function choose(d, state) {
+    cur = d;
+    S = { ...fresh(d), ...(state && state.c === d.id ? clean(state, d) : {}) };
+    if (!state || state.c !== d.id) saved = null;
+    renderPanel();
+    const set = (id, v) => { const el = $(id); if (el) el.value = v; };
+    set('#bldDevice', S.device); set('#bldStyle', S.style); set('#bldMode', S.mode); set('#bldBg', S.bg);
+    update();
+  }
+
+  function onPanel(e) {
+    const el = e.target.closest('[data-a], [data-t], [data-text], [data-children], [data-tag], [data-ev], [data-id]');
+    if (!el) return;
+    if (el.dataset.a !== undefined) {
+      const k = el.dataset.a;
+      let v = el.localName === 'sav-switch' ? el.checked : el.value;
+      if (v === '_' || v === null) v = '';
+      // an icon field changes the component only with a real icon name (or when emptied): while typing, the last good icon stays
+      if (el.hasAttribute('data-icons') && v) { iconIndex(); if (!iconNames || !iconNames.has(String(v).trim())) return; v = String(v).trim(); }
+      S.attrs[k] = typeof v === 'number' ? String(v) : v;
+      const ic = el.querySelector(`[data-icon-of="${k}"]`); if (ic) { if (v) ic.setAttribute('name', v); ic.hidden = !v; }
+    } else if (el.dataset.t) {
+      const unit = el.dataset.unit || '';
+      S.tokens[el.dataset.t] = el.value === '' ? '' : el.value + unit;
+      el.closest('.bld-color, .bld-tok')?.classList.toggle('on', !!S.tokens[el.dataset.t]);
+    } else if (el.hasAttribute('data-text')) S.text = el.value;
+    else if (el.hasAttribute('data-children')) S.children = safeHtml(el.value);
+    else if (el.hasAttribute('data-tag')) {
+      S.tag = el.value;
+      const def = baseOf(cur).tags.find((t) => t.tag === el.value);
+      if (def && def.text !== undefined) { S.text = def.text; const ti = $('[data-text]'); if (ti) ti.value = def.text; }
+    } else if (el.dataset.ev) S.events = [...$('#bldPanel').querySelectorAll('[data-ev]')].filter((c) => c.checked).map((c) => c.dataset.ev);
+    else if (el.hasAttribute('data-id')) S.id = el.value.trim().replace(/[^\w-]/g, '');
+    update();
+  }
+
+  function mount(main) {
+    const [, params] = D().hashParts();
+    const all = comps();
+    const given = params.get('cfg') ? dec(params.get('cfg')) : pending;
+    const d = all.find((x) => x.id === (params.get('c') || given?.c)) || all.find((x) => x.id === 'button') || all[0];
+    pending = null;
+    choose(d, given);
+    $('#bldPick').addEventListener('change', () => { const d = all.find((x) => x.id === $('#bldPick').value); if (d && d !== cur) choose(d); });
+    const step = (n) => choose(all[(all.indexOf(cur) + n + all.length) % all.length]);
+    $('#bldPrev').addEventListener('click', () => step(-1));
+    $('#bldNext').addEventListener('click', () => step(1));
+    const panel = $('#bldPanel');
+    iconIndex(); // ready before the first letter is typed
+    // suggestions for the icon fields: exact name, then names that start with the text, contain it, or have it among their words
+    panel.addEventListener('sav-query', async (e) => {
+      const field = e.target.closest?.('[data-icons]'); if (!field) return;
+      const all = await iconIndex();
+      const q = String(e.detail.query || '').trim().toLowerCase(); if (!q) return;
+      const rank = (n) => (n === q ? 0 : n.startsWith(q) ? 1 : n.includes(q) ? 2 : (all[n] || []).some((t) => t.startsWith(q)) ? 3 : (all[n] || []).some((t) => t.includes(q)) ? 4 : 9);
+      field.suggestions = Object.keys(all).map((n) => [n, rank(n)]).filter(([, r]) => r < 9)
+        .sort((a, b) => a[1] - b[1] || a[0].length - b[0].length || a[0].localeCompare(b[0])).slice(0, 12)
+        .map(([n]) => ({ label: n, value: n, icon: n, description: (all[n] || []).slice(0, 4).join(', ') }));
+    });
+    panel.addEventListener('input', onPanel);
+    panel.addEventListener('change', onPanel);
+    panel.addEventListener('click', (e) => {
+      const x = e.target.closest('[data-clear]'); if (!x) return;
+      S.tokens[x.dataset.clear] = ''; x.parentElement.classList.remove('on'); update();
+    });
+    const bar = (id, key) => $(id).addEventListener('change', (e) => { if (e.target !== $(id)) return; S[key] = $(id).value; update(); });
+    bar('#bldDevice', 'device'); bar('#bldStyle', 'style'); bar('#bldMode', 'mode'); bar('#bldBg', 'bg');
+    $('#bldReset').addEventListener('click', () => choose(cur, { c: cur.id })); // back to the defaults; a saved item stays the one Save updates
+    $('#bldShare').addEventListener('click', () => {
+      navigator.clipboard?.writeText(location.href).then(() => Sav.toast('Link copied: it opens the builder with these settings', { variant: 'success', icon: 'link' }), () => Sav.toast('Copy the address from the address bar', { variant: 'neutral' }));
+    });
+    $('#bldDownload').addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([pageCode()], { type: 'text/html' }));
+      a.download = `${cur.id}.html`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    const config = () => ({ tag: S.tag, attrs: S.attrs, text: S.text ?? '', tokens: S.tokens,
+      builder: { style: S.style, mode: S.mode, device: S.device, bg: S.bg, events: S.events, id: S.id, children: S.children } });
+    const onSaved = (item) => { saved = { id: item.id, name: item.name, c: cur.id }; saveLabels(); };
+    $('#playSave').addEventListener('click', () => window.SavAccount?.saveComponent(cur, config(), saved?.c === cur.id ? saved.name : '', { id: saved?.c === cur.id ? saved.id : 0, onSaved }));
+    $('#bldSaveNew').addEventListener('click', () => window.SavAccount?.saveComponent(cur, config(), saved ? `${saved.name} (copy)` : '', { onSaved }));
+    saveLabels();
+  }
+
+  let pending = null; // settings handed over by a playground or a saved item
+  let saved = null; // the saved item on screen ({ id, name, c }), so "Save" replaces it instead of making a copy
+  /** the save button says what it will do; "Save as new" shows only while a saved item is open (and saving is possible) */
+  function saveLabels() {
+    const b = $('#playSave'), n = $('#bldSaveNew'); if (!b || !n) return;
+    const mine = saved && saved.c === cur?.id;
+    b.lastChild.textContent = mine ? `Save changes to “${saved.name}”` : 'Save to my components';
+    n.hidden = !mine || b.hidden;
+  }
+  document.addEventListener('savc:route', () => setTimeout(saveLabels));
+  document.addEventListener('savc:account', () => saveLabels()); // account.js shows the save button when accounts work
+  window.SavBuilder = {
+    pages: { builder: { title: 'Component builder', html, mount } },
+    /** opens the builder on one component, optionally with the settings of its playground */
+    /** opens a component saved from the builder (account page): every setting comes back, and Save updates it */
+    openSaved(item) {
+      const c = item.config || {};
+      pending = { c: item.component, tag: c.tag, attrs: { ...(c.attrs || {}) }, text: c.text, tokens: { ...(c.tokens || {}) }, ...(c.builder || {}) };
+      saved = { id: item.id, name: item.name, c: item.component };
+      location.hash = `builder?c=${item.component}`;
+    },
+    open(id, play) {
+      pending = play ? { c: id, tag: play.tag, attrs: { ...play.attrs }, text: play.text, tokens: { ...play.tokens } } : null;
+      location.hash = `builder?c=${id}${pending ? '&cfg=' + enc(pending) : ''}`;
+    },
+  };
+})();

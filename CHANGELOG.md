@@ -2,7 +2,7 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
-## 1.0.0 — 2026-11-17
+## 1.0.0 — 2026-12-15
 
 The first public version.
 
@@ -80,6 +80,24 @@ The first public version.
 - Site: Tilt is the default style and the chosen style now shapes the whole site; new Versions page (changes between major versions).
 - More than 2,000 icons (plus their older names), loaded on demand (most from Lucide, ISC licence).
 - Primary colour: the light blue of saveriomorelli.com (`#66cbff`).
+
+- New: `sav-range-dual`, a slider with two handles for a span (start and end), also with dates (`type="date"`), a minimum gap
+  (`min-gap`), and a form value sent as two fields (`name-start`, `name-end`).
+- New: `sav-number-input`, a number field with − and + buttons (`buttons="sides | end | none"`) that switch off at min and max;
+  hold a button to keep counting, PageUp and PageDown step ten times.
+- Range and double range share the same thumb look in every style.
+- Tabs: `icon-placement="start | after | end"` on `sav-tabs` or on one `sav-tab` puts the icon before the text, right after it,
+  or at the far end of the tab (parts `tab-icon`, `tab-label`).
+- Tabs: vertical tabs can fold to icons only and open again with a small handle on the border of the rail, next to the first tab (`collapsible`, `collapsed`,
+  `collapse-label`, `expand-label`, `collapse()`, `expand()`, event `sav-collapse`). The labels fold away smoothly and the icons stay put;
+  collapsed, each name shows in a tooltip, a tab without an icon shows its first letter, sub tabs become dots under their main tab
+  (the open one bigger and coloured) and the main tab stays marked. `collapse-button="row"` puts the button as a row with text
+  at the bottom of the rail instead.
+- Select: options can have an icon (`<option data-icon="…">`), shown in the list and in the field.
+- Tabs: the bar scrolls only sideways (the indicator stuck out by a pixel and let it scroll up and down).
+- Radio group `appearance="buttons"`: a row wider than its place scrolls sideways; an icon next to the text keeps a small gap.
+- Avatar: `--ring` draws a ring on the avatar's own shape (leaning square in Tilt, circle, rounded), for avatars that overlap.
+- Chip group: the `value` written in the HTML selects its chips even before they are set up (it could start with nothing selected).
 
 ## 0.1.0 – 0.2.0 — 2026-11-16
 

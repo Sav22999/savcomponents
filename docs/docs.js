@@ -36,7 +36,7 @@
     const f = filter.trim().toLowerCase();
     const match = (d) => !f || d.name.toLowerCase().includes(f) || d.tag.toLowerCase().includes(f) || d.group.toLowerCase().includes(f);
     let html = f ? '' : `<div class="side-group"><div class="side-title">Start</div>
-      <a href="#" data-r="">Overview</a><a href="#start" data-r="start">Getting started</a><a href="#theming" data-r="theming">Theming</a><a href="#styles" data-r="styles">Styles</a><a href="#examples" data-r="examples">Practical examples</a><a href="#versions" data-r="versions">Versions</a><a href="demo.html">Demo website</a></div>`;
+      <a href="#" data-r="">Overview</a><a href="#start" data-r="start">Getting started</a><a href="#theming" data-r="theming">Theming</a><a href="#styles" data-r="styles">Styles</a><a href="#builder" data-r="builder">Component builder</a><a href="#examples" data-r="examples">Practical examples</a><a href="#versions" data-r="versions">Versions</a><a href="demo.html" class="side-ext" target="_blank" rel="noopener">Demo website${ICON('external')}<span class="sr-only"> (opens in a new tab)</span></a></div>`;
     for (const g of groups) {
       const items = DOCS.filter((d) => d.group === g && match(d));
       if (!items.length) continue;
@@ -253,10 +253,10 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       ${d.demos.map((x) => `<h2 id="s-${slug(x.title)}">${x.title}</h2><div class="demo layered"><div class="demo-view">${x.html}</div>${codeBlock(x.html)}</div>`).join('')}
       ${d.id === 'icon' ? iconExplorerHtml() : ''}
       ${d.play ? playgroundHtml(d) : ''}
-      ${table('Attributes', ['Name', 'Values', 'Description'], d.attrs && d.tag.startsWith('sav-') ? [...d.attrs, ['shape', 'tilt · squared · rounded', 'Shape of this component only, whatever the page style. See <a href="#styles">Styles</a>.']] : d.attrs)}
+      ${window.SavRef ? window.SavRef.html(d) : `${table('Attributes', ['Name', 'Values', 'Description'], d.attrs && d.tag.startsWith('sav-') ? [...d.attrs, ['shape', 'tilt · squared · rounded', 'Shape of this component only, whatever the page style. See <a href="#styles">Styles</a>.']] : d.attrs)}
       ${table('Slots', ['Name', 'Description'], d.slots)}
       ${table('Events', ['Name', 'Description'], d.events)}
-      ${table('Methods', ['Name', 'Description'], d.methods)}
+      ${table('Methods', ['Name', 'Description'], d.methods)}`}
       ${d.parts ? `<h2>CSS parts</h2><p>${d.parts.map((p) => `<code>${p}</code>`).join(' ')}</p>` : ''}
       ${window.SavA11y?.html(d.id) || ''}
       <nav class="pager">${prev ? `<a class="layered" href="#${prev.id}">${ICON('arrow-left')}<span><small>Previous</small>${prev.name}</span></a>` : '<span></span>'}${next ? `<a href="#${next.id}" class="nx layered"><span><small>Next</small>${next.name}</span>${ICON('arrow-right')}</a>` : ''}</nav>
@@ -315,12 +315,13 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
      (1.x → 2.x) can ask for changes. Add the newest major version at the top; small releases go in CHANGELOG.md. */
   const MAJORS = [
     {
-      v: '1', title: 'Version 1', when: 'November 2026', current: true,
+      v: '1', title: 'Version 1', when: 'December 2026', current: true,
       intro: 'The first public version: the library, the 5 styles and the customiser. Nothing to migrate from.',
       added: [
         'More than 50 components: buttons, favourite buttons, charts, carousels, media players, OTP and password fields, fields, pickers (select, date, time), dialogs, drawers, tabs, menus, alerts, progress, code blocks and more.',
         'Five styles (Soft, Tilt, Sharp, Brutal, Glass), light and dark mode, and per-element shapes (tilt, squared, rounded).',
         'Theming with CSS variables (--sav-*), the live customiser and saved themes you can link from any site.',
+        'The component builder: every option of a component with a live preview, and code ready to copy (HTML, JavaScript, TypeScript, React, Vue).',
         'More than 2,000 icons, loaded only when used.',
         'Versioned links (/v/1.0.0/sav.js) so an update never changes a site that already uses the library.',
       ],
@@ -351,15 +352,15 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     return `<div class="doc-head"><sav-label class="eyebrow">Start</sav-label><h1>Practical examples</h1><p class="lead">Small, realistic screens built only with SavComponents, with the JavaScript (or TypeScript) that listens to their events. Copy the code and adapt it: names, prices and numbers are made up.</p><div class="ex-toc">${toc}</div></div>
     ${EX.map((e) => `<h2 id="ex-${e.id}">${e.title}</h2><p>${e.desc}</p><p class="uses">Uses: ${e.uses.split(' · ').map((u) => `<code>sav-${u}</code>`).join(' ')}</p>
       <div class="demo layered"><div class="demo-view">${e.html}${e.js ? `<script>${e.js}</script>` : ''}</div>
-        ${e.js ? `<sav-tabs appearance="pills" class="ex-code"><sav-tab label="HTML" name="html">${codeBlock(e.html)}</sav-tab><sav-tab label="JavaScript" name="js">${codeBlock(e.js, 'js')}</sav-tab>${e.ts ? `<sav-tab label="TypeScript" name="ts">${codeBlock(e.ts, 'ts')}</sav-tab>` : ''}</sav-tabs>` : codeBlock(e.html)}</div>`).join('')}
+        ${e.js ? `<sav-tabs class="code-tabs ex-code"><sav-tab label="HTML" name="html">${codeBlock(e.html)}</sav-tab><sav-tab label="JavaScript" name="js">${codeBlock(e.js, 'js')}</sav-tab>${e.ts ? `<sav-tab label="TypeScript" name="ts">${codeBlock(e.ts, 'ts')}</sav-tab>` : ''}</sav-tabs>` : codeBlock(e.html)}</div>`).join('')}
     ${footer()}`;
   }
 
   /* ------------------------------------------------------------ playground: one component, your settings */
 
   /** Knobs read from the attribute table: "boolean" rows become switches, "a · b · c" rows become selects. */
-  function knobsFor(d) {
-    const skip = new Set(['href', 'target', 'download', 'type', 'name', 'value', 'id', 'from', 'for', ...(d.play.skip || [])]);
+  function knobsFor(d, keep = []) {
+    const skip = new Set(['href', 'target', 'download', 'type', 'name', 'value', 'id', 'from', 'for', ...(d.play?.skip || [])].filter((n) => !keep.includes(n)));
     const knobs = [];
     for (const [names, values] of d.attrs || []) {
       if (/[[(<]|^--|^Sav\./.test(names) || /CSS|option|On sav-/i.test(values) || /On sav-/.test(names)) continue;
@@ -371,7 +372,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       else if (/string|number|ms|url|icon name/.test(values)) list.forEach((n) => knobs.push({ name: n, type: 'text' }));
     }
     const descs = new Map((d.attrs || []).map((r) => [r[0], plain(r[2])]));
-    for (const k of knobs) { const row = (d.attrs || []).find((r) => r[0].split(' · ').map((x) => x.trim()).includes(k.name)); k.desc = row ? plain(row[2]) || plain(row[1]) : ''; }
+    for (const k of knobs) { const row = (d.attrs || []).find((r) => r[0].split(' · ').map((x) => x.trim()).includes(k.name)); k.desc = row ? plain(row[2]) || plain(row[1]) : ''; k.values = row ? row[1] : ''; }
     const own = knobs.find((k) => k.name === 'shape'); // the avatar has its own shapes: merge them
     if (own) own.options = [...new Set([...own.options, 'tilt', 'squared', 'rounded'])];
     else knobs.push({ name: 'shape', type: 'enum', options: ['tilt', 'squared', 'rounded'] });
@@ -383,7 +384,19 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   /* ------------------------------------------------------------ icons: search among all of them */
 
   let iconIndex = null;
-  const loadIconIndex = () => (iconIndex ||= fetch(Sav.iconBase + 'index.json').then((r) => r.json()).then((j) => j.icons).catch(() => Object.fromEntries(Object.keys(Sav.icons).map((n) => [n, []]))));
+  let iconNames = null; // every icon name, once the index is read: a half-typed name is not an icon yet
+  const loadIconIndex = () => (iconIndex ||= fetch(Sav.iconBase + 'index.json').then((r) => r.json()).then((j) => j.icons).catch(() => Object.fromEntries(Object.keys(Sav.icons).map((n) => [n, []])))
+    .then((all) => { iconNames = new Set([...Object.keys(all), ...Object.keys(Sav.icons)]); return all; }));
+  /** suggestions for an icon field (sav-search): exact name, then names that start with the text, contain it, or have it among their words */
+  async function iconSuggest(field, query) {
+    if (!field) return;
+    const all = await loadIconIndex();
+    const q = String(query || '').trim().toLowerCase(); if (!q) return;
+    const rank = (n) => (n === q ? 0 : n.startsWith(q) ? 1 : n.includes(q) ? 2 : (all[n] || []).some((t) => t.startsWith(q)) ? 3 : (all[n] || []).some((t) => t.includes(q)) ? 4 : 9);
+    field.suggestions = Object.keys(all).map((n) => [n, rank(n)]).filter(([, r]) => r < 9)
+      .sort((a, b) => a[1] - b[1] || a[0].length - b[0].length || a[0].localeCompare(b[0])).slice(0, 12)
+      .map(([n]) => ({ label: n, value: n, icon: n, description: (all[n] || []).slice(0, 4).join(', ') }));
+  }
 
   function iconExplorerHtml() {
     return `<h2 id="s-all-icons">All icons</h2>
@@ -431,15 +444,16 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   function playgroundHtml(d) {
     return `<h2 id="playground">Playground</h2><p>Change the attributes and see the result; copy the code or save it to your account.</p>
       <div class="play layered"><div class="play-knobs" id="playKnobs"></div><div class="play-out"><div class="play-preview" id="playPreview"></div><div id="playCode"></div>
-      <div class="row play-actions"><sav-button size="sm" appearance="ghost" variant="neutral" icon="refresh" id="playReset">Reset</sav-button><sav-button size="sm" icon="save" id="playSave" hidden>Save to my components</sav-button></div></div></div>`;
+      <div class="row play-actions"><sav-button size="sm" appearance="ghost" variant="neutral" icon="refresh" id="playReset">Reset</sav-button><sav-button size="sm" appearance="soft" id="playBuild"><sav-icon slot="prefix" name="wand-sparkles"></sav-icon>Open in the builder</sav-button><sav-button size="sm" icon="save" id="playSave" hidden>Save to my components</sav-button></div></div></div>`;
   }
 
   function playMarkup(d, st) {
     const attrs = Object.entries(st.attrs).filter(([, v]) => v !== '' && v !== false).map(([k, v]) => (v === true ? ` ${k}` : ` ${k}="${esc(v)}"`)).join('');
     const style = Object.entries(st.tokens).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join('; ');
     const inner = st.text !== undefined ? esc(st.text) : '';
-    const tag = (d.play.tags || []).find((t) => t.tag === st.tag)?.tag || d.play.tag;
-    return `<${tag}${attrs}${style ? ` style="${esc(style)}"` : ''}>${inner}${d.play.children || ''}</${tag}>`;
+    // a component saved from the builder may have no playground: its own tag is used then
+    const tag = (d.play?.tags || []).find((t) => t.tag === st.tag)?.tag || d.play?.tag || (/^sav-[a-z-]+$/.test(st.tag || '') ? st.tag : 'div');
+    return `<${tag}${attrs}${style ? ` style="${esc(style)}"` : ''}>${inner}${d.play?.children || ''}</${tag}>`;
   }
 
   function mountPlayground(d) {
@@ -456,6 +470,9 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       const v = playState.attrs[k.name];
       if (k.type === 'bool') return `<sav-switch size="sm" data-k="${k.name}" ${v ? 'checked' : ''}>${esc(titleCase(k.name))}${tip(k.desc)}</sav-switch>`;
       if (k.type === 'enum') return `<sav-select size="sm" data-k="${k.name}" value="${esc(v || '')}" sheet-on-mobile aria-label="${esc(titleCase(k.name))}" placeholder="Default">${lbl(titleCase(k.name), k.desc)}<option value="">Default</option>${k.options.map((o) => `<option value="${o}">${titleCase(o)}</option>`).join('')}</sav-select>`;
+      // icons: a search among the whole icon set (drawing, name, words); the chosen icon shows next to the label
+      if (/icon name/.test(k.values || '')) return `<sav-search size="sm" data-k="${k.name}" data-icons no-filter max="12" value="${esc(v || '')}" placeholder="Search icons: star, heart, bell…">`
+        + `<span slot="label" class="knob-l">${esc(titleCase(k.name))}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${v ? '' : 'hidden'}></sav-icon></span></sav-search>`;
       return `<sav-input size="sm" data-k="${k.name}" value="${esc(v || '')}">${lbl(titleCase(k.name), k.desc)}</sav-input>`;
     };
     box.innerHTML = (d.play.tags ? `<sav-radio-group appearance="buttons" size="sm" data-tag value="${playState.tag || d.play.tag}">${lbl('Component', 'Which version of the component to show.')}${d.play.tags.map((t) => `<sav-radio value="${t.tag}">${t.label}</sav-radio>`).join('')}</sav-radio-group>` : '')
@@ -468,6 +485,8 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       $('#playPreview').innerHTML = html;
       $('#playCode').innerHTML = codeBlock(html);
     };
+    loadIconIndex(); // ready before the first letter in an icon field
+    box.addEventListener('sav-query', (e) => iconSuggest(e.target.closest?.('[data-icons]'), e.detail.query));
     box.addEventListener('input', (e) => onKnob(e.target));
     box.addEventListener('change', (e) => onKnob(e.target));
     function onKnob(t) {
@@ -477,7 +496,13 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         playState.tag = el.value;
         const def = d.play.tags.find((x) => x.tag === el.value);
         if (def && def.text !== undefined && (!playState.text || d.play.tags.some((x) => x.text === playState.text))) { playState.text = def.text; const ti = box.querySelector('[data-text]'); if (ti) ti.value = def.text; }
-      } else if (el.dataset.k) playState.attrs[el.dataset.k] = el.localName === 'sav-switch' ? el.checked : el.value;
+      } else if (el.dataset.k) {
+        let v = el.localName === 'sav-switch' ? el.checked : el.value;
+        // an icon field changes the component only with a real icon name (or when emptied): while typing, the last good icon stays
+        if (el.hasAttribute('data-icons') && v) { if (!iconNames?.has(String(v).trim())) return; v = String(v).trim(); }
+        playState.attrs[el.dataset.k] = v;
+        const ic = el.querySelector(`[data-icon-of="${el.dataset.k}"]`); if (ic) { if (v) ic.setAttribute('name', v); ic.hidden = !v; }
+      }
       else if (el.hasAttribute('data-text')) playState.text = el.value;
       else {
         const name = el.dataset.token || el.dataset.tokenOn;
@@ -489,6 +514,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       update();
     }
     $('#playReset').addEventListener('click', () => { pendingPlay = null; playState = structuredClone(base); mountPlayground(d); });
+    $('#playBuild').addEventListener('click', () => window.SavBuilder?.open(d.id, playState));
     $('#playSave').addEventListener('click', () => window.SavAccount?.saveComponent(d, { tag: playState.tag || d.play.tag, attrs: playState.attrs, text: playState.text ?? '', tokens: playState.tokens }, playState.name));
     update();
     if (fromSaved) setTimeout(() => document.getElementById('playground')?.scrollIntoView({ behavior: 'smooth' }), 50);
@@ -497,7 +523,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   /** Used by account.js */
   window.SavDocs = {
     docs: DOCS, icon: ICON, esc, codeBlock, footer: () => footer(), route: () => route(),
-    playMarkup,
+    playMarkup, knobsFor, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
     themeConfig: () => ({ style: store.get('savc-style', 'tilt'), mode: store.get('savc-mode', 'auto'), tokens: themeTokens(), settings: { ...theme } }),
     applyThemeConfig(cfg) {
       theme = { ...(cfg.settings || {}) };
@@ -548,7 +574,8 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     const [id, params] = hashParts();
     const main = $('#main');
     const d = DOCS.find((x) => x.id === id);
-    const extra = window.SavAccount?.pages?.[id];
+    const extra = window.SavAccount?.pages?.[id] || window.SavBuilder?.pages?.[id];
+    main.classList.toggle('wide', !!window.SavBuilder?.pages?.[id]);
     main.innerHTML = extra ? extra.html() + footer() : id === 'start' ? pageStart() : id === 'theming' ? pageTheming() : id === 'styles' ? pageStyles() : id === 'examples' ? pageExamples() : id === 'versions' ? pageVersions() : d ? pageComponent(d) : pageHome();
     // scripts inside demos do not run from innerHTML: re-create them
     main.querySelectorAll('.demo-view script').forEach((old) => { const s = document.createElement('script'); s.textContent = `{\n${old.textContent}\n}`; old.replaceWith(s); }); // a block: running a demo twice never redeclares its const
@@ -556,6 +583,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     document.title = (d ? d.name : extra ? extra.title : { start: 'Getting started', theming: 'Theming', styles: 'Styles', examples: 'Practical examples', versions: 'Versions' }[id] || 'Web components you can customise') + ' — SavComponents';
     if (d?.play) mountPlayground(d);
     if (d) window.SavA11y?.mount(main);
+    if (d) window.SavRef?.mount(main, d);
     if (!id) mountCompFilter(main);
     extra?.mount?.(main);
     document.dispatchEvent(new CustomEvent('savc:route', { detail: { id } }));
@@ -722,6 +750,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       { label: 'Theming', sub: 'Colours, tokens, ::part()', href: '#theming', kind: 'Page', icon: 'palette' },
       { label: 'Styles', sub: 'Soft, Tilt, Sharp, Brutal, Glass', href: '#styles', kind: 'Page', icon: 'layers' },
       { label: 'Practical examples', sub: 'Sign-in, settings, shop cards…', href: '#examples', kind: 'Page', icon: 'image' },
+      { label: 'Component builder', sub: 'Every option of a component, code ready to copy', href: '#builder', kind: 'Page', icon: 'wand-sparkles', words: 'builder customise customize generator configurator playground code copy react vue typescript' },
       { label: 'Demo website', sub: 'A whole lorem ipsum site made only with the library', href: 'demo.html', kind: 'Page', icon: 'layout', words: 'demo example site template landing' },
       { label: 'Versions', sub: 'What changes between major versions', href: '#versions', kind: 'Page', icon: 'history', words: 'changelog release update migrate breaking' },
     ];

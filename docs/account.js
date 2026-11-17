@@ -284,14 +284,24 @@
     }, 'Sign in to save your themes and use them on your sites.');
   }
 
-  async function saveComponent(d, config, current) {
+  /** opts.id: replace the configuration of that saved item (keeps its name); opts.onSaved(item): told what was saved */
+  async function saveComponent(d, config, current, opts = {}) {
     needAccount(async () => {
-      const name = await askName(`Save this ${d.name.toLowerCase()}`, current || `My ${d.name.toLowerCase()}`);
-      if (!name) return;
+      const own = opts.id && A.items.find((i) => i.id === opts.id);
       try {
+        if (own) {
+          const r = await api('item.save', { id: own.id, name: own.name, config });
+          Object.assign(own, r.item);
+          toast(`Changes saved in “${own.name}”`, 'success', 'save');
+          opts.onSaved?.(own);
+          return;
+        }
+        const name = await askName(`Save this ${d.name.toLowerCase()}`, current || `My ${d.name.toLowerCase()}`);
+        if (!name) return;
         const r = await api('item.save', { kind: 'component', component: d.id, name, config });
         A.items.unshift(r.item);
-        toast('Saved in “My components”', 'success', 'save');
+        toast('Saved in “My components”: find it in your account', 'success', 'save');
+        opts.onSaved?.(r.item);
       } catch (e) { fail(e); }
     }, 'Sign in to save your components.');
   }
@@ -333,10 +343,10 @@
       const d = docById(i.component);
       return `<div class="item-card layered" data-item="${i.id}">
         <div class="item-name"><b>${esc(i.name)}</b><small>${d ? esc(d.name) : esc(i.component)}</small></div>
-        <div class="item-preview">${d?.play ? D.playMarkup(d, i.config) : ''}</div>
+        <div class="item-preview">${d && (d.play || i.config.tag) ? D.playMarkup(d, i.config) : ''}</div>
         <div class="row">
           <sav-button size="sm" appearance="soft" icon="code" data-act="code">Code</sav-button>
-          <sav-button size="sm" appearance="ghost" icon="edit" data-act="open">Open in playground</sav-button>
+          ${i.config.builder ? '<sav-button size="sm" appearance="ghost" data-act="build"><sav-icon slot="prefix" name="wand-sparkles"></sav-icon>Open in the builder</sav-button>' : '<sav-button size="sm" appearance="ghost" icon="edit" data-act="open">Open in playground</sav-button>'}
           <sav-dropdown placement="bottom-end"><sav-button slot="trigger" size="sm" appearance="ghost" variant="neutral" icon="more-horizontal" label="More actions"></sav-button>
             <sav-menu-item value="rename"><sav-icon slot="prefix" name="edit"></sav-icon>Rename</sav-menu-item>
             <sav-menu-item value="delete" variant="danger"><sav-icon slot="prefix" name="trash"></sav-icon>Delete</sav-menu-item></sav-dropdown>
@@ -389,6 +399,7 @@
       else if (act === 'embed') showEmbed(item);
       else if (act === 'code') showCode(item);
       else if (act === 'open') D.openPlayground(item);
+      else if (act === 'build') window.SavBuilder?.openSaved(item);
       else if (act === 'update') {
         const r = await api('item.save', { id: item.id, name: item.name, config: D.themeConfig() });
         Object.assign(item, r.item); toast('Theme updated: sites using its link change within 5 minutes', 'success', 'refresh'); D.route();
@@ -561,6 +572,9 @@
     }
     A.ready = true;
     renderTop();
+    // a page drawn before the account was known (playground, builder) shows its save button now
+    $('#playSave')?.toggleAttribute('hidden', !A.installed);
+    document.dispatchEvent(new CustomEvent('savc:account'));
     handleLinks();
     if (['#account', '#admin'].includes(location.hash)) D.route();
   })();

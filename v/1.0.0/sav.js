@@ -940,8 +940,9 @@
       :host([shape="tilt"]) { --_ar: 0; --_at: 10deg; --_ai: 7%; --_is: 1.32; }
       .a { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; width: var(--size); height: var(--size);
            color: var(--_c-text); font-size: calc(var(--size) * .38); font-weight: var(--sav-font-weight-bold); user-select: none; flex: none; }
-      .a::before { content: ""; position: absolute; inset: var(--_ai); z-index: -1; border-radius: var(--_ar); background: var(--_c-soft-hover); transform: rotate(var(--_at)); }
-      .ph { position: absolute; inset: var(--_ai); overflow: hidden; border-radius: var(--_ar); transform: rotate(var(--_at)); }
+      /* --ring: a ring drawn on the shape itself (leaning square in Tilt, circle, rounded), e.g. to separate stacked avatars */
+      .a::before { content: ""; position: absolute; inset: var(--_ai); z-index: -1; border-radius: var(--_ar); background: var(--_c-soft-hover); transform: rotate(var(--_at)); box-shadow: var(--ring, none); }
+      .ph { position: absolute; inset: var(--_ai); overflow: hidden; border-radius: var(--_ar); transform: rotate(var(--_at)); box-shadow: var(--ring, none); }
       img { width: 100%; height: 100%; object-fit: cover; display: block; transform: rotate(calc(var(--_at) * -1)) scale(var(--_is)); }
       svg { width: 55%; height: 55%; }
     `];
@@ -1198,6 +1199,145 @@
     select() { this.native?.select(); }
   }
   define('sav-input', SavInput);
+
+  /* ================================================================== sav-number-input */
+
+  /* A number field with a − button on the left and a + on the right (buttons="end" puts both on the right, "none" hides them).
+     The buttons switch off by themselves at min and max; holding one repeats, faster and faster. Arrows step like a native
+     number field, PageUp and PageDown step ten times. */
+  class SavNumberInput extends SavFormControl {
+    static styles = [SIZES, FIELD, VARIANTS, `
+      :host { min-width: 8.5rem; }
+      .ctl { -moz-appearance: textfield; appearance: textfield; font-variant-numeric: tabular-nums; text-align: var(--_align, start); }
+      .ctl::-webkit-inner-spin-button, .ctl::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+      :host(:not([buttons])) .box, :host([buttons="sides"]) .box { padding-inline: .3rem; --_align: center; }
+      :host([buttons="end"]) .box { padding-inline-end: .3rem; }
+      :host([buttons="end"]) .minus { order: 1; }
+      :host([buttons="end"]) .plus { order: 2; }
+      :host([buttons="none"]) .step { display: none; }
+      :host([pill]) .step { border-radius: var(--sav-radius-pill); }
+      .step { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; flex: none;
+              width: calc(var(--_h) - .6rem); height: calc(var(--_h) - .6rem); padding: 0; border: 0; border-radius: var(--sav-radius-sm);
+              background: none; color: var(--_c-text); cursor: pointer; font: inherit; -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; }
+      /* the button background is a layer: in Tilt it leans like the knobs, the sign stays upright */
+      .step::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_c-soft);
+              transform: rotate(var(--sav-knob-tilt, 0deg)) scale(var(--_sc, 1)); transition: background var(--sav-duration), transform .18s var(--sav-easing); }
+      .step:hover:not(:disabled)::before { background: var(--_c-soft-hover); transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -.5)); }
+      .step:active:not(:disabled)::before { --_sc: .88; }
+      .step:disabled { color: var(--sav-color-text-muted); cursor: not-allowed; }
+      .step:disabled::before { background: var(--sav-color-surface-2); opacity: .6; }
+      .step svg { width: 1em; height: 1em; }
+      .unit { flex: none; color: var(--sav-color-text-muted); font-size: .9em; }
+      .unit:empty { display: none; }
+      @media (prefers-reduced-motion: reduce) { .step::before { transition: none; } }
+    `];
+    static NATIVE = ['placeholder', 'min', 'max', 'step', 'readonly', 'autofocus', 'autocomplete', 'inputmode'];
+    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'unit', 'buttons', 'decrease-label', 'increase-label', ...SavNumberInput.NATIVE]; }
+    connectedCallback() {
+      if (this.shadowRoot.firstChild) return;
+      const id = nextId('nu');
+      this.shadowRoot.innerHTML = `<div class="w" part="form-control">
+        <label class="lbl" part="label" for="${id}"><slot name="label"></slot><span class="lbl-text"></span></label>
+        <div class="box" part="base">
+          <button type="button" class="step minus" part="button decrease-button" tabindex="-1" aria-controls="${id}">${svgIcon('minus')}</button>
+          <slot name="prefix"></slot>
+          <input class="ctl" part="input" id="${id}" type="number">
+          <span class="unit" part="unit"></span><slot name="suffix"></slot>
+          <button type="button" class="step plus" part="button increase-button" tabindex="-1" aria-controls="${id}">${svgIcon('plus')}</button>
+        </div>
+        <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span></div>
+      </div>`;
+      const input = (this.native = this.$('input'));
+      this._default = this.getAttribute('value') ?? '';
+      input.value = this._default;
+      input.addEventListener('input', (e) => { e.stopPropagation(); this.onValue(); this.emit('input', { value: this.value }); });
+      input.addEventListener('change', () => { this.markTouched(); this.emit('change', { value: this.value }); });
+      input.addEventListener('blur', () => { if (input.value) this.markTouched(); });
+      input.addEventListener('invalid', () => this.markTouched());
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'PageUp' || e.key === 'PageDown') { e.preventDefault(); this.bump(e.key === 'PageUp' ? 10 : -10, true); }
+        else if (e.key === 'Enter' && this.form && !e.isComposing) { e.preventDefault(); this.form.requestSubmit(); }
+      });
+      // the scroll wheel never changes the number by accident while the page scrolls
+      input.addEventListener('wheel', () => { if (document.activeElement === this) input.blur(); }, { passive: true });
+      for (const [sel, dir] of [['.minus', -1], ['.plus', 1]]) {
+        const btn = this.$(sel);
+        let timer = null, changed = false;
+        const stop = () => { clearTimeout(timer); timer = null; if (changed) { changed = false; this.markTouched(); this.emit('change', { value: this.value }); } };
+        const tick = (delay) => { if (btn.disabled) return stop(); if (this.bump(dir)) changed = true; timer = setTimeout(() => tick(Math.max(35, delay * 0.82)), delay); };
+        btn.addEventListener('pointerdown', (e) => { if (e.button !== 0 || btn.disabled) return; e.preventDefault(); try { btn.setPointerCapture(e.pointerId); } catch {} if (this.bump(dir)) changed = true; timer = setTimeout(() => tick(110), 420); });
+        btn.addEventListener('pointerup', stop);
+        btn.addEventListener('pointercancel', stop);
+        btn.addEventListener('lostpointercapture', stop);
+        // a click without a pointer (screen readers, keyboard on the button)
+        btn.addEventListener('click', (e) => { if (e.detail === 0 && !btn.disabled) { this.bump(dir); this.emit('change', { value: this.value }); } });
+      }
+      this.$$('slot').forEach((s) => s.addEventListener('slotchange', () => this.syncLabels(this.$('.w'))));
+      this.sync();
+      this.onValue(false);
+    }
+    changed(name, v) {
+      if (name === 'value') { if (this.native && document.activeElement !== this) { this.native.value = v ?? ''; this._default = v ?? ''; this.onValue(false); } return; }
+      this.sync();
+    }
+    sync() {
+      const input = this.native; if (!input) return;
+      for (const a of SavNumberInput.NATIVE) {
+        const v = this.getAttribute(a);
+        v === null ? input.removeAttribute(a) : input.setAttribute(a, v);
+      }
+      if (!this.hasAttribute('inputmode')) input.inputMode = Number.isInteger(Number(this.getAttribute('step') || 1)) && !(Number(this.getAttribute('min')) < 0) ? 'numeric' : 'decimal';
+      input.disabled = this.isDisabled;
+      input.required = this.required;
+      input.name = this.name || '';
+      const lbl = this.getAttribute('aria-label');
+      if (lbl) input.setAttribute('aria-label', lbl);
+      input.setAttribute('aria-describedby', this.$('.help').id);
+      this.$('.minus').setAttribute('aria-label', this.getAttribute('decrease-label') || 'Decrease');
+      this.$('.plus').setAttribute('aria-label', this.getAttribute('increase-label') || 'Increase');
+      this.$('.unit').textContent = this.getAttribute('unit') || '';
+      this.syncLabels(this.$('.w'));
+      this.onValue(false);
+    }
+    /** steps by n (−/+), within min and max; true when the number changed */
+    bump(n, fire = true) {
+      const input = this.native;
+      if (this.isDisabled || input.readOnly) return false;
+      const before = input.value;
+      try { n > 0 ? input.stepUp(n) : input.stepDown(-n); } catch {
+        const st = Number(input.step) || 1, v = (Number(input.value) || 0) + n * st;
+        input.value = String(Math.min(Number(input.max || Infinity), Math.max(Number(input.min || -Infinity), v)));
+      }
+      if (input.value === before) return false;
+      this.onValue();
+      if (fire) this.emit('input', { value: this.value });
+      return true;
+    }
+    onValue() {
+      const input = this.native;
+      const v = input.value === '' ? null : Number(input.value);
+      this.internals.setFormValue(input.value);
+      const off = this.isDisabled || input.readOnly;
+      const min = input.min === '' ? -Infinity : Number(input.min), max = input.max === '' ? Infinity : Number(input.max);
+      this.$('.minus').disabled = off || (v !== null && v <= min);
+      this.$('.plus').disabled = off || (v !== null && v >= max);
+      this.syncValidity();
+      if (this.hasAttribute('data-user-invalid')) this.markTouched();
+    }
+    formResetCallback() { this.native.value = this._default; this.onValue(); this.removeAttribute('data-user-invalid'); }
+    formStateRestoreCallback(s) { this.native.value = s || ''; this.onValue(); }
+    /** a number, or null when the field is empty */
+    get value() { const s = this.native ? this.native.value : this.getAttribute('value') ?? ''; return s === '' || s === null ? null : Number(s); }
+    set value(v) { if (this.native) { this.native.value = v ?? ''; this.onValue(); } else this.setAttribute('value', v ?? ''); }
+    get valueAsNumber() { return this.native ? this.native.valueAsNumber : Number(this.getAttribute('value')); }
+    stepUp(n = 1) { this.bump(Math.abs(n), false); }
+    stepDown(n = 1) { this.bump(-Math.abs(n), false); }
+    focus(o) { this.native?.focus(o); }
+    blur() { this.native?.blur(); }
+    select() { this.native?.select(); }
+  }
+  props(SavNumberInput, { variant: String });
+  define('sav-number-input', SavNumberInput);
 
   /* ================================================================== sav-textarea */
 
@@ -1465,6 +1605,11 @@
       :host([multiple]) .opt:not([aria-selected="true"]) .ck * { visibility: hidden; }
       .opt-l { flex: 1; min-width: 0; }
       .opt-d { display: block; font-size: .8em; font-weight: var(--sav-font-weight-normal); color: var(--sav-color-text-muted); }
+      .opt-row, .val-row { display: inline-flex; align-items: center; gap: .55rem; max-width: 100%; min-width: 0; vertical-align: middle; }
+      .opt-row { display: flex; }
+      .opt-t { min-width: 0; }
+      .opt-ic { flex: none; width: 1.1em; height: 1.1em; color: var(--sav-color-text-muted); }
+      .opt[aria-selected="true"] .opt-ic { color: inherit; }
       .opt[hidden], .grp[hidden] { display: none; }
       .empty { padding: .8rem .6rem; color: var(--sav-color-text-muted); font-size: var(--sav-font-size-sm); }
     `];
@@ -1484,7 +1629,7 @@
     }
     readOptions() {
       this.opts = [];
-      const add = (o, group) => this.opts.push({ value: o.getAttribute('value') ?? o.textContent.trim(), label: o.getAttribute('label') || o.textContent.trim(), disabled: o.disabled || !!group?.disabled, selected: o.hasAttribute('selected'), group: group?.label || '', desc: o.dataset.description || '' });
+      const add = (o, group) => this.opts.push({ value: o.getAttribute('value') ?? o.textContent.trim(), label: o.getAttribute('label') || o.textContent.trim(), disabled: o.disabled || !!group?.disabled, selected: o.hasAttribute('selected'), group: group?.label || '', desc: o.dataset.description || '', icon: o.dataset.icon || '' });
       for (const n of this.children) {
         if (n.localName === 'option') add(n);
         else if (n.localName === 'optgroup') [...n.children].forEach((o) => o.localName === 'option' && add(o, n));
@@ -1600,8 +1745,9 @@
     set value(v) { if (this.trigger) this.setValue(v ?? ''); else this.setAttribute('value', Array.isArray(v) ? v.join(',') : v ?? ''); }
     get options() { return this.opts || []; }
     /** How an option and a chosen value are drawn: subclasses (language, country) add a flag and a code. */
-    optionInner(o) { return `${esc(o.label)}${o.desc ? `<span class="opt-d">${esc(o.desc)}</span>` : ''}`; }
-    valueInner(o) { return esc(o.label); }
+    /* <option data-icon="…">: an icon before the text, in the list and in the field */
+    optionInner(o) { const t = `${esc(o.label)}${o.desc ? `<span class="opt-d">${esc(o.desc)}</span>` : ''}`; return o.icon ? `<span class="opt-row">${svgIcon(o.icon, 'opt-ic')}<span class="opt-t">${t}</span></span>` : t; }
+    valueInner(o) { return o.icon ? `<span class="val-row">${svgIcon(o.icon, 'opt-ic')}<span>${esc(o.label)}</span></span>` : esc(o.label); }
   }
   define('sav-select', SavSelect);
 
@@ -2054,10 +2200,12 @@
       :host([data-appearance="buttons"]) .row:hover { color: var(--sav-color-text); }
       :host([data-appearance="buttons"][checked]) .row { color: var(--sav-color-text); --_rb: var(--sav-color-surface); --_rsh: var(--sav-sheen, none); --_rs: var(--sav-tab-segment-shadow, var(--sav-shadow-sm)); }
       :host([data-appearance="buttons"]:focus-visible) .row { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: -2px; }
-      :host([data-appearance="buttons"]) { flex: 1; }
+      :host([data-appearance="buttons"]) { flex: 1 0 auto; }
+      /* an icon next to the text keeps a small gap from it */
+      :host([data-appearance="buttons"]) .lb { display: inline-flex; align-items: center; gap: .4em; }
     `];
     connectedCallback() {
-      if (!this.shadowRoot.firstChild) this.shadowRoot.innerHTML = '<div class="row" part="base"><span class="dot" part="control"></span><span part="label"><slot></slot></span></div>';
+      if (!this.shadowRoot.firstChild) this.shadowRoot.innerHTML = '<div class="row" part="base"><span class="dot" part="control"></span><span class="lb" part="label"><slot></slot></span></div>';
       this.setAttribute('role', 'radio');
       tiltWatch(this.$('.row'));
       this.sync();
@@ -2080,6 +2228,8 @@
       .items { display: flex; flex-direction: column; gap: .55rem; }
       :host([orientation="horizontal"]) .items { flex-direction: row; flex-wrap: wrap; gap: .5rem 1.25rem; }
       :host([appearance="buttons"]) .items { flex-direction: row; display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--sav-radius); background: var(--sav-color-surface-2); border: var(--sav-border-width) solid var(--sav-color-border); }
+      /* more buttons than room: the row scrolls sideways instead of spilling out of its container */
+      :host([appearance="buttons"]) .items { max-width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
       :host([data-user-invalid]) .items { --sav-color-border-strong: var(--sav-color-danger); }
       .native { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
     `];
@@ -2166,16 +2316,8 @@
 
   /* ================================================================== sav-range */
 
-  class SavRange extends SavFormControl {
-    static styles = [FIELD, VARIANTS, `
-      .head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
-      .out { font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); font-variant-numeric: tabular-nums; }
-      :host(:not([show-value])) .out { display: none; }
-      .track { position: relative; display: flex; align-items: center; height: 1.6rem; --_th: 1.15rem; }
-      /* track and thumb follow the style: --sav-range-* tokens (set by sav-style-tilt, sharp, brutal, glass) */
-      input { appearance: none; -webkit-appearance: none; width: 100%; height: var(--sav-range-height, .4rem); margin: 0; border-radius: var(--sav-range-radius, var(--sav-radius-pill)); cursor: pointer; background:
-              linear-gradient(to right, oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h) 0 var(--_p, 50%), var(--sav-color-surface-2) var(--_p, 50%) 100%); box-shadow: var(--sav-range-track-shadow, inset 0 0 0 1px var(--sav-color-border)); }
-      input:disabled { opacity: .5; cursor: not-allowed; }
+  /* thumbs of sav-range and sav-range-dual: they follow the style through the --sav-range-* tokens */
+  const RANGE_THUMB = `
       .track { --_tb: var(--sav-range-thumb-bg, color-mix(in oklab, oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h) calc(var(--sav-range-thumb-fill, 0) * 100%), var(--sav-color-surface)));
                --_tbd: var(--sav-range-thumb-border-width, 3px) solid color-mix(in oklab, var(--sav-color-text) calc(var(--sav-range-thumb-ink, 0) * 100%), oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h));
                --_tt: var(--sav-range-thumb-tilt, 0deg); }
@@ -2189,6 +2331,18 @@
       input:focus-visible { outline: none; }
       input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 var(--sav-focus-width) var(--sav-color-focus); }
       input:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 var(--sav-focus-width) var(--sav-color-focus); }
+  `;
+
+  class SavRange extends SavFormControl {
+    static styles = [FIELD, VARIANTS, RANGE_THUMB, `
+      .head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+      .out { font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); font-variant-numeric: tabular-nums; }
+      :host(:not([show-value])) .out { display: none; }
+      .track { position: relative; display: flex; align-items: center; height: 1.6rem; --_th: 1.15rem; }
+      /* track and thumb follow the style: --sav-range-* tokens (set by sav-style-tilt, sharp, brutal, glass) */
+      input { appearance: none; -webkit-appearance: none; width: 100%; height: var(--sav-range-height, .4rem); margin: 0; border-radius: var(--sav-range-radius, var(--sav-radius-pill)); cursor: pointer; background:
+              linear-gradient(to right, oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h) 0 var(--_p, 50%), var(--sav-color-surface-2) var(--_p, 50%) 100%); box-shadow: var(--sav-range-track-shadow, inset 0 0 0 1px var(--sav-color-border)); }
+      input:disabled { opacity: .5; cursor: not-allowed; }
       .ticks { display: flex; justify-content: space-between; font-size: .75rem; color: var(--sav-color-text-muted); margin-top: .15rem; }
       .ticks:empty { display: none; }
     `];
@@ -2239,6 +2393,173 @@
   }
   props(SavRange, { variant: String });
   define('sav-range', SavRange);
+
+  /* ================================================================== sav-range-dual */
+
+  /* Two handles on one track: a span with a start and an end (prices, ages, years, dates).
+     Two native range inputs lie on top of each other and only their thumbs take the pointer, so each handle keeps the native
+     keys (arrows, Home, End, PageUp, PageDown) and role. type="date" works with dates (YYYY-MM-DD) and steps of days. */
+  const DAY = 864e5;
+  const isoDay = (n) => new Date(n * DAY).toISOString().slice(0, 10);
+  const dayOf = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '').trim()); return m ? Math.round(Date.UTC(+m[1], +m[2] - 1, +m[3]) / DAY) : null; };
+  class SavRangeDual extends SavFormControl {
+    static styles = [FIELD, VARIANTS, RANGE_THUMB, `
+      .head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+      .out { font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+      :host(:not([show-value])) .out { display: none; }
+      :host { min-width: 10rem; }
+      .track { position: relative; height: 1.6rem; --_th: 1.15rem; --_tw: var(--sav-range-thumb-width, var(--_th)); cursor: pointer; touch-action: none; }
+      .rail { position: absolute; inset-inline: 0; top: 50%; height: var(--sav-range-height, .4rem); transform: translateY(-50%); border-radius: var(--sav-range-radius, var(--sav-radius-pill));
+              background: var(--sav-color-surface-2); box-shadow: var(--sav-range-track-shadow, inset 0 0 0 1px var(--sav-color-border)); overflow: hidden; }
+      /* the coloured part between the two thumb centres (a thumb centre travels from half a thumb to the end minus half a thumb) */
+      .fill { position: absolute; top: 0; bottom: 0; background: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h);
+              left: calc(var(--_tw) / 2 + (100% - var(--_tw)) * var(--_a, 0)); right: calc(var(--_tw) / 2 + (100% - var(--_tw)) * (1 - var(--_b, 1))); }
+      input { position: absolute; inset-inline: 0; top: 50%; transform: translateY(-50%); appearance: none; -webkit-appearance: none; width: 100%; height: var(--sav-range-height, .4rem);
+              margin: 0; background: none; pointer-events: none; z-index: 1; }
+      input::-moz-range-track { background: none; border: 0; }
+      input::-webkit-slider-thumb { pointer-events: auto; cursor: grab; }
+      input::-moz-range-thumb { pointer-events: auto; cursor: grab; }
+      input:active::-webkit-slider-thumb { cursor: grabbing; }
+      input.top { z-index: 2; }
+      :host([disabled]) .track { opacity: .5; cursor: not-allowed; }
+      :host([disabled]) input::-webkit-slider-thumb { cursor: not-allowed; }
+      .ticks { display: flex; justify-content: space-between; font-size: .75rem; color: var(--sav-color-text-muted); margin-top: .15rem; }
+      .ticks:empty { display: none; }
+    `];
+    static get observedAttributes() { return [...FC, 'label', 'help', 'start', 'end', 'min', 'max', 'step', 'min-gap', 'labels', 'unit', 'prefix', 'type', 'start-label', 'end-label', 'name-start', 'name-end']; }
+    connectedCallback() {
+      if (this.shadowRoot.firstChild) return;
+      const id = nextId('rd');
+      this.shadowRoot.innerHTML = `<div class="w" part="form-control" role="group" aria-labelledby="${id}-l">
+        <div class="head"><label class="lbl" part="label" id="${id}-l" for="${id}-a"><slot name="label"></slot><span class="lbl-text"></span></label><output class="out" part="value"></output></div>
+        <div class="track" part="base"><div class="rail" part="track"><div class="fill" part="fill"></div></div>
+          <input type="range" class="a" part="input input-start" id="${id}-a" aria-describedby="${id}-h"><input type="range" class="b" part="input input-end" aria-describedby="${id}-h"></div>
+        <div class="ticks" part="labels"></div>
+        <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span></div>
+      </div>`;
+      const a = (this._a = this.$('.a')), b = (this._b = this.$('.b'));
+      this.native = a;
+      for (const [el, other] of [[a, b], [b, a]]) {
+        // the native input event has no detail: it stops here and the element fires its own, with the values
+        el.addEventListener('input', (e) => { e.stopPropagation(); this.clamp(el, other); this.onValue(); this.emit('input', this.detail()); });
+        el.addEventListener('change', () => this.fireChange());
+        el.addEventListener('pointerdown', () => this.raise(el));
+        el.addEventListener('focus', () => this.raise(el));
+      }
+      // a press on the track (not on a thumb) moves the nearest thumb there, and keeps dragging it
+      const track = this.$('.track');
+      track.addEventListener('pointerdown', (e) => {
+        if (this.isDisabled || e.button !== 0 || e.target.localName === 'input') return;
+        e.preventDefault();
+        const v = this.valueAt(e.clientX);
+        const el = Math.abs(v - a.valueAsNumber) <= Math.abs(v - b.valueAsNumber) && !(v > b.valueAsNumber) ? a : b;
+        this.raise(el); el.focus({ preventScroll: true });
+        const move = (ev) => { el.value = this.valueAt(ev.clientX); this.clamp(el, el === a ? b : a); this.onValue(); this.emit('input', this.detail()); };
+        move(e);
+        try { track.setPointerCapture(e.pointerId); } catch {}
+        const up = () => { track.removeEventListener('pointermove', move); track.removeEventListener('pointerup', up); track.removeEventListener('pointercancel', up); this.fireChange(); };
+        track.addEventListener('pointermove', move);
+        track.addEventListener('pointerup', up);
+        track.addEventListener('pointercancel', up);
+      });
+      this.$$('slot').forEach((s) => s.addEventListener('slotchange', () => this.syncLabels(this.$('.w'))));
+      this.sync();
+      this.setPair(this.getAttribute('start'), this.getAttribute('end'), true);
+      this._default = [a.value, b.value];
+    }
+    changed(name, v) {
+      if (name === 'start' || name === 'end') { if (this._a) this.setPair(name === 'start' ? v : this.toNum(this._a.value, true), name === 'end' ? v : this.toNum(this._b.value, true)); return; }
+      this.sync();
+    }
+    get isDate() { return this.getAttribute('type') === 'date'; }
+    /** attribute (number or YYYY-MM-DD) → number on the track (days for dates) */
+    num(v, fallback) {
+      if (v === null || v === undefined || v === '') return fallback;
+      const n = this.isDate ? dayOf(v) : Number(v);
+      return n === null || Number.isNaN(n) ? fallback : n;
+    }
+    toNum(v, raw) { return raw ? (this.isDate ? isoDay(Number(v)) : v) : Number(v); }
+    sync() {
+      const a = this._a, b = this._b; if (!a) return;
+      const today = Math.floor(Date.now() / DAY);
+      const min = this.num(this.getAttribute('min'), this.isDate ? today : 0);
+      const max = this.num(this.getAttribute('max'), this.isDate ? today + 90 : 100);
+      const step = Number(this.getAttribute('step')) || 1;
+      for (const el of [a, b]) { el.min = min; el.max = Math.max(min, max); el.step = step; el.disabled = this.isDisabled; }
+      a.setAttribute('aria-label', this.getAttribute('start-label') || 'Start');
+      b.setAttribute('aria-label', this.getAttribute('end-label') || 'End');
+      this.syncLabels(this.$('.w'));
+      const labels = this.getAttribute('labels');
+      this.$('.ticks').innerHTML = labels ? labels.split(',').map((l) => `<span>${esc(l.trim())}</span>`).join('') : '';
+      this.onValue();
+    }
+    get gap() { return Math.max(0, Number(this.getAttribute('min-gap')) || 0); }
+    clamp(el, other) {
+      const g = this.gap;
+      if (el === this._a && el.valueAsNumber > this._b.valueAsNumber - g) el.value = this._b.valueAsNumber - g;
+      if (el === this._b && el.valueAsNumber < this._a.valueAsNumber + g) el.value = this._a.valueAsNumber + g;
+      this.raise(el);
+    }
+    /** the thumb in use is drawn on top; when both sit on the same spot the one that can still move is on top */
+    raise(el) {
+      const a = this._a, b = this._b;
+      let top = el;
+      if (a.valueAsNumber === b.valueAsNumber) top = a.valueAsNumber >= (Number(a.max) + Number(a.min)) / 2 ? a : b;
+      a.classList.toggle('top', top === a); b.classList.toggle('top', top === b);
+    }
+    valueAt(x) {
+      const r = this.$('.track').getBoundingClientRect();
+      const tw = parseFloat(getComputedStyle(this._a).getPropertyValue('--_tw')) || 18;
+      const t = Math.min(1, Math.max(0, (x - r.left - tw / 2) / Math.max(1, r.width - tw)));
+      const min = Number(this._a.min), max = Number(this._a.max), step = Number(this._a.step) || 1;
+      return Math.min(max, Math.max(min, min + Math.round(((max - min) * t) / step) * step));
+    }
+    setPair(s, e, initial = false) {
+      const a = this._a, b = this._b;
+      const min = Number(a.min), max = Number(a.max);
+      let x = this.num(s, min), y = this.num(e, max);
+      if (x > y) [x, y] = [y, x];
+      a.value = x; b.value = y;
+      this.clamp(b, a);
+      if (!initial) this.raise(a);
+      this.onValue();
+    }
+    format(n) {
+      const loc = document.documentElement.lang || undefined;
+      if (this.isDate) { try { return new Date(n * DAY).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); } catch { return isoDay(n); } }
+      return (this.getAttribute('prefix') || '') + n.toLocaleString(loc, { maximumFractionDigits: 6 }) + (this.getAttribute('unit') || '');
+    }
+    onValue() {
+      const a = this._a, b = this._b;
+      const min = Number(a.min), span = Number(a.max) - min || 1;
+      const t = this.$('.track');
+      t.style.setProperty('--_a', (a.valueAsNumber - min) / span);
+      t.style.setProperty('--_b', (b.valueAsNumber - min) / span);
+      const fa = this.format(a.valueAsNumber), fb = this.format(b.valueAsNumber);
+      this.$('.out').textContent = `${fa} – ${fb}`;
+      a.setAttribute('aria-valuetext', fa); b.setAttribute('aria-valuetext', fb);
+      // sent with a form as two fields: <name>-start and <name>-end (or name-start / name-end)
+      const n = this.name;
+      const fd = new FormData();
+      if (n || this.getAttribute('name-start')) fd.append(this.getAttribute('name-start') || `${n}-start`, this.start);
+      if (n || this.getAttribute('name-end')) fd.append(this.getAttribute('name-end') || `${n}-end`, this.end);
+      this.internals.setFormValue(fd);
+    }
+    detail() { return { start: this.start, end: this.end, value: this.value }; }
+    fireChange() { this.emit('change', this.detail()); }
+    formResetCallback() { if (!this._a) return; this._a.value = this._default[0]; this._b.value = this._default[1]; this.onValue(); }
+    /** numbers, or YYYY-MM-DD strings with type="date" */
+    get start() { return this._a ? this.toNum(this._a.value, this.isDate) : this.getAttribute('start'); }
+    set start(v) { if (this._a) this.setPair(v, this.end); else this.setAttribute('start', v); }
+    get end() { return this._b ? this.toNum(this._b.value, this.isDate) : this.getAttribute('end'); }
+    set end(v) { if (this._b) this.setPair(this.start, v); else this.setAttribute('end', v); }
+    /** [start, end] */
+    get value() { return [this.start, this.end]; }
+    set value(v) { const [s, e] = Array.isArray(v) ? v : String(v ?? '').split(/\s*[,–]\s*/); this.setPair(s, e); }
+    focus(o) { this._a?.focus(o); }
+  }
+  props(SavRangeDual, { variant: String });
+  define('sav-range-dual', SavRangeDual);
 
   /* ================================================================== sav-rating */
 
@@ -2513,13 +2834,14 @@
     }
     changed() { this.closest('sav-tabs')?.build(); }
   }
-  props(SavTab, { label: String, name: String, icon: String, disabled: Boolean, active: Boolean, level: String });
+  props(SavTab, { label: String, name: String, icon: String, iconPlacement: String, disabled: Boolean, active: Boolean, level: String });
   define('sav-tab', SavTab);
 
   class SavTabs extends SavElement {
     static styles = `
       :host { display: block; }
-      .nav { position: relative; display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: none; border-bottom: var(--sav-border-width) solid var(--sav-color-border); }
+      /* the bottom line is an inset shadow and the indicator sits inside the bar: nothing pokes out, so the bar only ever scrolls sideways */
+      .nav { position: relative; display: flex; gap: .25rem; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; box-shadow: inset 0 calc(var(--sav-border-width) * -1) 0 var(--sav-color-border); }
       .nav::-webkit-scrollbar { display: none; }
       .tab { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .45rem; padding: .7rem .95rem; margin: 0; border: 0; background: none; color: var(--sav-color-text-muted);
              font: inherit; font-size: var(--sav-font-size-md); font-weight: var(--sav-font-weight-semibold); white-space: nowrap; cursor: pointer; border-radius: var(--sav-radius) var(--sav-radius) 0 0; transition: color var(--sav-duration); }
@@ -2530,23 +2852,88 @@
       .tab[aria-selected="true"] { color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); --_tb: var(--sav-tab-active-bg, transparent); }
       .tab:disabled { opacity: .45; cursor: not-allowed; }
       .tab:focus-visible { outline-offset: -3px; }
-      .tab svg { width: 1.1em; height: 1.1em; }
-      .ink { position: absolute; bottom: -1px; left: 0; height: 2px; background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); border-radius: 2px; transition: transform .25s var(--sav-easing), width .25s var(--sav-easing); }
-      :host([appearance="pills"]) .nav { border: 0; gap: .35rem; }
+      .tab svg, .ti sav-icon { width: 1.1em; height: 1.1em; }
+      /* icon-placement: start (before the text), after (right after it), end (at the far end of the tab, space in between) */
+      .ti { display: inline-flex; flex: none; }
+      .tl { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .tab.icon-end .ti { margin-inline-start: auto; padding-inline-start: .6rem; }
+      .tab.icon-end .tl { flex: 0 1 auto; }
+      :host([placement="start"]) .tab { justify-content: flex-start; text-align: start; }
+      .ink { position: absolute; bottom: 0; left: 0; height: 2px; background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); border-radius: 2px; transition: transform .25s var(--sav-easing), width .25s var(--sav-easing); }
+      :host([appearance="pills"]) .nav { box-shadow: none; gap: .35rem; }
       :host([appearance="pills"]) .tab { border-radius: var(--sav-radius-pill); padding: .5rem 1rem; }
       :host([appearance="pills"]) .tab::before { inset: 0; }
       :host([appearance="pills"]) .tab[aria-selected="true"] { --_tb: var(--sav-tab-active-bg, color-mix(in oklab, var(--sav-color-primary) 13%, transparent)); }
       :host([appearance="pills"]) .ink { display: none; }
-      :host([appearance="segmented"]) .nav { display: inline-flex; border: var(--sav-border-width) solid var(--sav-color-border); background: var(--sav-color-surface-2); padding: 3px; border-radius: var(--sav-radius); gap: 2px; max-width: 100%; }
+      :host([appearance="segmented"]) .nav { box-shadow: none; display: inline-flex; border: var(--sav-border-width) solid var(--sav-color-border); background: var(--sav-color-surface-2); padding: 3px; border-radius: var(--sav-radius); gap: 2px; max-width: 100%; }
       :host([appearance="segmented"]) .tab { border-radius: calc(var(--sav-radius) - 2px); padding: .45rem .95rem; }
       :host([appearance="segmented"]) .tab::before { inset: 0; }
       :host([appearance="segmented"]) .tab[aria-selected="true"] { color: var(--sav-color-text); --_tb: var(--sav-color-surface); --_tsh-img: var(--sav-sheen, none); --_ts: var(--sav-tab-segment-shadow, var(--sav-shadow-sm)); }
       :host([appearance="segmented"]) .ink { display: none; }
+      .rail { display: contents; }
+      .fold, .ini, .sd, .tip { display: none; }
       :host([placement="start"]) .wrap { display: flex; gap: 1.25rem; }
-      /* by default (Soft, Sharp) the tabs sit on a rail and the selected one is a raised card; Tilt and Brutal use a plain column with a divider */
-      :host([placement="start"]) .nav { flex-direction: column; gap: 2px; border-bottom: 0; align-self: flex-start; min-width: 10rem; overflow: visible;
+      /* vertical: one column holds the tabs and, when collapsible, the fold button; the rail look (background, divider) is on it */
+      :host([placement="start"]) .rail { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 2px; align-self: flex-start; flex: none; min-width: 10rem;
         padding: var(--sav-tab-vertical-rail-padding, 4px); background: var(--sav-tab-vertical-rail, var(--sav-color-surface-2)); border-radius: calc(var(--sav-radius) + 2px);
-        border-right: var(--sav-tab-vertical-divider, 0 solid transparent); }
+        border-right: var(--sav-tab-vertical-divider, 0 solid transparent); transition: min-width .28s var(--sav-easing); }
+      /* labels fold away smoothly; the icons never move */
+      :host([placement="start"]) .tl { max-width: 16rem; white-space: nowrap; transition: max-width .28s var(--sav-easing), opacity .2s; }
+      :host([placement="start"]) .tab { transition: color var(--sav-duration), gap .28s var(--sav-easing); }
+      /* the fold button: a row like the tabs, under a thin line, with the "panel" icons */
+      :host([placement="start"][collapsible]) .fold { position: relative; isolation: isolate; display: flex; align-items: center; gap: .45rem; margin: .35rem 0 0; padding: .5rem .8rem;
+        border: 0; border-radius: var(--sav-radius); background: none; color: var(--sav-color-text-muted); font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold);
+        text-align: start; white-space: nowrap; cursor: pointer; transition: color var(--sav-duration), gap .28s var(--sav-easing); }
+      .fold::before { content: ""; position: absolute; inset: 1px 0; z-index: -1; border-radius: inherit; background: var(--_fb, transparent); transform: rotate(${TILT}); transition: background var(--sav-duration); }
+      .fold::after { content: ""; position: absolute; left: .55rem; right: .55rem; top: calc(-.2rem - 1px); height: 1px; background: var(--sav-color-border); }
+      .fold:hover { color: var(--sav-color-text); --_fb: var(--sav-tab-vertical-hover, color-mix(in oklab, var(--sav-color-surface) 55%, transparent)); }
+      .fold:focus-visible { outline-offset: -3px; }
+      .fold svg, .fold sav-icon { flex: none; width: 1.1em; height: 1.1em; }
+      .fold-t { overflow: hidden; max-width: 12rem; transition: max-width .28s var(--sav-easing), opacity .2s; }
+      /* collapsed */
+      :host([placement="start"][collapsed]) .rail { min-width: 0; }
+      :host([placement="start"][collapsed]) :is(.tab, .fold) { gap: 0; }
+      :host([placement="start"][collapsed]) :is(.tl, .fold-t) { max-width: 0; opacity: 0; }
+      :host([placement="start"][collapsed]) .tab.icon-end .ti { margin: 0; padding: 0; }
+      /* a tab without an icon shows its first letter, drawn like an icon */
+      :host([placement="start"][collapsed]) .tab:not(.sub):not(:has(.ti)) .ini { display: inline-grid; place-items: center; flex: none; box-sizing: border-box; width: 1.1em; height: 1.1em;
+        border: calc(1.1em / 12) solid currentColor; border-radius: min(var(--sav-radius-sm), 4px); font-size: 1em; line-height: 1; }
+      /* the letter is drawn like the outline icons: same size and stroke, the letter small and bold inside */
+      .ini-l { font-size: .6em; font-weight: var(--sav-font-weight-bold); }
+      /* sub tabs become small dots under their main tab; the open one is a bigger coloured dot */
+      :host([placement="start"][collapsed]) .tab.sub { margin-left: 0; padding: .28rem .8rem; }
+      :host([placement="start"][collapsed]) .tab.sub::after { display: none; }
+      :host([placement="start"][collapsed]) .tab.sub .ti { display: none; }
+      :host([placement="start"][collapsed]) .tab.sub .sd { display: block; width: 6px; height: 6px; margin-inline: calc(.55em - 3px); border-radius: 50%; background: var(--sav-color-border-strong);
+        transition: transform .2s var(--sav-easing), background var(--sav-duration); }
+      :host([placement="start"][collapsed]) .tab.sub.group-on .sd { background: color-mix(in oklab, var(--sav-color-primary) 55%, var(--sav-color-border-strong)); }
+      :host([placement="start"][collapsed]) .tab.sub[aria-selected="true"] { --_tb: transparent; --_ts: none; --_tsh-img: none; }
+      :host([placement="start"][collapsed]) .tab.sub[aria-selected="true"] .sd { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); transform: scale(1.45); }
+      :host([placement="start"][collapsed]) .tab.sub:hover .sd { transform: scale(1.3); }
+      /* the main tab of the open sub tab stays marked while its sub tabs are dots */
+      :host([placement="start"][collapsed]) .tab.parent-on { --_tb: color-mix(in oklab, var(--sav-color-primary) 16%, transparent); }
+      /* the name of a collapsed tab shows in a tooltip on hover or keyboard focus (screen readers read the hidden label) */
+      :host([placement="start"][collapsed]) .tab:is(:hover, :focus-visible) { z-index: 3; }
+      :host([placement="start"][collapsed]) :is(.tab, .fold):is(:hover, :focus-visible) .tip,
+      :host([placement="start"][collapsible]:not([collapse-button="row"])) .fold:is(:hover, :focus-visible) .tip { display: block; position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+        padding: .35rem .6rem; border-radius: var(--sav-radius-sm); background: var(--sav-color-tooltip-bg); color: var(--sav-color-tooltip-text); box-shadow: var(--sav-tooltip-shadow, var(--sav-shadow));
+        font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); line-height: 1.3; white-space: nowrap; pointer-events: none; animation: sav-tab-tip .15s ease-out; }
+      .tip::before { content: ""; position: absolute; left: -4px; top: calc(50% - 4px); width: 8px; height: 8px; background: inherit; transform: rotate(45deg); }
+      @keyframes sav-tab-tip { from { opacity: 0; transform: translate(-4px, -50%); } }
+      @media (prefers-reduced-motion: reduce) { :host([placement="start"]) :is(.rail, .tl, .tab, .fold, .fold-t, .sd) { transition: none; } .tip { animation: none !important; } }
+      /* collapse-button="edge" (the default): a small round handle on the right border of the rail, level with the first tab, half outside it
+         (a leaning square in Tilt, since it takes the pill radius of the style) */
+      :host([placement="start"][collapsible]:not([collapse-button="row"])) .fold { position: absolute; z-index: 4; top: calc(var(--sav-tab-vertical-rail-padding, 4px) * 0 + .55rem); right: -.85rem;
+        width: 1.7rem; height: 1.7rem; margin: 0; padding: 0; gap: 0; justify-content: center; border-radius: var(--sav-radius-pill); color: var(--sav-color-text-muted); }
+      :host([placement="start"]:not([collapse-button="row"])) .fold::before { inset: 0; --_fb: var(--sav-color-surface); background: var(--_fb); background-image: var(--sav-sheen, none);
+        box-shadow: 0 0 0 var(--sav-border-width) var(--sav-color-border-strong), var(--sav-shadow-sm); transform: rotate(calc(var(--sav-knob-tilt, 0deg))); }
+      :host([placement="start"]:not([collapse-button="row"])) .fold:hover { color: var(--sav-color-primary); }
+      :host([placement="start"]:not([collapse-button="row"])) .fold:hover::before { transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -.5)) scale(1.08); }
+      :host([placement="start"]:not([collapse-button="row"])) .fold::after, :host([placement="start"]:not([collapse-button="row"])) .fold-t { display: none; }
+      :host([placement="start"][collapsible]:not([collapse-button="row"])) .wrap { gap: 1.9rem; } /* room for the handle that sticks out */
+      :host([placement="start"]:not([collapse-button="row"])) .fold svg, :host([placement="start"]:not([collapse-button="row"])) .fold sav-icon { width: .95rem; height: .95rem; }
+      /* by default (Soft, Sharp) the tabs sit on a rail and the selected one is a raised card; Tilt and Brutal use a plain column with a divider */
+      :host([placement="start"]) .nav { flex-direction: column; gap: 2px; box-shadow: none; overflow: visible; }
       :host([placement="start"]) .tab { border-radius: var(--sav-radius); padding: .5rem .8rem; }
       :host([placement="start"]) .tab::before { inset: 1px 0; transform-origin: left; }
       :host([placement="start"]) .tab:not([aria-selected="true"]):not(:disabled):hover { --_tb: var(--sav-tab-vertical-hover, color-mix(in oklab, var(--sav-color-surface) 55%, transparent)); }
@@ -2569,13 +2956,31 @@
     `;
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = '<div class="wrap"><div class="nav" part="nav" role="tablist"></div><div class="panels" part="panels"><slot></slot></div></div>';
+      this.shadowRoot.innerHTML = '<div class="wrap"><div class="rail" part="rail"><div class="nav" part="nav" role="tablist"></div><button type="button" class="fold" part="collapse-button"></button></div><div class="panels" part="panels"><slot></slot></div></div>';
+      this.$('.fold').addEventListener('click', () => (this.collapsed ? this.expand() : this.collapse()));
       this.$('slot').addEventListener('slotchange', () => this.build());
       this.$('.nav').addEventListener('keydown', (e) => this.onKey(e));
       this._ro = new ResizeObserver(() => this.ink());
       this._ro.observe(this);
       this.build();
     }
+    changed(name) {
+      if (name === 'icon-placement') this.build();
+      else if (['collapsed', 'collapsible', 'placement', 'collapse-label', 'expand-label', 'collapse-button'].includes(name)) this.syncFold();
+    }
+    /** the fold button and, when collapsed, a tooltip with the name of each tab */
+    syncFold() {
+      const b = this.$('.fold'); if (!b) return;
+      const c = this.collapsed && this.getAttribute('placement') === 'start';
+      const text = c ? this.getAttribute('expand-label') || 'Expand' : this.getAttribute('collapse-label') || 'Collapse';
+      const edge = this.getAttribute('collapse-button') !== 'row'; // the handle on the border is the default; "row" puts a row at the bottom
+      b.innerHTML = `${svgIcon(edge ? (c ? 'chevrons-right' : 'chevrons-left') : c ? 'panel-left-open' : 'panel-left-close')}<span class="fold-t">${esc(text)}</span><span class="tip" aria-hidden="true">${esc(text)}</span>`;
+      b.setAttribute('aria-label', text);
+      b.setAttribute('aria-expanded', String(!c));
+    }
+    /** only the icons (collapse), or icons and labels again (expand); both fire sav-collapse */
+    collapse() { if (this.collapsed) return; this.collapsed = true; this.emit('sav-collapse', { collapsed: true }); }
+    expand() { if (!this.collapsed) return; this.collapsed = false; this.emit('sav-collapse', { collapsed: false }); }
     get tabs() { return [...this.querySelectorAll(':scope > sav-tab')]; }
     build() {
       const nav = this.$('.nav'); if (!nav || this._building) return;
@@ -2585,11 +2990,22 @@
       tabs.forEach((t) => { if (!t.id) t.id = nextId('tabpanel'); });
       const want = this.getAttribute('active');
       let active = (want && tabs.find((t) => A(t, 'name') === want)) || tabs.find((t) => t.hasAttribute('active') && !t.hasAttribute('disabled')) || tabs.find((t) => !t.hasAttribute('disabled'));
-      nav.innerHTML = tabs.map((t, i) => `<button class="tab${A(t, 'level') === 'sub' ? ' sub' : ''}" part="tab${A(t, 'level') === 'sub' ? ' sub-tab' : ''}" role="tab" type="button" id="${t.id}-t" aria-controls="${t.id}" data-i="${i}" ${t.hasAttribute('disabled') ? 'disabled' : ''}>${A(t, 'icon') ? svgIcon(A(t, 'icon')) : ''}<span>${esc(A(t, 'label') || `Tab ${i + 1}`)}</span></button>`).join('') + '<span class="ink" part="indicator"></span>';
+      // where the icon goes: the tab's own icon-placement, else the one of sav-tabs, else before the text
+      const place = (t) => { const p = A(t, 'icon-placement') || this.getAttribute('icon-placement'); return p === 'after' || p === 'end' ? p : 'start'; };
+      const inner = (t, i) => {
+        const ic = A(t, 'icon') ? `<span class="ti" part="tab-icon">${svgIcon(A(t, 'icon'))}</span>` : '';
+        const label = A(t, 'label') || `Tab ${i + 1}`;
+        const tx = `<span class="tl" part="tab-label">${esc(label)}</span>`;
+        const ini = ic ? '' : `<span class="ini" aria-hidden="true"><span class="ini-l">${esc(label.trim().charAt(0).toUpperCase())}</span></span>`; // collapsed and no icon: its first letter
+        const extra = `${A(t, 'level') === 'sub' ? '<span class="sd" aria-hidden="true"></span>' : ''}<span class="tip" aria-hidden="true">${esc(label)}</span>`; // collapsed: a dot for sub tabs, the name as tooltip
+        return (place(t) === 'start' ? ini + ic + tx : ini + tx + ic) + extra;
+      };
+      nav.innerHTML = tabs.map((t, i) => `<button class="tab${A(t, 'level') === 'sub' ? ' sub' : ''}${A(t, 'icon') ? ` icon-${place(t)}` : ''}" part="tab${A(t, 'level') === 'sub' ? ' sub-tab' : ''}" role="tab" type="button" id="${t.id}-t" aria-controls="${t.id}" data-i="${i}" ${t.hasAttribute('disabled') ? 'disabled' : ''}>${inner(t, i)}</button>`).join('') + '<span class="ink" part="indicator"></span>';
       nav.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => this.select(tabs[b.dataset.i])));
       nav.querySelectorAll('.tab').forEach((b) => tiltWatch(b));
       tabs.forEach((t) => t.setAttribute('aria-labelledby', `${t.id}-t`));
       this._building = false;
+      this.syncFold();
       this.select(active, false);
     }
     select(tab, fire = true) {
@@ -2638,7 +3054,7 @@
       next.click();
     }
   }
-  props(SavTabs, { appearance: String, placement: String });
+  props(SavTabs, { appearance: String, placement: String, iconPlacement: String, collapsible: Boolean, collapsed: Boolean, collapseLabel: String, expandLabel: String, collapseButton: String });
   define('sav-tabs', SavTabs);
 
   /* ================================================================== sav-details / sav-accordion */
@@ -3094,8 +3510,10 @@
     }
     get chips() { return [...this.querySelectorAll('sav-chip')]; }
     /** Selected values: a list with multiple, otherwise one value (or ''). */
-    get value() { const sel = this.chips.filter((c) => c.selected).map((c) => c.value ?? c.textContent.trim()); return this.multiple ? sel : sel[0] || ''; }
-    set value(v) { const want = new Set(Array.isArray(v) ? v : String(v).split(',').filter(Boolean)); this.chips.forEach((c) => c.toggleAttribute('selected', want.has(c.value ?? c.textContent.trim()))); }
+    /* the attributes are read, not the properties: when the group starts, its chips may not be set up yet */
+    static chipValue(c) { return c.getAttribute('value') ?? c.textContent.trim(); }
+    get value() { const sel = this.chips.filter((c) => c.hasAttribute('selected')).map(SavChipGroup.chipValue); return this.multiple ? sel : sel[0] || ''; }
+    set value(v) { const want = new Set(Array.isArray(v) ? v : String(v).split(',').map((x) => x.trim()).filter(Boolean)); this.chips.forEach((c) => c.toggleAttribute('selected', want.has(SavChipGroup.chipValue(c)))); }
     pick(chip) {
       if (this.multiple) chip.toggleAttribute('selected');
       else { const on = !chip.selected || !this.required; this.chips.forEach((c) => c.toggleAttribute('selected', c === chip && on)); }

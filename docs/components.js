@@ -273,6 +273,36 @@ window.SAVC_DOCS = [
     parts: ['form-control', 'label', 'base', 'input', 'help-text'],
   },
   {
+    id: 'number-input', name: 'Number input', play: { tag: 'sav-number-input', attrs: { label: 'Guests', value: '2', min: '1', max: '12' }, skip: ['decrease-label', 'increase-label'] }, tag: 'sav-number-input', group: 'Forms', icon: 'diff',
+    desc: 'A number field with a − button on the left and a + on the right. The buttons switch off at the minimum and maximum; hold one to keep counting. It takes part in native forms and validation.',
+    demos: [
+      { title: 'Basic', html: `<sav-number-input label="Guests" value="2" min="1" max="12" help="From 1 to 12 people."></sav-number-input>
+<sav-number-input label="Weight" value="2.5" min="0" step="0.5" unit="kg"></sav-number-input>` },
+      { title: 'Buttons', html: `<sav-number-input label="Buttons on the sides (default)" value="1" min="0"></sav-number-input>
+<sav-number-input label="Both buttons on the right" value="1" min="0" buttons="end"></sav-number-input>
+<sav-number-input label="No buttons" value="1" min="0" buttons="none"></sav-number-input>` },
+      { title: 'Sizes, colours, pill', html: `<sav-number-input size="sm" value="3" min="0" max="5" aria-label="Small"></sav-number-input>
+<sav-number-input value="40" step="5" variant="success" unit="%" aria-label="Medium, success"></sav-number-input>
+<sav-number-input size="lg" value="10" pill appearance="filled" aria-label="Large pill"></sav-number-input>
+<sav-number-input value="7" disabled aria-label="Disabled"></sav-number-input>` },
+      { title: 'Listen to changes', html: `<sav-number-input id="qty" label="Quantity" value="1" min="1" max="99"></sav-number-input>
+<p class="muted small" id="qtyOut">Total: 12.00 EUR (example price 12 EUR)</p>
+<script>
+  const qty = document.getElementById('qty');
+  qty.addEventListener('input', () => {
+    document.getElementById('qtyOut').textContent = 'Total: ' + ((qty.value || 0) * 12).toFixed(2) + ' EUR (example price 12 EUR)';
+  });
+</script>` },
+    ],
+    attrs: [['label · help · placeholder', 'string', ''], ['value · min · max · step', 'number', 'Arrows step by step, PageUp and PageDown by ten steps.'], ['unit', 'string', 'Text after the number, inside the field (kg, %, EUR…).'],
+      ['buttons', 'sides · end · none', 'Where the − and + buttons go. Default sides.'], ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['variant', 'primary · …', 'Colour of the buttons.'],
+      ['pill · readonly · disabled · required', 'boolean', ''], ['name', 'string', 'Form field name.'], ['decrease-label · increase-label', 'string', 'Names of the buttons for screen readers. Default "Decrease" and "Increase".']],
+    slots: [['label', 'Rich label'], ['prefix · suffix', 'Icons or text inside the field, next to the number'], ['help', 'Rich help text']],
+    events: [['input', 'While the number changes (typing or buttons): detail.value.'], ['change', 'When a change is done: detail.value (a number, or null when empty).']],
+    methods: [['stepUp(n) · stepDown(n)', 'Change the number by n steps.'], ['focus() · blur() · select()', ''], ['checkValidity() · reportValidity() · setCustomValidity(msg)', '']],
+    parts: ['form-control', 'label', 'base', 'input', 'button', 'decrease-button', 'increase-button', 'unit', 'help-text'],
+  },
+  {
     id: 'textarea', name: 'Textarea', play: { tag: 'sav-textarea', attrs: { label: 'Message' } }, tag: 'sav-textarea', group: 'Forms', icon: 'letter-text',
     desc: 'Multi-line text, with an optional counter and automatic height.',
     demos: [{ title: 'Basic', html: `<sav-textarea label="Message" placeholder="Write something…" maxlength="200" counter></sav-textarea>
@@ -507,6 +537,36 @@ window.SAVC_DOCS = [
     attrs: [['label · help', 'string', ''], ['value · min · max · step', 'number', ''], ['show-value', 'boolean', ''], ['unit', 'string', 'Appended to the shown value.'], ['labels', 'comma list', 'Labels under the track.'], ['variant', 'primary · …', '']],
   },
   {
+    id: 'range-dual', name: 'Double range', play: { tag: 'sav-range-dual', attrs: { label: 'Price', start: '20', end: '80', 'show-value': true, prefix: '€ ' }, skip: ['name-start', 'name-end', 'start-label', 'end-label'] }, tag: 'sav-range-dual', group: 'Forms', icon: 'ruler-dimension-line',
+    desc: 'A slider with two handles for a span: a start and an end, such as a price band, an age group or a period between two dates. Each handle works with the keyboard like a normal slider.',
+    demos: [
+      { title: 'Basic', html: `<sav-range-dual label="Price" min="0" max="500" step="10" start="80" end="320" prefix="€ " show-value></sav-range-dual>
+<sav-range-dual label="Age" min="18" max="99" start="25" end="40" show-value labels="18, 40, 60, 80, 99" variant="success"></sav-range-dual>` },
+      { title: 'Dates', html: `<sav-range-dual label="Stay" type="date" min="2027-06-01" max="2027-09-30" start="2027-07-10" end="2027-07-24" min-gap="1" show-value
+  start-label="Check-in" end-label="Check-out" help="At least one night."></sav-range-dual>` },
+      { title: 'Minimum gap and form', html: `<form id="filterForm" class="demo-form">
+  <sav-range-dual name="hours" label="Opening hours" min="0" max="24" start="9" end="18" min-gap="2" unit=":00" show-value></sav-range-dual>
+  <sav-button type="submit" size="sm">Send</sav-button>
+  <p class="muted small" id="filterOut">The form sends hours-start and hours-end.</p>
+</form>
+<script>
+  document.getElementById('filterForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = new FormData(e.target);
+    document.getElementById('filterOut').textContent = 'Sent: ' + new URLSearchParams(data).toString();
+  });
+</script>` },
+    ],
+    attrs: [['label · help', 'string', ''], ['start · end', 'number · date', 'The two values. With type="date" they are dates written YYYY-MM-DD.'], ['min · max · step', 'number · date', 'With type="date" the step is in days.'],
+      ['type', 'number · date', 'Default number.'], ['min-gap', 'number', 'Smallest distance between the two handles (default 0).'], ['show-value', 'boolean', 'Shows "start – end" next to the label.'],
+      ['prefix · unit', 'string', 'Written before and after each shown number (€, %, km…).'], ['labels', 'comma list', 'Labels under the track.'], ['variant', 'primary · …', ''], ['disabled · required', 'boolean', ''],
+      ['name', 'string', 'Sent with a form as two fields: name-start and name-end.'], ['name-start · name-end', 'string', 'Other names for the two fields.'], ['start-label · end-label', 'string', 'Names of the two handles for screen readers. Default "Start" and "End".']],
+    slots: [['label', 'Rich label'], ['help', 'Rich help text']],
+    events: [['input', 'While a handle moves: detail.start, detail.end, detail.value.'], ['change', 'When a handle is let go: detail.start, detail.end, detail.value ([start, end]).']],
+    methods: [['start · end · value', 'Properties: read or set the values (numbers, or YYYY-MM-DD dates).'], ['focus()', 'Focuses the first handle.']],
+    parts: ['form-control', 'label', 'value', 'base', 'track', 'fill', 'input', 'input-start', 'input-end', 'labels', 'help-text'],
+  },
+  {
     id: 'rating', name: 'Rating', play: { tag: 'sav-rating', attrs: { value: '3' } }, tag: 'sav-rating', group: 'Forms', icon: 'star-half',
     desc: 'Stars (or any icon) for ratings. Keyboard: arrows, Home, End.',
     demos: [{ title: 'Basic', html: `<sav-rating label="Your rating" value="3"></sav-rating>
@@ -546,8 +606,13 @@ window.SAVC_DOCS = [
 <sav-avatar label="Grace Hopper" variant="primary"></sav-avatar>
 <sav-avatar></sav-avatar>
 <sav-avatar label="Alan Turing" shape="rounded" size="lg" variant="primary"></sav-avatar>
-<sav-avatar image="docs/sample.svg" label="Landscape" size="xl"></sav-avatar>` }],
-    attrs: [['image', 'url', 'Falls back to initials if it fails.'], ['label', 'string', 'Name: gives the initials and the accessible name.'], ['initials', 'string', 'Overrides the computed initials.'], ['shape', 'circle · rounded · square · tilt', 'Tilt is a square leaning 10°, like the logo.'], ['size', 'sm · md · lg · xl', 'Or --size.'], ['variant', 'neutral · primary', '']],
+<sav-avatar image="docs/sample.svg" label="Landscape" size="xl"></sav-avatar>` },
+      { title: 'Stacked, with a ring', html: `<div style="display: flex">
+  <sav-avatar label="Ada Lovelace" variant="primary" style="--ring: 0 0 0 3px var(--sav-color-bg)"></sav-avatar>
+  <sav-avatar label="Alan Turing" style="--ring: 0 0 0 3px var(--sav-color-bg); margin-left: -.4rem"></sav-avatar>
+  <sav-avatar label="Grace Hopper" variant="primary" style="--ring: 0 0 0 3px var(--sav-color-bg); margin-left: -.4rem"></sav-avatar>
+</div>` }],
+    attrs: [['image', 'url', 'Falls back to initials if it fails.'], ['label', 'string', 'Name: gives the initials and the accessible name.'], ['initials', 'string', 'Overrides the computed initials.'], ['shape', 'circle · rounded · square · tilt', 'Tilt is a square leaning 10°, like the logo.'], ['size', 'sm · md · lg · xl', 'Or --size.'], ['variant', 'neutral · primary', ''], ['--size · --ring', 'CSS', '--size: width and height. --ring: a ring that follows the shape (circle, rounded, leaning square in Tilt), for example 0 0 0 2px white to separate avatars that overlap.']],
   },
   {
     id: 'divider', name: 'Divider', tag: 'sav-divider', group: 'Layout', icon: 'separator-horizontal',
@@ -900,7 +965,39 @@ window.SAVC_DOCS = [
   <sav-tab label="Security">Password and two-step login.</sav-tab>
   <sav-tab label="Billing">Invoices and payment methods.</sav-tab>
 </sav-tabs>` },
-      { title: 'Vertical with sub tabs', html: `<sav-tabs placement="start" active="profile">
+      { title: 'Icons: start, after the text, end', html: `<div class="demo-grid">
+  <sav-tabs placement="start">
+    <sav-tab label="Inbox" icon="mail">Icons at the start (the default).</sav-tab>
+    <sav-tab label="Starred" icon="star">Icons at the start (the default).</sav-tab>
+    <sav-tab label="Settings" icon="settings">Icons at the start (the default).</sav-tab>
+  </sav-tabs>
+  <sav-tabs placement="start" icon-placement="after">
+    <sav-tab label="Inbox" icon="mail">Icons right after the text.</sav-tab>
+    <sav-tab label="Starred" icon="star">Icons right after the text.</sav-tab>
+    <sav-tab label="Settings" icon="settings">Icons right after the text.</sav-tab>
+  </sav-tabs>
+  <sav-tabs placement="start" icon-placement="end">
+    <sav-tab label="Inbox" icon="mail">Icons at the end, with space in between.</sav-tab>
+    <sav-tab label="Starred" icon="star">Icons at the end, with space in between.</sav-tab>
+    <sav-tab label="Help centre" icon="external" icon-placement="after">One tab can choose its own placement.</sav-tab>
+  </sav-tabs>
+</div>` },
+      { title: 'Vertical, collapsible', html: `<sav-tabs placement="start" collapsible>
+  <sav-tab label="Inbox" icon="mail">The handle on the border, next to the first tab, folds the tabs: only the icons stay, and each name shows in a tooltip.</sav-tab>
+  <sav-tab label="Starred" icon="star">Starred messages.</sav-tab>
+  <sav-tab label="Archive" icon="folder">Archived messages.</sav-tab>
+  <sav-tab label="Settings">Without an icon, a collapsed tab shows its first letter.</sav-tab>
+</sav-tabs>
+<sav-tabs placement="start" collapsible collapsed collapse-label="Hide" expand-label="Show">
+  <sav-tab label="Overview" icon="home">This one starts collapsed, with its own button texts.</sav-tab>
+  <sav-tab label="Activity" icon="bell">Recent activity.</sav-tab>
+</sav-tabs>
+<sav-tabs placement="start" collapsible collapse-button="row">
+  <sav-tab label="Projects" icon="folder">collapse-button="row": the button is a row at the bottom of the tabs.</sav-tab>
+  <sav-tab label="Team" icon="users">The people of the team.</sav-tab>
+  <sav-tab label="Reports" icon="chart-column">Monthly reports.</sav-tab>
+</sav-tabs>` },
+      { title: 'Vertical with sub tabs', html: `<sav-tabs placement="start" active="profile" collapsible>
   <sav-tab label="Account" icon="user" name="account">Your account in short.</sav-tab>
   <sav-tab label="Profile" level="sub" name="profile">Name, picture and bio.</sav-tab>
   <sav-tab label="Security" level="sub" name="security">Password and two-step sign-in.</sav-tab>
@@ -910,9 +1007,10 @@ window.SAVC_DOCS = [
   <sav-tab label="Billing" icon="credit-card" name="billing">Plan and invoices.</sav-tab>
 </sav-tabs>` },
     ],
-    attrs: [['appearance', 'underline · pills · segmented', 'Default underline.'], ['placement', 'top · start', ''], ['active', 'tab name', 'Tab to open first.'], ['label · name · icon · active · disabled', '', 'On sav-tab.'], ['level', 'normal · sub', 'On sav-tab: sub sits under the tab before it, smaller and indented (two levels; clearest with placement="start").'], ['--sav-tab-sub-indent', 'CSS', 'How far sub tabs are indented (default .9rem).'], ['--sav-tab-padding', 'CSS', 'Panel padding.']],
-    events: [['sav-tab-show', 'detail.name, detail.index']],
-    methods: [['show(nameOrIndex)', '']],
+    attrs: [['appearance', 'underline · pills · segmented', 'Default underline.'], ['placement', 'top · start', ''], ['active', 'tab name', 'Tab to open first.'], ['label · name · icon · active · disabled', '', 'On sav-tab.'], ['collapsible', 'boolean', 'Vertical tabs: a button under the tabs folds them to icons only (collapsed) and opens them again (expanded).'], ['collapsed', 'boolean', 'Vertical tabs: only the icons show (or the first letter of a tab without icon); the names become tooltips. Set it to start collapsed; the button changes it.'], ['collapse-label · expand-label', 'string', 'Text of the fold button. Default "Collapse" and "Expand".'], ['collapse-button', 'edge · row', 'Where the fold button goes: edge (a small handle on the right border of the rail, next to the first tab, the default) or row (a row with text at the bottom of the rail).'], ['icon-placement', 'start · after · end', 'Where the icon of a tab goes: start (before the text, the default), after (right after the text) or end (at the far end of the tab, with space in between; clearest in vertical tabs). On sav-tabs it applies to every tab; on one sav-tab it applies to that tab only.'], ['level', 'normal · sub', 'On sav-tab: sub sits under the tab before it, smaller and indented (two levels; clearest with placement="start").'], ['--sav-tab-sub-indent', 'CSS', 'How far sub tabs are indented (default .9rem).'], ['--sav-tab-padding', 'CSS', 'Panel padding.']],
+    events: [['sav-tab-show', 'detail.name, detail.index'], ['sav-collapse', 'Vertical tabs folded or opened: detail.collapsed.']],
+    methods: [['show(nameOrIndex)', 'Opens a tab by its name or position.'], ['collapse() · expand()', 'Vertical tabs: only the icons, or icons and names again.']],
+    parts: ['nav', 'tab', 'sub-tab', 'tab-icon', 'tab-label', 'indicator', 'panels', 'rail', 'collapse-button'],
   },
   {
     id: 'accordion', name: 'Accordion', tag: 'sav-accordion · sav-details', group: 'Navigation', icon: 'list-collapse',
@@ -1488,6 +1586,246 @@ document.getElementById('ex-delete-ok')!.addEventListener('click', () => {
 dialog.addEventListener('sav-request-close', (event) => {
   console.log('closing because of', (event as CustomEvent<{ source: string }>).detail.source);
 });` },
+  {
+    id: 'booking', title: 'Book a stay', uses: 'card · range-dual · number-input · button · toast',
+    desc: 'A booking box: the nights between two dates on one slider, the guests with − and + buttons, and a price that follows. Dates and prices are made up.',
+    html: `<sav-card class="ex" style="max-width: 26rem">
+  <strong slot="header">Mountain cabin — example</strong>
+  <form id="bk-form" class="stack">
+    <sav-range-dual id="bk-dates" name="stay" type="date" label="Your stay" min="2027-07-01" max="2027-08-31"
+      start="2027-07-10" end="2027-07-17" min-gap="1" show-value start-label="Check-in" end-label="Check-out"></sav-range-dual>
+    <div class="row between">
+      <sav-number-input id="bk-adults" name="adults" label="Adults" value="2" min="1" max="6" size="sm"></sav-number-input>
+      <sav-number-input id="bk-children" name="children" label="Children" value="0" min="0" max="4" size="sm"></sav-number-input>
+    </div>
+    <div class="row between"><span class="muted" id="bk-nights">7 nights</span><b id="bk-total">€ 840</b></div>
+    <sav-button type="submit" block>Book now</sav-button>
+  </form>
+</sav-card>`,
+    js: `const dates = document.getElementById('bk-dates');
+const adults = document.getElementById('bk-adults');
+const children = document.getElementById('bk-children');
+const PER_NIGHT = 100, PER_CHILD = 20; // example prices
+
+function update() {
+  const nights = Math.round((new Date(dates.end) - new Date(dates.start)) / 864e5);
+  const total = nights * (PER_NIGHT + (children.value || 0) * PER_CHILD) + (adults.value - 2 > 0 ? (adults.value - 2) * 15 * nights : 0);
+  document.getElementById('bk-nights').textContent = nights + (nights === 1 ? ' night' : ' nights');
+  document.getElementById('bk-total').textContent = '€ ' + total;
+}
+
+// both fire "input" while they change, with the new values in event.detail
+dates.addEventListener('input', update);
+adults.addEventListener('input', update);
+children.addEventListener('input', update);
+update();
+
+document.getElementById('bk-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  // the slider sends stay-start and stay-end, the fields adults and children
+  console.log(Object.fromEntries(new FormData(event.target)));
+  Sav.toast('Booked from ' + dates.start + ' to ' + dates.end + ' (example)', { variant: 'success', icon: 'calendar' });
+});`,
+    ts: `declare const Sav: { toast(message: string, options?: { variant?: string; icon?: string }): void };
+type RangeDual = HTMLElement & { start: string; end: string };
+type NumberInput = HTMLElement & { value: number | null };
+
+const dates = document.getElementById('bk-dates') as RangeDual;
+const adults = document.getElementById('bk-adults') as NumberInput;
+const children = document.getElementById('bk-children') as NumberInput;
+const PER_NIGHT = 100, PER_CHILD = 20; // example prices
+
+function update(): void {
+  const nights = Math.round((new Date(dates.end).getTime() - new Date(dates.start).getTime()) / 864e5);
+  const extraAdults = Math.max(0, (adults.value ?? 2) - 2);
+  const total = nights * (PER_NIGHT + (children.value ?? 0) * PER_CHILD + extraAdults * 15);
+  document.getElementById('bk-nights')!.textContent = nights + (nights === 1 ? ' night' : ' nights');
+  document.getElementById('bk-total')!.textContent = '€ ' + total;
+}
+
+[dates, adults, children].forEach((el) => el.addEventListener('input', update));
+update();
+
+document.getElementById('bk-form')!.addEventListener('submit', (event) => {
+  event.preventDefault();
+  console.log(Object.fromEntries(new FormData(event.target as HTMLFormElement)));
+  Sav.toast(\`Booked from \${dates.start} to \${dates.end} (example)\`, { variant: 'success', icon: 'calendar' });
+});` },
+  {
+    id: 'cart', title: 'Shopping cart', uses: 'card · list · number-input · badge · button · toast',
+    desc: 'Quantities change with − and +, the totals follow, and a quantity of zero removes the row. Products and prices are made up.',
+    html: `<sav-card class="ex" style="max-width: 30rem">
+  <div slot="header" class="row between"><strong>Your cart</strong><sav-badge id="ct-count" appearance="soft">3 items</sav-badge></div>
+  <sav-list id="ct-list" appearance="plain">
+    <sav-list-item description="€ 24 each" data-price="24"><sav-icon slot="prefix" name="coffee"></sav-icon>Coffee beans, 1 kg
+      <sav-number-input slot="suffix" size="sm" value="1" min="0" max="9" aria-label="Quantity of coffee beans" style="width: 8rem"></sav-number-input></sav-list-item>
+    <sav-list-item description="€ 9 each" data-price="9"><sav-icon slot="prefix" name="cup-soda"></sav-icon>Glass mug
+      <sav-number-input slot="suffix" size="sm" value="2" min="0" max="9" aria-label="Quantity of glass mugs" style="width: 8rem"></sav-number-input></sav-list-item>
+  </sav-list>
+  <div slot="footer" class="row between"><b id="ct-total">Total: € 42</b><sav-button id="ct-pay" icon="lock">Pay</sav-button></div>
+</sav-card>`,
+    js: `const list = document.getElementById('ct-list');
+
+function refresh() {
+  let items = 0, total = 0;
+  list.querySelectorAll('sav-list-item').forEach((row) => {
+    const qty = row.querySelector('sav-number-input').value || 0;
+    items += qty;
+    total += qty * Number(row.dataset.price);
+  });
+  document.getElementById('ct-count').textContent = items + (items === 1 ? ' item' : ' items');
+  document.getElementById('ct-total').textContent = 'Total: € ' + total;
+  document.getElementById('ct-pay').disabled = items === 0;
+}
+
+// one listener for every row: "input" bubbles up from each number field
+list.addEventListener('input', refresh);
+list.addEventListener('change', (event) => {
+  const field = event.target.closest('sav-number-input');
+  if (field && field.value === 0) {
+    field.closest('sav-list-item').remove();
+    Sav.toast('Removed from the cart (example)', { variant: 'neutral', icon: 'trash', duration: 2000 });
+    refresh();
+  }
+});
+
+document.getElementById('ct-pay').addEventListener('click', () => Sav.toast('Payment page (example)', { icon: 'lock' }));`,
+    ts: `declare const Sav: { toast(message: string, options?: { variant?: string; icon?: string; duration?: number }): void };
+type NumberInput = HTMLElement & { value: number | null };
+
+const list = document.getElementById('ct-list') as HTMLElement;
+const pay = document.getElementById('ct-pay') as HTMLElement & { disabled: boolean };
+
+function refresh(): void {
+  let items = 0, total = 0;
+  list.querySelectorAll<HTMLElement>('sav-list-item').forEach((row) => {
+    const qty = (row.querySelector('sav-number-input') as NumberInput).value ?? 0;
+    items += qty;
+    total += qty * Number(row.dataset.price);
+  });
+  document.getElementById('ct-count')!.textContent = items + (items === 1 ? ' item' : ' items');
+  document.getElementById('ct-total')!.textContent = 'Total: € ' + total;
+  pay.disabled = items === 0;
+}
+
+list.addEventListener('input', refresh);
+list.addEventListener('change', (event) => {
+  const field = (event.target as HTMLElement).closest('sav-number-input') as NumberInput | null;
+  if (field && field.value === 0) {
+    field.closest('sav-list-item')!.remove();
+    Sav.toast('Removed from the cart (example)', { variant: 'neutral', icon: 'trash', duration: 2000 });
+    refresh();
+  }
+});
+
+pay.addEventListener('click', () => Sav.toast('Payment page (example)', { icon: 'lock' }));` },
+  {
+    id: 'filters', title: 'Shop filters', uses: 'range-dual · chip-group · rating · switch · badge',
+    desc: 'A filter panel: a price band, categories, a minimum rating and a switch, with the number of results updated on every change. The products are made up.',
+    html: `<div class="ex stack" style="max-width: 26rem">
+  <sav-range-dual id="fl-price" label="Price" min="0" max="300" step="10" start="20" end="180" prefix="€ " show-value></sav-range-dual>
+  <sav-chip-group id="fl-cat" label="Category" multiple value="shoes,bags">
+    <sav-chip value="shoes" size="sm">Shoes</sav-chip><sav-chip value="bags" size="sm">Bags</sav-chip>
+    <sav-chip value="hats" size="sm">Hats</sav-chip><sav-chip value="belts" size="sm">Belts</sav-chip>
+  </sav-chip-group>
+  <sav-rating id="fl-stars" value="3" label="Minimum rating"></sav-rating>
+  <sav-switch id="fl-stock" checked>Only in stock</sav-switch>
+  <div class="row between"><b>Results</b><sav-badge id="fl-count" variant="primary">0 products</sav-badge></div>
+</div>`,
+    js: `// a small made-up catalogue
+const PRODUCTS = [
+  { cat: 'shoes', price: 89, stars: 4, stock: true }, { cat: 'shoes', price: 140, stars: 5, stock: false },
+  { cat: 'bags', price: 60, stars: 3, stock: true }, { cat: 'bags', price: 220, stars: 4, stock: true },
+  { cat: 'hats', price: 25, stars: 4, stock: true }, { cat: 'belts', price: 35, stars: 2, stock: true },
+];
+const price = document.getElementById('fl-price');
+const cat = document.getElementById('fl-cat');
+const stars = document.getElementById('fl-stars');
+const stock = document.getElementById('fl-stock');
+
+function apply() {
+  const cats = [].concat(cat.value || []); // a list with "multiple"
+  const found = PRODUCTS.filter((p) => p.price >= price.start && p.price <= price.end
+    && cats.includes(p.cat) && p.stars >= stars.value && (!stock.checked || p.stock));
+  document.getElementById('fl-count').textContent = found.length + (found.length === 1 ? ' product' : ' products');
+}
+
+price.addEventListener('input', apply);
+[cat, stars, stock].forEach((el) => el.addEventListener('change', apply));
+apply();`,
+    ts: `interface Product { cat: string; price: number; stars: number; stock: boolean }
+const PRODUCTS: Product[] = [
+  { cat: 'shoes', price: 89, stars: 4, stock: true }, { cat: 'shoes', price: 140, stars: 5, stock: false },
+  { cat: 'bags', price: 60, stars: 3, stock: true }, { cat: 'bags', price: 220, stars: 4, stock: true },
+  { cat: 'hats', price: 25, stars: 4, stock: true }, { cat: 'belts', price: 35, stars: 2, stock: true },
+];
+const price = document.getElementById('fl-price') as HTMLElement & { start: number; end: number };
+const cat = document.getElementById('fl-cat') as HTMLElement & { value: string | string[] };
+const stars = document.getElementById('fl-stars') as HTMLElement & { value: number };
+const stock = document.getElementById('fl-stock') as HTMLElement & { checked: boolean };
+
+function apply(): void {
+  const cats = ([] as string[]).concat(cat.value || []);
+  const found = PRODUCTS.filter((p) => p.price >= price.start && p.price <= price.end
+    && cats.includes(p.cat) && p.stars >= stars.value && (!stock.checked || p.stock));
+  document.getElementById('fl-count')!.textContent = found.length + (found.length === 1 ? ' product' : ' products');
+}
+
+price.addEventListener('input', apply);
+[cat, stars, stock].forEach((el) => el.addEventListener('change', apply));
+apply();` },
+  {
+    id: 'help', title: 'Help centre', uses: 'tabs · search · accordion · details · button',
+    desc: 'Vertical tabs with icons at the end of each tab (icon-placement="end"), a search that opens the right tab, and questions in an accordion. The texts are examples.',
+    html: `<div class="ex stack">
+  <sav-search id="hc-search" placeholder="Search the help: refund, password, invoice…">
+    <option value="billing">Refund</option><option value="billing">Invoice</option>
+    <option value="account">Password</option><option value="account">Two-step sign-in</option><option value="shipping">Tracking</option>
+  </sav-search>
+  <sav-tabs id="hc-tabs" placement="start" icon-placement="end">
+    <sav-tab label="Account" name="account" icon="user">
+      <sav-accordion>
+        <sav-details summary="How do I change my password?">Open Settings, then Security, then Change password.</sav-details>
+        <sav-details summary="What is two-step sign-in?">A code from your phone, asked after the password.</sav-details>
+      </sav-accordion>
+    </sav-tab>
+    <sav-tab label="Billing" name="billing" icon="credit-card">
+      <sav-accordion>
+        <sav-details summary="Where are my invoices?">In Billing, one per month, as PDF.</sav-details>
+        <sav-details summary="How do refunds work?">Within 14 days, to the card you paid with.</sav-details>
+      </sav-accordion>
+    </sav-tab>
+    <sav-tab label="Shipping" name="shipping" icon="truck">
+      <sav-accordion><sav-details summary="How do I track a parcel?">The tracking link is in the email that confirms the order.</sav-details></sav-accordion>
+    </sav-tab>
+    <sav-tab label="Contact us" name="contact" icon="external" icon-placement="after">
+      <p>Still stuck? Write to us: we answer within a day (example).</p>
+      <sav-button id="hc-write" icon="mail">Write to us</sav-button>
+    </sav-tab>
+  </sav-tabs>
+</div>`,
+    js: `const tabs = document.getElementById('hc-tabs');
+
+// choosing a suggestion ("sav-pick") opens the tab it belongs to: its value is the tab name
+document.getElementById('hc-search').addEventListener('sav-pick', (event) => {
+  tabs.show(event.detail.value);
+});
+
+tabs.addEventListener('sav-tab-show', (event) => console.log('open tab:', event.detail.name));
+document.getElementById('hc-write').addEventListener('click', () => Sav.toast('Message form (example)', { icon: 'mail' }));`,
+    ts: `declare const Sav: { toast(message: string, options?: { icon?: string }): void };
+type SavTabs = HTMLElement & { show(nameOrIndex: string | number): void };
+
+const tabs = document.getElementById('hc-tabs') as SavTabs;
+
+document.getElementById('hc-search')!.addEventListener('sav-pick', (event) => {
+  tabs.show((event as CustomEvent<{ value: string }>).detail.value);
+});
+
+tabs.addEventListener('sav-tab-show', (event) => {
+  console.log('open tab:', (event as CustomEvent<{ name: string; index: number }>).detail.name);
+});
+document.getElementById('hc-write')!.addEventListener('click', () => Sav.toast('Message form (example)', { icon: 'mail' }));` },
   {
     id: 'faq', title: 'FAQ section', uses: 'accordion · details · button',
     desc: 'Questions that open one at a time.',

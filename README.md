@@ -26,7 +26,7 @@ A theme saved with an account has its own link: `https://savcomponents.com/theme
 | `demo.html` | A demo website made only with the library |
 | `icons/<version>/` | The icon set (SVG files + `index.json`), versioned on its own and shared by every library version: `Sav.iconsVersion` says which one a library uses. New sets with `tools/release-icons.sh` |
 | `v/<version>/` | Published versions, frozen by `tools/release.sh`. Never edit them. |
-| `index.html`, `docs/` | The documentation site (component pages, playground, customiser, accounts, admin) |
+| `index.html`, `docs/` | The documentation site (component pages with a full reference of attributes, slots, events and methods, playground, component builder, customiser, accounts, admin) |
 | `theme.php` | Serves `/theme/<id>.css` from the accounts API, with a 5-minute cache |
 | `privacy.html` | Privacy notice of the accounts |
 | `tools/release.sh` | Publishes the version written in `dist/sav.js` |
