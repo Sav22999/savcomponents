@@ -227,7 +227,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       return `<div class="tok">${sw}<code>--sav-${t}</code><span class="tv">${esc(v)}</span></div>`;
     }).join('')}</div>`).join('');
     return `<div class="doc-head"><sav-label class="eyebrow">Start</sav-label><h1>Theming</h1><p class="lead">Every component reads CSS custom properties. Set them on <code>:root</code> for the whole site, on a container for a section, or on a single element.</p>
-      <sav-button onclick="document.getElementById('themer').show()"><sav-icon slot="prefix" name="settings"></sav-icon>Open the customiser</sav-button></div>
+      <sav-button onclick="document.getElementById('themer').show()"><sav-icon slot="prefix" name="brush"></sav-icon>Open the customiser</sav-button></div>
     <h2>Whole site</h2>
     ${codeBlock(`:root {\n  --sav-color-primary: #0f8b8d;\n  --sav-radius: 4px;\n  --sav-font: "Inter", system-ui, sans-serif;\n}`, 'css')}
     <h2>One section or one element</h2>
@@ -738,6 +738,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     return out;
   }
 
+  let searchOpener = null; // set by initSearch: opens the search on phones
   function initSearch() {
     const input = $('#search'), box = $('#searchSug');
     if (!input || !box) return;
@@ -753,7 +754,19 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       return 0;
     };
     const close = () => { box.hidden = true; input.setAttribute('aria-expanded', 'false'); active = -1; };
-    const go = (it) => { if (!it) return; location.hash = it.href.slice(1); input.value = ''; close(); input.blur(); renderSide(); };
+    const go = (it) => { if (!it) return; location.hash = it.href.slice(1); input.value = ''; close(); input.blur(); renderSide(); setSearchOpen(false); };
+    // phones: the search button opens the field over the whole header, the X closes it (and clears it)
+    const openBtn = $('#searchOpen'), closeBtn = $('#searchClose');
+    function setSearchOpen(open) {
+      if (!openBtn || document.body.classList.contains('search-open') === open) return;
+      document.body.classList.toggle('search-open', open); openBtn.setAttribute('aria-expanded', String(open));
+      if (open) input.focus();
+      else { if (input.value) { input.value = ''; renderSide(); } close(); if (getComputedStyle(openBtn).display !== 'none') openBtn.focus({ preventScroll: true }); }
+    }
+    searchOpener = () => setSearchOpen(true);
+    openBtn?.addEventListener('click', () => setSearchOpen(true));
+    closeBtn?.addEventListener('click', () => setSearchOpen(false));
+    matchMedia('(max-width: 640px)').addEventListener('change', (m) => { if (!m.matches) setSearchOpen(false); });
     const paint = () => {
       box.innerHTML = items.length ? items.map((it, i) => `${i === 0 || items[i - 1].kind !== it.kind ? `<div class="sug-h">${it.kind === 'Icon' ? 'Icons' : it.kind + 's'}</div>` : ''}
         <a href="${it.href}" class="sug${i === active ? ' on' : ''}" role="option" id="sug-${i}" data-i="${i}"><sav-icon name="${esc(it.icon || 'search')}"></sav-icon><span><b>${esc(it.label)}</b><small>${esc(it.sub || '')}</small></span></a>`).join('')
@@ -784,7 +797,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { if (!items.length) return; e.preventDefault(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; paint(); box.querySelector('.sug.on')?.scrollIntoView({ block: 'nearest' }); }
       else if (e.key === 'Enter') { e.preventDefault(); go(items[active] || items[0]); }
-      else if (e.key === 'Escape') { input.value = ''; close(); renderSide(); input.blur(); }
+      else if (e.key === 'Escape') { input.value = ''; close(); renderSide(); input.blur(); setSearchOpen(false); }
     });
     box.addEventListener('mousedown', (e) => e.preventDefault()); // keep the focus in the field
     box.addEventListener('click', (e) => { const a = e.target.closest('.sug'); if (a) { e.preventDefault(); go(items[a.dataset.i]); } });
@@ -793,33 +806,42 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
 
   /* ------------------------------------------------------------ boot */
 
-  renderSide();
-  applyTheme();
-  setMode(store.get('savc-mode', 'auto'));
-  route();
-  renderThemer();
-  addEventListener('hashchange', route);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => store.get('savc-mode', 'auto') === 'auto' && setMode('auto'));
+  // the phone menu is wired first: if a later step fails in some browser, the menu still opens
+  const menuBtn = $('#menuBtn'), side = $('#side');
+  const setNav = (open) => { document.body.classList.toggle('nav-open', open); menuBtn.setAttribute('aria-expanded', String(open)); menuBtn.setAttribute('aria-label', open ? 'Close the menu' : 'Open the menu'); };
+  menuBtn.addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
+  side.addEventListener('click', (e) => { if (e.target.closest('a')) setNav(false); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('nav-open')) { setNav(false); menuBtn.focus(); } });
+  document.addEventListener('click', (e) => { if (document.body.classList.contains('nav-open') && !e.target.closest('#side, #menuBtn')) setNav(false); });
 
-  $('#modePick').setAttribute('value', store.get('savc-mode', 'auto'));
-  $('#modePick').addEventListener('change', (e) => setMode(e.detail.value));
-  $('#customizeBtn').addEventListener('click', () => $('#themer').show());
-  $('#resetTheme').addEventListener('click', () => { theme = {}; applyTheme(); renderThemer(); });
-  $('#exportTheme').addEventListener('click', exportCss);
-  const sp = $('#stylePick');
-  if (sp) {
+  // every other start-up step runs on its own: one failing does not stop the next ones
+  const safely = (name, fn) => { try { fn(); } catch (err) { console.error(`[SavComponents docs] ${name} failed:`, err); } };
+  safely('menu', renderSide);
+  ['#side', '#main'].forEach((s) => $(s)?.removeAttribute('aria-busy')); // the loading skeleton is gone
+  safely('theme', applyTheme);
+  safely('mode', () => setMode(store.get('savc-mode', 'auto')));
+  safely('page', route);
+  safely('customiser', renderThemer);
+  addEventListener('hashchange', () => safely('page', route));
+  safely('system mode', () => matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => store.get('savc-mode', 'auto') === 'auto' && setMode('auto')));
+  safely('theme choice', () => {
+    $('#modePick').setAttribute('value', store.get('savc-mode', 'auto'));
+    $('#modePick').addEventListener('change', (e) => setMode(e.detail.value));
+  });
+  safely('customiser buttons', () => {
+    $('#customizeBtn').addEventListener('click', () => $('#themer').show());
+    $('#resetTheme').addEventListener('click', () => { theme = {}; applyTheme(); renderThemer(); });
+    $('#exportTheme').addEventListener('click', exportCss);
+  });
+  safely('style picker', () => {
+    const sp = $('#stylePick'); if (!sp) return;
     sp.innerHTML = Sav.styles.map((x) => `<option value="${x}" data-description="${esc(STYLE_INFO[x][1])}">${STYLE_INFO[x][0]}</option>`).join('');
     sp.value = store.get('savc-style', 'tilt');
     sp.addEventListener('change', () => setStyle(sp.value));
-  }
-  initSearch();
-  initVersionPicker();
+  });
+  safely('search', initSearch);
+  safely('version picker', initVersionPicker);
   addEventListener('keydown', (e) => {
-    if (e.key === '/' && !e.target.closest('input, textarea, [contenteditable], sav-input, sav-textarea')) { e.preventDefault(); $('#search').focus(); }
+    if (e.key === '/' && !e.target.closest('input, textarea, [contenteditable], sav-input, sav-textarea')) { e.preventDefault(); if (searchOpener && getComputedStyle($('#searchOpen')).display !== 'none') searchOpener(); else $('#search').focus(); }
   });
-  $('#menuBtn').addEventListener('click', () => {
-    const open = document.body.classList.toggle('nav-open');
-    $('#menuBtn').setAttribute('aria-expanded', String(open));
-  });
-  $('#side').addEventListener('click', (e) => { if (e.target.closest('a')) document.body.classList.remove('nav-open'); });
 })();

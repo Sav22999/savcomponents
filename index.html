@@ -46,23 +46,31 @@
     <sav-dropdown id="verPick" class="ver-pick" label="Documentation version"></sav-dropdown>
     <div class="top-actions">
       <sav-select id="stylePick" class="style-pick" size="sm" aria-label="Style of the components" sheet-on-mobile></sav-select>
-      <div class="search-wrap">
+      <!-- on phones the search is a button: it opens the field across the whole header, with an X to close it -->
+      <button class="icon-btn search-toggle" id="searchOpen" aria-label="Search" aria-controls="searchPanel" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg></button>
+      <div class="search-wrap" id="searchPanel">
         <label class="search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg>
           <input id="search" type="search" placeholder="Search components, options, icons" aria-label="Search components, options and icons" autocomplete="off">
           <kbd>/</kbd>
         </label>
+        <button class="icon-btn search-close" id="searchClose" aria-label="Close the search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         <div id="searchSug" class="search-sug" role="listbox" aria-label="Suggestions" hidden></div>
       </div>
       <sav-theme-choice id="modePick" icons-only size="sm" label="Theme"></sav-theme-choice>
       <span id="accountSlot" class="account-slot"></span>
-      <sav-button id="customizeBtn" size="sm" appearance="soft"><sav-icon slot="prefix" name="settings"></sav-icon><span class="cz-text">Customise</span></sav-button>
+      <sav-button id="customizeBtn" size="sm" appearance="soft"><sav-icon slot="prefix" name="brush"></sav-icon><span class="cz-text">Customise</span></sav-button>
     </div>
   </header>
 
   <div class="layout">
-    <nav class="side" id="side" aria-label="Documentation"></nav>
-    <main class="main" id="main" tabindex="-1"></main>
+    <!-- shown until the scripts have loaded: a skeleton like the library's own, replaced as soon as the menu and the page are drawn -->
+    <nav class="side" id="side" aria-label="Documentation" aria-busy="true"><div class="side-group"><i class="sk sk-t"></i><i class="sk sk-l" style="width:62%"></i><i class="sk sk-l" style="width:78%"></i><i class="sk sk-l" style="width:48%"></i><i class="sk sk-l" style="width:58%"></i><i class="sk sk-l" style="width:70%"></i><i class="sk sk-l" style="width:54%"></i></div><div class="side-group"><i class="sk sk-t"></i><i class="sk sk-l" style="width:50%"></i><i class="sk sk-l" style="width:66%"></i><i class="sk sk-l" style="width:72%"></i><i class="sk sk-l" style="width:58%"></i></div><div class="side-group"><i class="sk sk-t"></i><i class="sk sk-l" style="width:44%"></i><i class="sk sk-l" style="width:60%"></i><i class="sk sk-l" style="width:52%"></i><i class="sk sk-l" style="width:68%"></i><i class="sk sk-l" style="width:56%"></i></div></nav>
+    <main class="main" id="main" tabindex="-1" aria-busy="true"><div class="sk-page" role="status" aria-label="Loading">
+      <i class="sk sk-h1"></i><i class="sk sk-p" style="width:92%"></i><i class="sk sk-p" style="width:84%"></i><i class="sk sk-p" style="width:58%"></i>
+      <div class="sk-row"><i class="sk sk-btn"></i><i class="sk sk-btn"></i></div>
+      <i class="sk sk-card"></i><i class="sk sk-h2"></i><i class="sk sk-p" style="width:88%"></i><i class="sk sk-p" style="width:70%"></i><i class="sk sk-card sk-short"></i>
+    </div></main>
   </div>
 
   <sav-drawer id="themer" label="Customise the theme" style="--size: 23rem">

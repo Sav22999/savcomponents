@@ -18,49 +18,60 @@
     } catch (e) {}
   </script>
   <style>
-    /* only page layout: spacing between sections and the sticky header */
+    /* only page layout: spacing between sections */
     body { margin: 0; }
-    header { position: sticky; top: 0; z-index: 50; background: color-mix(in oklab, var(--sav-color-bg) 85%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--sav-color-border); }
-    .bar { display: flex; align-items: center; gap: 1rem; min-height: 64px; }
-    .brand { display: flex; align-items: center; gap: .6rem; margin-right: auto; color: inherit; text-decoration: none; font-weight: 800; font-size: 1.2rem; }
-    .links { display: flex; gap: .25rem; }
-    section { padding: clamp(2.5rem, 7vw, 5rem) 0; }
+    section { padding: clamp(2.5rem, 7vw, 5rem) 0; scroll-margin-top: 4rem; }
     .center { text-align: center; display: grid; justify-items: center; gap: .6rem; margin-bottom: 2rem; }
     .lead { font-size: 1.15rem; line-height: 1.6; color: var(--sav-color-text-muted); max-width: 40rem; margin: 0; }
     .row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
     .stack { display: grid; gap: .8rem; }
     .price { font-size: 2.2rem; font-weight: 800; }
+    .stat { display: grid; justify-items: center; gap: .4rem; text-align: center; }
+    .stat b { font-size: 1.6rem; }
+    .muted { color: var(--sav-color-text-muted); margin: 0; }
+    .team { display: flex; flex-wrap: wrap; gap: 1.25rem; justify-content: center; }
+    .person { display: grid; justify-items: center; gap: .35rem; width: 8rem; text-align: center; }
+    .person small { color: var(--sav-color-text-muted); }
     footer { padding: 2.5rem 0 6rem; border-top: 1px solid var(--sav-color-border); color: var(--sav-color-text-muted); font-size: .9rem; }
-    @media (max-width: 760px) { .links, .hide-m { display: none; } }
+    footer .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+    footer h4 { margin: 0 0 .5rem; color: var(--sav-color-text); }
+    .logo { display: inline-flex; align-items: center; gap: .55rem; }
+    .announce { padding-top: 1rem; }
+    /* always there: the way back to the library */
+    .back-lib { position: fixed; left: 1rem; bottom: 1rem; z-index: 60; box-shadow: var(--sav-shadow-lg); border-radius: var(--sav-radius); }
+    @media (max-width: 760px) { .back-lib { bottom: calc(5rem + env(safe-area-inset-bottom)); } }
   </style>
 </head>
 <body class="sav-base">
-  <header>
-    <sav-container size="lg" class="bar">
-      <div class="bar">
-        <a class="brand" href="#top"><sav-avatar size="sm" label="Lorem" variant="primary"></sav-avatar>Lorem</a>
-        <nav class="links" aria-label="Main">
-          <sav-button appearance="ghost" variant="neutral" href="#features">Features</sav-button>
-          <sav-button appearance="ghost" variant="neutral" href="#pricing">Pricing</sav-button>
-          <sav-button appearance="ghost" variant="neutral" href="#faq">FAQ</sav-button>
-        </nav>
-        <sav-select id="demoStyle" class="hide-m" size="sm" aria-label="Style" style="width: 8.5rem">
-          <option value="soft">Soft</option><option value="tilt">Tilt</option><option value="sharp">Sharp</option><option value="brutal">Brutal</option><option value="glass">Glass</option>
-        </sav-select>
-        <sav-theme-choice appearance="buttons" icons-only apply value="auto"></sav-theme-choice>
-        <sav-button class="hide-m" href="#signup">Sign up</sav-button>
-      </div>
-    </sav-container>
-  </header>
+  <sav-header sticky appearance="transparent" search-collapse="always" label="Main">
+    <a slot="logo" href="#top"><sav-avatar size="sm" label="Lorem" variant="primary" style="--size: 2rem"></sav-avatar>Lorem</a>
+    <a href="#features">Features</a>
+    <a href="#tour">Tour <sav-new-label appearance="dot"></sav-new-label></a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <sav-search slot="search" id="siteSearch" placeholder="Search the site" size="sm">
+      <option value="#features">Features</option><option value="#tour">Product tour</option><option value="#numbers">Numbers</option><option value="#world">Customers worldwide</option>
+      <option value="#pricing">Pricing</option><option value="#team">Team</option><option value="#faq">FAQ</option><option value="#signup">Sign up</option>
+    </sav-search>
+    <sav-select slot="actions" id="demoStyle" size="sm" aria-label="Style" style="width: 7.5rem">
+      <option value="soft">Soft</option><option value="tilt">Tilt</option><option value="sharp">Sharp</option><option value="brutal">Brutal</option><option value="glass">Glass</option>
+    </sav-select>
+    <sav-theme-choice slot="actions" icons-only apply value="auto" size="sm" label="Theme"></sav-theme-choice>
+    <sav-button slot="actions" size="sm" href="#signup">Sign up</sav-button>
+  </sav-header>
 
   <main id="top">
+    <sav-container size="lg" class="announce">
+      <sav-alert variant="primary" closable heading="Lorem 2.0 is out">Dark mode, charts and a brand-new editor. <a href="#tour">Take the tour</a>.</sav-alert>
+    </sav-container>
+
     <section>
       <sav-container size="lg">
         <sav-showcase desktop="docs/media/poster.jpg" mobile="docs/sample.svg" desktop-alt="The Lorem dashboard on a computer" mobile-alt="The Lorem app on a phone"
           eyebrow="Lorem 2.0" heading="Lorem ipsum dolor sit amet, consectetur." text="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.">
           <div class="row"><sav-badge appearance="soft" variant="success">Free for 30 days</sav-badge><sav-rating value="5" readonly style="--size: 1rem"></sav-rating><small>4.9 from 2,140 reviews</small></div>
           <sav-button slot="actions" size="lg" href="#signup">Start free<sav-icon slot="suffix" name="arrow-right"></sav-icon></sav-button>
-          <sav-button slot="actions" size="lg" appearance="outline" variant="neutral" href="#features">See how</sav-button>
+          <sav-button slot="actions" size="lg" appearance="outline" variant="neutral" id="watchBtn"><sav-icon slot="prefix" name="circle-play"></sav-icon>Watch the video</sav-button>
         </sav-showcase>
       </sav-container>
     </section>
@@ -69,15 +80,52 @@
       <sav-container size="lg">
         <div class="center"><sav-label appearance="soft">Features</sav-label><sav-heading level="2" size="1">Ut enim ad minim veniam</sav-heading><p class="lead">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p></div>
         <sav-grid min="15rem">
-          <sav-card><sav-heading level="3" size="4" marker>Excepteur sint</sav-heading><p>Occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p></sav-card>
+          <sav-card style="position: relative"><sav-new-label appearance="ribbon"></sav-new-label><sav-heading level="3" size="4" marker>Excepteur sint</sav-heading><p>Occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p></sav-card>
           <sav-card><sav-heading level="3" size="4" marker>Nemo enim</sav-heading><p>Ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur.</p></sav-card>
           <sav-card><sav-heading level="3" size="4" marker>Neque porro</sav-heading><p>Quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p></sav-card>
-          <sav-card><sav-heading level="3" size="4" marker>Quis autem</sav-heading><p>Vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae.</p></sav-card>
+          <sav-card><sav-heading level="3" size="4" marker>Quis autem <sav-info-tip content="Vel illum qui dolorem eum fugiat quo voluptas nulla pariatur."></sav-info-tip></sav-heading><p>Vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae.</p></sav-card>
         </sav-grid>
       </sav-container>
     </section>
 
-    <section>
+    <section id="tour">
+      <sav-container size="lg">
+        <div class="center"><sav-label appearance="soft">Product tour <sav-new-label appearance="text"></sav-new-label></sav-label><sav-heading level="2">At vero eos et accusamus</sav-heading></div>
+        <sav-tabs appearance="pills" id="tourTabs">
+          <sav-tab label="Dashboard" icon="layout-dashboard">
+            <sav-grid min="16rem">
+              <sav-card><sav-chart-bar label="Sales per quarter" show-values style="width: 100%" data='{"labels":["Q1","Q2","Q3","Q4"],"series":[{"name":"2025","values":[12,19,15,24]},{"name":"2026","values":[16,22,21,30]}]}'></sav-chart-bar></sav-card>
+              <sav-card><sav-chart-pie label="Traffic sources" type="donut" center="48%" gap="2" style="width: 100%; max-width: 16rem; margin: auto" data='{"labels":["Search","Social","Direct","Email"],"values":[48,22,18,12]}'></sav-chart-pie></sav-card>
+            </sav-grid>
+          </sav-tab>
+          <sav-tab label="Team" icon="users">
+            <sav-table sortable striped hover style="width: 100%">
+              <table>
+                <thead><tr><th>Name</th><th>Role</th><th>Status</th><th class="num">Tasks</th></tr></thead>
+                <tbody>
+                  <tr><td>Ada Lovelace</td><td>Editor</td><td><sav-tag variant="success" pill>Active</sav-tag></td><td class="num">12</td></tr>
+                  <tr><td>Alan Turing</td><td>Viewer</td><td><sav-tag variant="neutral" pill>Away</sav-tag></td><td class="num">4</td></tr>
+                  <tr><td>Grace Hopper</td><td>Owner</td><td><sav-tag variant="success" pill>Active</sav-tag></td><td class="num">27</td></tr>
+                  <tr><td>Katherine Johnson</td><td>Editor</td><td><sav-tag variant="warning" pill>Invited</sav-tag></td><td class="num">0</td></tr>
+                </tbody>
+              </table>
+            </sav-table>
+          </sav-tab>
+          <sav-tab label="Settings" icon="settings">
+            <sav-card style="max-width: 32rem">
+              <div class="stack">
+                <sav-switch checked>Email me a weekly summary</sav-switch>
+                <sav-switch>Dark mode follows the system</sav-switch>
+                <sav-language-choice label="Language" value="en-GB"></sav-language-choice>
+                <sav-range label="Text size" min="80" max="140" value="100" step="10"></sav-range>
+              </div>
+            </sav-card>
+          </sav-tab>
+        </sav-tabs>
+      </sav-container>
+    </section>
+
+    <section id="numbers">
       <sav-container size="lg">
         <sav-grid min="18rem" align="center">
           <div class="stack">
@@ -85,9 +133,21 @@
             <sav-chip-group label="Period" value="year" required id="period">
               <sav-chip value="month">Month</sav-chip><sav-chip value="year">Year</sav-chip>
             </sav-chip-group>
+            <sav-grid min="7rem">
+              <div class="stat"><sav-progress-ring value="92" variant="success">92%</sav-progress-ring><small class="muted">Uptime goal</small></div>
+              <div class="stat"><sav-progress-ring value="64">64%</sav-progress-ring><small class="muted">Storage used</small></div>
+              <div class="stat"><b>4.9</b><sav-rating value="5" readonly style="--size: .9rem"></sav-rating><small class="muted">Rating</small></div>
+            </sav-grid>
           </div>
           <sav-card><sav-chart-line id="demoChart" label="Active users" smooth data='{"labels":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"series":[{"name":"Users","values":[120,150,170,160,210,260,240,300,320,360,390,420]}]}'></sav-chart-line></sav-card>
         </sav-grid>
+      </sav-container>
+    </section>
+
+    <section id="world">
+      <sav-container size="lg">
+        <div class="center"><sav-label appearance="soft">Worldwide</sav-label><sav-heading level="2">Customers in 40 countries</sav-heading><p class="lead" id="countryNote">Click a country to see how many teams use Lorem there.</p></div>
+        <sav-card><sav-chart-map id="worldMap" label="Teams by country" style="width: 100%" data='{"US":420,"BR":180,"IT":160,"DE":150,"FR":120,"GB":110,"IN":240,"JP":90,"AU":60,"CA":80,"ZA":30,"MX":70,"ES":65}'></sav-chart-map></sav-card>
       </sav-container>
     </section>
 
@@ -109,8 +169,20 @@
         <sav-grid min="15rem">
           <sav-card><div class="stack"><sav-label appearance="plain">Lorem</sav-label><div class="price" data-m="0" data-y="0">€ 0</div><sav-list appearance="plain"><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Ut enim ad minim</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Duis aute irure</sav-list-item></sav-list><sav-button appearance="outline" variant="neutral" block>Start</sav-button></div></sav-card>
           <sav-card><div class="stack"><div class="row"><sav-label appearance="plain">Ipsum</sav-label><sav-badge>Popular</sav-badge></div><div class="price" data-m="12" data-y="9.6">€ 12</div><sav-list appearance="plain"><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Everything in Lorem</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Excepteur sint</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Sunt in culpa</sav-list-item></sav-list><sav-button block>Choose Ipsum</sav-button></div></sav-card>
-          <sav-card><div class="stack"><sav-label appearance="plain">Dolor</sav-label><div class="price" data-m="29" data-y="23.2">€ 29</div><sav-list appearance="plain"><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Everything in Ipsum</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Nemo enim ipsam</sav-list-item></sav-list><sav-button appearance="outline" variant="neutral" block>Contact us</sav-button></div></sav-card>
+          <sav-card style="position: relative"><sav-new-label appearance="corner" sparkle variant="success"></sav-new-label><div class="stack"><sav-label appearance="plain">Dolor</sav-label><div class="price" data-m="29" data-y="23.2">€ 29</div><sav-list appearance="plain"><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Everything in Ipsum</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Nemo enim ipsam <sav-info-tip content="Up to 50 people, then € 2 each."></sav-info-tip></sav-list-item></sav-list><sav-button appearance="outline" variant="neutral" block>Contact us</sav-button></div></sav-card>
         </sav-grid>
+      </sav-container>
+    </section>
+
+    <section id="team">
+      <sav-container size="lg">
+        <div class="center"><sav-label appearance="soft">Team</sav-label><sav-heading level="2">Nos sumus</sav-heading></div>
+        <div class="team">
+          <div class="person"><sav-avatar initials="AL" variant="primary" style="--size: 4rem"></sav-avatar><b>Ada L.</b><small>Founder</small><sav-favourite-button icon="heart" label="Like Ada"></sav-favourite-button></div>
+          <div class="person"><sav-avatar initials="AT" variant="success" style="--size: 4rem"></sav-avatar><b>Alan T.</b><small>Engineering</small><sav-favourite-button icon="heart" label="Like Alan"></sav-favourite-button></div>
+          <div class="person"><sav-avatar initials="GH" variant="warning" style="--size: 4rem"></sav-avatar><b>Grace H.</b><small>Product</small><sav-favourite-button icon="heart" label="Like Grace"></sav-favourite-button></div>
+          <div class="person"><sav-avatar initials="KJ" variant="danger" style="--size: 4rem"></sav-avatar><b>Katherine J.</b><small>Data</small><sav-favourite-button icon="heart" label="Like Katherine"></sav-favourite-button></div>
+        </div>
       </sav-container>
     </section>
 
@@ -132,6 +204,8 @@
           <form class="stack" id="signupForm">
             <sav-input name="email" type="email" label="Email" required placeholder="you@example.com"><sav-icon slot="prefix" name="mail"></sav-icon></sav-input>
             <sav-password name="password" label="Password" rules min-strength="2" required></sav-password>
+            <sav-country-choice name="country" label="Country" value="IT"></sav-country-choice>
+            <sav-select name="size" label="Team size" value="small"><option value="solo">Just me</option><option value="small">2–10</option><option value="medium">11–50</option><option value="large">More than 50</option></sav-select>
             <sav-checkbox name="terms" required>I accept lorem ipsum</sav-checkbox>
             <sav-button type="submit" block>Sign up</sav-button>
           </form>
@@ -142,14 +216,26 @@
 
   <footer>
     <sav-container size="lg">
-      <div class="row" style="justify-content: space-between">
+      <div class="cols">
+        <div class="stack"><span class="logo"><sav-avatar size="sm" label="Lorem" variant="primary" style="--size: 1.75rem"></sav-avatar><b>Lorem</b></span><p class="muted">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p></div>
+        <div><h4>Write to us</h4><div class="row"><span>hello@example.com</span><sav-copy-button value="hello@example.com"></sav-copy-button></div></div>
+        <div><h4>Language</h4><sav-language-choice value="en-GB" aria-label="Language of the site" size="sm"></sav-language-choice></div>
+      </div>
+      <sav-divider></sav-divider>
+      <div class="row" style="justify-content: space-between; margin-top: 1rem">
         <span>© 2026 Lorem — a demo made only with SavComponents. All text is placeholder.</span>
         <sav-breadcrumb><sav-breadcrumb-item href="index.html">SavComponents</sav-breadcrumb-item><sav-breadcrumb-item>Demo site</sav-breadcrumb-item></sav-breadcrumb>
       </div>
     </sav-container>
   </footer>
 
-  <sav-bottom-nav fixed mobile-only label="Main">
+  <sav-button class="back-lib" href="index.html" size="sm" variant="neutral"><sav-icon slot="prefix" name="arrow-left"></sav-icon>Back to SavComponents</sav-button>
+
+  <sav-dialog id="videoDialog" label="Lorem in 4 seconds" style="--width: 46rem">
+    <sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" label="Lorem in 4 seconds"></sav-video>
+  </sav-dialog>
+
+  <sav-bottom-nav fixed mobile-only label="Sections">
     <sav-bottom-nav-item icon="home" label="Home" href="#top" current></sav-bottom-nav-item>
     <sav-bottom-nav-item icon="layers" label="Features" href="#features"></sav-bottom-nav-item>
     <sav-bottom-nav-item icon="credit-card" label="Pricing" href="#pricing"></sav-bottom-nav-item>
@@ -163,6 +249,15 @@
       style.value = (localStorage.getItem('savc-style') || '"tilt"').replace(/"/g, '');
       style.addEventListener('change', () => { Sav.setStyle(style.value); try { localStorage.setItem('savc-style', JSON.stringify(style.value)); } catch (e) {} });
 
+      // the search in the header jumps to the chosen section
+      document.getElementById('siteSearch').addEventListener('sav-pick', (e) => {
+        e.preventDefault();
+        location.hash = e.detail.value;
+        document.querySelector('sav-header').toggleSearch(false);
+      });
+
+      document.getElementById('watchBtn').addEventListener('click', () => document.getElementById('videoDialog').show());
+
       document.getElementById('billing').addEventListener('change', (e) => {
         const yearly = e.target.value === 'year';
         document.querySelectorAll('.price').forEach((p) => { const v = Number(yearly ? p.dataset.y : p.dataset.m); p.textContent = '€ ' + v.toLocaleString(undefined, { maximumFractionDigits: 2 }); });
@@ -173,6 +268,12 @@
         chart.data = e.detail.value === 'month'
           ? { labels: ['W1', 'W2', 'W3', 'W4'], series: [{ name: 'Users', values: [360, 375, 381, 420] }] }
           : JSON.parse(chart.getAttribute('data'));
+      });
+
+      document.getElementById('worldMap').addEventListener('sav-country', (e) => {
+        const { code, value } = e.detail;
+        let name = code; try { name = new Intl.DisplayNames([document.documentElement.lang || 'en'], { type: 'region' }).of(code); } catch (err) {}
+        document.getElementById('countryNote').textContent = value ? `${name}: ${value} teams use Lorem.` : `${name}: no teams yet — be the first!`;
       });
 
       document.getElementById('signupForm').addEventListener('submit', (e) => {

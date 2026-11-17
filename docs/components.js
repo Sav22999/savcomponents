@@ -160,6 +160,40 @@ window.SAVC_DOCS = [
     attrs: [['variant', 'primary · neutral · success · warning · danger', ''], ['appearance', 'solid · soft · outline', ''], ['pill · dot · pulse', 'boolean', 'Shape and attention effect.']],
   },
   {
+    builtFrom: ['badge'],
+    id: 'new-label', name: 'New label', play: { tag: 'sav-new-label', attrs: { sparkle: '' }, text: '' }, tag: 'sav-new-label', group: 'Feedback', icon: 'sparkles',
+    desc: 'Marks something as new: a badge (with sparkles and a passing shine if you like), a diagonal ribbon or a tab in the corner of a card, a pulsing dot, or just the coloured word. It can take care of itself: until hides it after a date, seen-key hides it for good once the person has clicked what it marks.',
+    demos: [
+      { title: 'Badge, soft, with sparkles and shine', html: `<sav-new-label></sav-new-label>
+<sav-new-label appearance="soft"></sav-new-label>
+<sav-new-label sparkle shine variant="success"></sav-new-label>
+<sav-new-label variant="danger">Just in</sav-new-label>` },
+      { title: 'Next to a menu item and a heading', html: `<sav-menu appearance="card" style="width: 15rem">
+  <sav-menu-item><sav-icon slot="prefix" name="layout-dashboard"></sav-icon>Dashboard</sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="chart-column"></sav-icon>Reports<sav-new-label slot="suffix" appearance="text"></sav-new-label></sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="bell"></sav-icon>Alerts<sav-new-label slot="suffix" appearance="dot"></sav-new-label></sav-menu-item>
+</sav-menu>
+<h3 style="margin: 0; display: flex; align-items: center; gap: .5rem">Dark mode <sav-new-label sparkle></sav-new-label></h3>` },
+      { title: 'Ribbon and corner tab on a card', html: `<sav-card style="position: relative; width: 15rem">
+  <sav-new-label appearance="ribbon"></sav-new-label>
+  <strong>Pro plan</strong>
+  <p style="margin: .4rem 0 0">Now with unlimited projects.</p>
+</sav-card>
+<sav-card style="position: relative; width: 15rem">
+  <sav-new-label appearance="corner" sparkle variant="success"></sav-new-label>
+  <strong>Charts</strong>
+  <p style="margin: .4rem 0 0">Bar, pie, line, map.</p>
+</sav-card>` },
+      { title: 'Hides itself: after a date, or once seen', html: `<sav-button appearance="outline" variant="neutral">Try the new editor <sav-new-label seen-key="demo-editor"></sav-new-label></sav-button>
+<sav-badge variant="neutral" appearance="soft">Expired: <sav-new-label until="2024-01-31">hidden</sav-new-label> (until 2024-01-31)</sav-badge>` },
+    ],
+    attrs: [['appearance', 'badge · soft · ribbon · corner · dot · text', 'ribbon and corner sit in the top corner of the parent (give it position: relative).'], ['variant', 'primary · neutral · success · warning · danger · protected', ''],
+      ['placement', 'end · start', 'Which top corner, for ribbon and corner.'], ['sparkle', 'boolean', 'A sparkles icon before the word.'], ['shine', 'boolean', 'A gloss crosses it now and then (off with reduced motion).'],
+      ['until', 'date', 'Hidden after this day (2026-12-31) or moment.'], ['seen-key', 'string', 'Hidden for good after the first click on its parent; remembered in the browser under this name. reset() shows it again.'],
+      ['--transform · --offset', 'CSS', 'Text case (default uppercase); distance from the corner.']],
+    events: [['sav-seen', 'detail.key']],
+  },
+  {
     id: 'tag', name: 'Tag', play: { tag: 'sav-tag', text: 'Tag' }, tag: 'sav-tag', group: 'Feedback', icon: 'tag',
     desc: 'Keywords, filters and choices; removable tags fire an event and remove themselves.',
     demos: [
@@ -713,7 +747,7 @@ window.SAVC_DOCS = [
 </sav-carousel>` },
     ],
     attrs: [['label', 'string', 'sav-carousel: name for screen readers.'], ['per-view', 'number', 'Slides visible at once (default 1).'], ['loop', 'boolean', 'After the last comes the first.'], ['autoplay', 'ms', 'Moves by itself (default 5000 ms); pauses on hover and focus, off with reduced motion.'],
-      ['no-arrows', 'boolean', 'Hides the previous and next buttons.'], ['no-dots', 'boolean', 'Hides the dots.'], ['no-swipe', 'boolean', 'Turns off swiping with fingers and dragging with the mouse.'], ['no-keyboard', 'boolean', 'Turns off the arrow keys.'], ['controls', 'inside · outside', 'Where the arrows sit.'], ['src · alt · heading · text · ratio · overlay', '', 'sav-slide: image, its text, the text over the image.']],
+      ['no-arrows', 'boolean', 'Hides the previous and next buttons (on touch screens they are hidden anyway).'], ['touch-arrows', 'boolean', 'Shows the arrows on touch screens too.'], ['no-hint', 'boolean', 'On touch screens, no “grab and move” hint the first time the carousel shows up.'], ['no-dots', 'boolean', 'Hides the dots.'], ['no-swipe', 'boolean', 'Turns off swiping with fingers and dragging with the mouse.'], ['no-keyboard', 'boolean', 'Turns off the arrow keys.'], ['controls', 'inside · outside', 'Where the arrows sit.'], ['src · alt · heading · text · ratio · overlay', '', 'sav-slide: image, its text, the text over the image.']],
     events: [['sav-slide', 'The visible slide changed. detail.index']], methods: [['go(index)', 'Shows a slide.']],
   },
   {
@@ -866,8 +900,17 @@ window.SAVC_DOCS = [
   <sav-tab label="Security">Password and two-step login.</sav-tab>
   <sav-tab label="Billing">Invoices and payment methods.</sav-tab>
 </sav-tabs>` },
+      { title: 'Vertical with sub tabs', html: `<sav-tabs placement="start" active="profile">
+  <sav-tab label="Account" icon="user" name="account">Your account in short.</sav-tab>
+  <sav-tab label="Profile" level="sub" name="profile">Name, picture and bio.</sav-tab>
+  <sav-tab label="Security" level="sub" name="security">Password and two-step sign-in.</sav-tab>
+  <sav-tab label="Notifications" icon="bell" name="notifications">What we tell you, and how.</sav-tab>
+  <sav-tab label="Email" level="sub" name="email">Weekly summary, news.</sav-tab>
+  <sav-tab label="Phone" level="sub" name="phone">Push and text messages.</sav-tab>
+  <sav-tab label="Billing" icon="credit-card" name="billing">Plan and invoices.</sav-tab>
+</sav-tabs>` },
     ],
-    attrs: [['appearance', 'underline · pills · segmented', 'Default underline.'], ['placement', 'top · start', ''], ['active', 'tab name', 'Tab to open first.'], ['label · name · icon · active · disabled', '', 'On sav-tab.'], ['--sav-tab-padding', 'CSS', 'Panel padding.']],
+    attrs: [['appearance', 'underline · pills · segmented', 'Default underline.'], ['placement', 'top · start', ''], ['active', 'tab name', 'Tab to open first.'], ['label · name · icon · active · disabled', '', 'On sav-tab.'], ['level', 'normal · sub', 'On sav-tab: sub sits under the tab before it, smaller and indented (two levels; clearest with placement="start").'], ['--sav-tab-sub-indent', 'CSS', 'How far sub tabs are indented (default .9rem).'], ['--sav-tab-padding', 'CSS', 'Panel padding.']],
     events: [['sav-tab-show', 'detail.name, detail.index']],
     methods: [['show(nameOrIndex)', '']],
   },
@@ -892,17 +935,117 @@ window.SAVC_DOCS = [
   {
     builtFrom: ['dropdown'],
     id: 'menu', name: 'Menu', tag: 'sav-menu · sav-menu-item', group: 'Navigation', icon: 'menu',
-    desc: 'A menu that stays on the page — a sidebar, a settings list — with the same items as the dropdown and arrow keys. (The dropdown opens the same items from a button.)',
-    demos: [ { title: 'Sidebar menu', html: `<sav-menu label="Account" appearance="card" selectable style="width: 15rem">
+    desc: 'A menu that stays on the page, in several kinds: a list (a sidebar, a settings page), a bar across the top whose submenus drop down, and a rail of icons whose labels become tooltips and whose submenus fly out to the side — collapsible folds a list into a rail and back. Any item can hold a submenu; the current item is highlighted the way the style says. Same items as the dropdown, with arrow keys.',
+    demos: [ { title: 'Sidebar list', html: `<sav-menu label="Account" appearance="card" selectable style="width: 15rem">
   <sav-menu-label>Account</sav-menu-label>
   <sav-menu-item value="profile" current><sav-icon slot="prefix" name="user"></sav-icon>Profile</sav-menu-item>
   <sav-menu-item value="security"><sav-icon slot="prefix" name="lock"></sav-icon>Security</sav-menu-item>
   <sav-menu-item value="billing"><sav-icon slot="prefix" name="credit-card"></sav-icon>Billing</sav-menu-item>
   <sav-divider></sav-divider>
   <sav-menu-item value="logout" variant="danger"><sav-icon slot="prefix" name="log-out"></sav-icon>Sign out</sav-menu-item>
+</sav-menu>` },
+      { title: 'Submenus that open in place', html: `<sav-menu label="Documents" appearance="card" selectable style="width: 16rem">
+  <sav-menu-item value="home" current><sav-icon slot="prefix" name="home"></sav-icon>Home</sav-menu-item>
+  <sav-menu-item open><sav-icon slot="prefix" name="folder"></sav-icon>Projects
+    <sav-menu slot="submenu">
+      <sav-menu-item value="website">Website</sav-menu-item>
+      <sav-menu-item value="app">Phone app</sav-menu-item>
+      <sav-menu-item value="brand">Brand book</sav-menu-item>
+    </sav-menu>
+  </sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="users"></sav-icon>Team
+    <sav-menu slot="submenu">
+      <sav-menu-item value="people">People</sav-menu-item>
+      <sav-menu-item value="roles">Roles</sav-menu-item>
+    </sav-menu>
+  </sav-menu-item>
+  <sav-menu-item value="settings"><sav-icon slot="prefix" name="settings"></sav-icon>Settings</sav-menu-item>
+</sav-menu>` },
+      { title: 'Bar with drop-down submenus', html: `<sav-menu orientation="horizontal" appearance="card" label="Main" selectable>
+  <sav-menu-item value="home" current>Home</sav-menu-item>
+  <sav-menu-item>Products
+    <sav-menu slot="submenu">
+      <sav-menu-item value="components"><sav-icon slot="prefix" name="blocks"></sav-icon>Components</sav-menu-item>
+      <sav-menu-item value="themes"><sav-icon slot="prefix" name="palette"></sav-icon>Themes</sav-menu-item>
+      <sav-menu-item>More
+        <sav-menu slot="submenu">
+          <sav-menu-item value="icons">Icons</sav-menu-item>
+          <sav-menu-item value="charts">Charts</sav-menu-item>
+        </sav-menu>
+      </sav-menu-item>
+    </sav-menu>
+  </sav-menu-item>
+  <sav-menu-item value="pricing">Pricing</sav-menu-item>
+  <sav-menu-item value="docs">Docs</sav-menu-item>
+</sav-menu>` },
+      { title: 'Rail of icons, collapsible', html: `<sav-menu collapsible collapsed appearance="card" label="App" selectable>
+  <sav-menu-item value="home" current><sav-icon slot="prefix" name="home"></sav-icon>Home</sav-menu-item>
+  <sav-menu-item value="inbox"><sav-icon slot="prefix" name="inbox"></sav-icon>Inbox</sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="chart-column"></sav-icon>Reports
+    <sav-menu slot="submenu">
+      <sav-menu-item value="sales">Sales</sav-menu-item>
+      <sav-menu-item value="traffic">Traffic</sav-menu-item>
+    </sav-menu>
+  </sav-menu-item>
+  <sav-menu-item value="settings"><sav-icon slot="prefix" name="settings"></sav-icon>Settings</sav-menu-item>
 </sav-menu>` } ],
-    attrs: [['label', 'string', 'Name for screen readers.'], ['appearance', 'plain · card', ''], ['selectable', 'boolean', 'Marks the clicked item as current.']],
-    events: [['sav-select', 'detail.value, detail.item']],
+    attrs: [['label', 'string', 'Name for screen readers.'], ['appearance', 'plain · card', ''], ['orientation', 'vertical · horizontal', 'horizontal: a bar; its submenus drop down.'],
+      ['collapsed', 'boolean', 'A rail: icons only, the labels become tooltips, submenus fly out to the side.'], ['collapsible', 'boolean', 'Adds the button that folds the list into a rail and back.'],
+      ['selectable', 'boolean', 'Marks the clicked item as current (also inside submenus).'], ['current · open · value · variant · type · disabled', '', 'sav-menu-item; open shows its submenu.'],
+      ['<sav-menu slot="submenu">', 'child', 'Inside a sav-menu-item: its submenu (it can hold more).']],
+    events: [['sav-select', 'detail.value, detail.item'], ['sav-toggle', 'detail.item, detail.open (a submenu) · detail.collapsed (the rail)']],
+  },
+  {
+    builtFrom: ['search', 'avatar', 'button'],
+    id: 'header', name: 'Header', tag: 'sav-header', group: 'Navigation', icon: 'panel-top',
+    play: { tag: 'sav-header', attrs: {}, children: '<a slot="logo" href="#header"><img src="docs/logo.svg" width="28" height="28" alt="">Acme</a><a href="#header" aria-current="page">Home</a><a href="#header">Products</a><a href="#header">Pricing</a><sav-search slot="search" placeholder="Search" size="sm"></sav-search><sav-avatar slot="actions" initials="AL" label="Ada Lovelace" style="--size: 2rem"></sav-avatar>' },
+    desc: 'The top bar of a site or app: logo, links, search and actions (an avatar, buttons). When the header is too narrow for everything — its own width, so it works in any layout — the links fold behind a menu button and the search folds into a button that opens the field across the whole header, with an X to close it. The current link is highlighted like the breadcrumb: a tint, a leaning tile, an underline, an inked block or glass, by style.',
+    demos: [
+      { title: 'Logo, links, search and avatar', html: `<sav-header>
+  <a slot="logo" href="#header"><img src="docs/logo.svg" width="28" height="28" alt="">Acme</a>
+  <a href="#header" aria-current="page">Home</a>
+  <a href="#header">Products</a>
+  <a href="#header">Pricing</a>
+  <a href="#header">About</a>
+  <sav-search slot="search" placeholder="Search" size="sm"></sav-search>
+  <sav-avatar slot="actions" initials="AL" label="Ada Lovelace" style="--size: 2rem"></sav-avatar>
+</sav-header>` },
+      { title: 'Links in the centre, floating, with buttons', html: `<sav-header align="center" appearance="floating">
+  <a slot="logo" href="#header"><img src="docs/logo.svg" width="28" height="28" alt="">Acme</a>
+  <a href="#header" aria-current="page">Home</a>
+  <a href="#header">Products</a>
+  <a href="#header">Pricing</a>
+  <a href="#header">About</a>
+  <sav-button slot="actions" size="sm" appearance="ghost" variant="neutral">Sign in</sav-button>
+  <sav-button slot="actions" size="sm">Get started</sav-button>
+</sav-header>` },
+      { title: 'Narrow: the links and the search fold into buttons', html: `<div style="width: 100%; max-width: 24rem">
+<sav-header>
+  <a slot="logo" href="#header"><img src="docs/logo.svg" width="28" height="28" alt="">Acme</a>
+  <a href="#header" aria-current="page">Home</a>
+  <a href="#header">Products</a>
+  <a href="#header">Pricing</a>
+  <a href="#header">About</a>
+  <sav-search slot="search" placeholder="Search" size="sm"></sav-search>
+  <sav-avatar slot="actions" initials="AL" label="Ada Lovelace" style="--size: 2rem"></sav-avatar>
+</sav-header>
+</div>` },
+      { title: 'Search always a button, menu button on the right, transparent', html: `<sav-header search-collapse="always" menu-button="end" appearance="transparent">
+  <a slot="logo" href="#header"><img src="docs/logo.svg" width="28" height="28" alt="">Acme</a>
+  <a href="#header" aria-current="page">Home</a>
+  <a href="#header">Products</a>
+  <a href="#header">Pricing</a>
+  <a href="#header">About</a>
+  <sav-search slot="search" placeholder="Search the docs" size="sm"></sav-search>
+  <sav-button slot="actions" size="sm" appearance="soft"><sav-icon slot="prefix" name="brush"></sav-icon>Customise</sav-button>
+</sav-header>` },
+    ],
+    attrs: [['align', 'start · center · end', 'Where the links sit in the free room between logo and actions.'], ['appearance', 'bar · transparent · floating · plain', 'bar: a surface with a line under it (default); transparent: blurred; floating: a panel with a shadow (leans in Tilt); plain: no background.'],
+      ['sticky', 'boolean', 'Stays at the top while the page scrolls.'], ['breakpoint', 'number', 'Below this width (px, of the header itself) the links fold behind a menu button. Without it they fold when everything no longer fits on one line.'],
+      ['search-collapse', 'auto · always · never', 'When the search becomes a button that opens the field across the header: when narrow (default), always, or never.'], ['menu-button', 'start · end', 'Side of the menu button when narrow.'],
+      ['label', 'string', 'Name of the navigation (default “Main”).'], ['slot="logo" · slot="search" · slot="actions"', '', 'The links go in the default slot; mark the current one with aria-current="page".'],
+      ['--height · --padding · --search-width · --sav-header-bg', 'CSS', 'Size, side padding, width of the open search, background.'], ['toggleMenu() · toggleSearch()', 'method', 'Open or close the folded menu or search (pass true or false).']],
+    events: [['sav-toggle', 'detail.part (menu · search), detail.open']],
   },
   {
     builtFrom: ['badge', 'icon'],

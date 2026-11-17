@@ -162,7 +162,7 @@ kbd { font-family: var(--sav-font-mono); font-size: .75em; padding: .1em .4em; b
 .main p { line-height: 1.65; }
 .demo { --layer-tilt: .8deg; margin-bottom: .4rem; }
 .demo-view { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: 1.75rem 1.5rem; }
-.demo-view > :is(sav-code-block, sav-alert, sav-input, sav-textarea, sav-select, sav-progress-bar, sav-range, sav-tabs, sav-accordion, sav-breadcrumb, sav-skeleton, sav-divider, p, form, div:not(.row)) { flex-basis: 100%; }
+.demo-view > :is(sav-code-block, sav-alert, sav-input, sav-textarea, sav-select, sav-progress-bar, sav-range, sav-tabs, sav-accordion, sav-breadcrumb, sav-header, sav-skeleton, sav-divider, p, form, div:not(.row)) { flex-basis: 100%; }
 .demo-view > :is(sav-input, sav-select, sav-textarea) { max-width: 26rem; }
 .demo-view > p { margin: 0; }
 .demo .doc-code { --sav-radius: 0px; margin: 0; }
@@ -327,6 +327,10 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
   .main { padding: 1.5rem 16px 2rem; }
   .search { width: auto; flex: 1; }
   .search kbd { display: none; }
+  /* on small screens the search takes only the room that is left, so the top bar never overflows */
+  .search-wrap { flex: 1 1 0; min-width: 0; }
+  .search-wrap .search { width: 100%; min-width: 0; }
+  .search input { min-width: 0; }
   .top { padding: 0 16px; gap: .6rem; }
   .top-actions { flex: 1; min-width: 0; }
 }
@@ -413,3 +417,28 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
 /* the icon tiles: a stronger tint so even thin icons read well */
 .cc-ic, .f-ic { --tilt-bg: color-mix(in oklab, var(--sav-color-primary) 22%, var(--sav-color-surface)); }
 .comp-card[hidden], .comp-group[hidden] { display: none; }
+
+/* loading skeleton (plain HTML in index.html, so it shows before sav.js has loaded); same look as sav-skeleton */
+.sk { display: block; height: 1rem; margin-bottom: .7rem; border-radius: var(--sav-radius-sm); background: linear-gradient(90deg, var(--sav-color-surface-2) 30%, color-mix(in oklab, var(--sav-color-surface-2), var(--sav-color-text) 8%) 50%, var(--sav-color-surface-2) 70%);
+      background-size: 300% 100%; animation: sk-sheen 1.6s ease-in-out infinite; }
+.sk-page { padding-top: .5rem; }
+.sk-h1 { width: 55%; height: 2.6rem; margin-bottom: 1.4rem; } .sk-h2 { width: 38%; height: 1.7rem; margin: 2.2rem 0 1rem; }
+.sk-row { display: flex; gap: .75rem; margin: 1.4rem 0 1.8rem; } .sk-btn { width: 8.5rem; height: 2.6rem; margin: 0; }
+.sk-card { height: 14rem; border-radius: var(--sav-radius); } .sk-card.sk-short { height: 8rem; margin-top: 1.2rem; }
+.side .sk-t { width: 38%; height: .6rem; margin: 0 .65rem .9rem; } .side .sk-l { height: .85rem; margin: 0 .65rem .95rem; max-width: calc(100% - 1.3rem); }
+@keyframes sk-sheen { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+
+/* phones: the search is a button; open, the field covers the whole header with an X to close it */
+.search-toggle, .search-close { display: none; }
+@media (max-width: 640px) {
+  .search-toggle { display: inline-flex; flex: none; }
+  .top-actions { justify-content: flex-end; } /* with the field folded into a button, the buttons sit on the right */
+  .search-wrap { display: none; }
+  .search-open .search-wrap { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; gap: .5rem; padding: 0 16px; background: var(--sav-color-bg); }
+  .search-open .search-wrap .search { flex: 1 1 0; width: auto; }
+  .search-open .search-close { display: inline-flex; flex: none; margin-right: -.4rem; }
+  .search-open .search-sug { position: fixed; left: 16px; right: 16px; width: auto; top: calc(var(--top-h) + 4px); }
+}
+/* phones: Customise shows only its brush, so the button is square like the others */
+@media (max-width: 560px) { #customizeBtn::part(base) { width: var(--_h, 2rem); padding: 0; } #customizeBtn::part(label) { display: none; } }

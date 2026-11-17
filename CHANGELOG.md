@@ -65,7 +65,7 @@ The first public version.
   `sav-chart-radar`, `sav-chart-line` (area or line, smooth, points, stacked, negative values), `sav-chart-activity` (calendar heatmap).
   Colours from `--sav-chart-1…8`; every chart has a summary and a data table for screen readers.
 - New: `sav-carousel` + `sav-slide` (images or image and text, per-view, loop, autoplay), `sav-video`, `sav-audio`, `sav-menu` (a menu that stays
-  on the page), `sav-bottom-nav` (phone tab bar), `sav-sortable` (drag and drop, also with the keyboard), `sav-dropzone` (file drop),
+  on the page), `sav-bottom-nav` (phone tab bar), `sav-new-label` (marks what is new, hides itself after a date or once seen), `sav-header` (top bar whose links and search fold into buttons when narrow), `sav-sortable` (drag and drop, also with the keyboard), `sav-dropzone` (file drop),
   `sav-showcase` (section with desktop and phone screenshots).
 - New form components: `sav-otp` (one-time code: length, numbers / letters / both / any, groups, mask), `sav-password` (strength meter and
   rules: length, upper and lower case, digits, symbols; can refuse weak passwords), `sav-search` (suggestions while typing, from options or
