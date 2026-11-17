@@ -21,8 +21,10 @@ RedirectMatch 404 ^/(tools|cache|\.git|\.idea)(/|$)
 <IfModule mod_headers.c>
   # The site itself (pages, docs scripts and styles, dist/) has no version in its address: browsers must check for a newer
   # copy every time (they reuse it when unchanged), so an update shows up at once. Released versions keep their long cache.
+  # "private": only the visitor's browser may keep a copy, not the hosting's proxy cache (Aruba's served an old home page
+  # on a normal reload, because "no-cache" alone lets a shared cache keep its copy).
   <If "%{REQUEST_URI} !~ m#^/(v|icons|flags|maps)/\d+\.\d+\.\d+/#">
-    Header setifempty Cache-Control "no-cache"
+    Header setifempty Cache-Control "private, no-cache"
   </If>
   # The library and the icons can be loaded from any domain
   <FilesMatch "\.(css|js|svg|json)$">
