@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- Source of docs/og.png (the Open Graph banner, 1200×630). Rebuild it with tools/og-banner.sh -->
+<html lang="en" class="sav-theme-dark sav-style-tilt">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../dist/sav.css">
+  <script src="../dist/sav.js"></script>
+  <style>
+    html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+    body {
+      background:
+        radial-gradient(900px 500px at 85% 20%, color-mix(in oklab, var(--sav-color-primary) 22%, transparent), transparent 70%),
+        radial-gradient(700px 420px at 0% 100%, rgba(76, 162, 240, .18), transparent 70%),
+        #0d1120;
+      color: #eef1fb; font-family: var(--sav-font);
+      display: grid; grid-template-columns: minmax(0,1fr) 430px; align-items: center; gap: 56px; padding: 0 70px 0 64px; box-sizing: border-box;
+    }
+    .brand { display: grid; gap: 26px; }
+    .logo { display: flex; align-items: center; gap: 22px; }
+    .logo img { width: 96px; height: 96px; }
+    h1 { margin: 0; font-size: 62px; line-height: 1; letter-spacing: -.02em; font-weight: 800; }
+    h1 span { color: var(--sav-color-primary); }
+    p { margin: 0; font-size: 29px; line-height: 1.35; color: #b9c0d8; max-width: 600px; }
+    .url { position: relative; display: inline-block; justify-self: start; font-size: 24px; font-weight: 700; padding: 10px 22px; color: #072536; }
+    .url::before { content: ""; position: absolute; inset: 0; background: var(--sav-color-primary); transform: rotate(-3deg); z-index: -1; }
+    .url { isolation: isolate; }
+
+    .panel { position: relative; box-sizing: border-box; width: 430px; min-width: 0; padding: 34px; display: grid; gap: 20px; isolation: isolate; }
+    .panel::before { content: ""; position: absolute; inset: 0; background: #161b2e; border: 1px solid #2a3150; transform: rotate(3deg); z-index: -1; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+    .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    sav-input { width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <div class="logo"><img src="../docs/logo.svg" alt=""><h1>Sav<span>Components</span></h1></div>
+    <p>Web components you can theme and drop into any website. No framework needed.</p>
+    <div class="url">savcomponents.com</div>
+  </div>
+  <div class="panel">
+    <div class="row">
+      <sav-button>Get started</sav-button>
+      <sav-button variant="neutral" appearance="outline">Customise</sav-button>
+    </div>
+    <sav-input label="Email" value="ada@example.com"></sav-input>
+    <div class="row">
+      <sav-switch checked>Dark mode</sav-switch>
+      <sav-badge variant="success">New</sav-badge>
+      <sav-badge>v1.0</sav-badge>
+    </div>
+    <sav-progress-bar value="68"></sav-progress-bar>
+    <sav-tabs appearance="segmented"><sav-tab label="Tilt"></sav-tab><sav-tab label="Soft"></sav-tab><sav-tab label="Glass"></sav-tab></sav-tabs>
+  </div>
+</body>
+</html>

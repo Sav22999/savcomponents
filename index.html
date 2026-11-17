@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en" class="sav-theme-light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SavComponents — web components you can customise</title>
+  <meta name="description" content="SavComponents: a library of framework-free web components for websites and web apps, themed with CSS custom properties.">
+  <meta name="savc-api" content="https://www.saveriomorelli.com/projects/savcomponents/api/">
+  <link rel="canonical" href="https://savcomponents.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SavComponents">
+  <meta property="og:title" content="SavComponents · themeable web components">
+  <meta property="og:description" content="A library of framework-free web components for websites and web apps, themed with CSS custom properties.">
+  <meta property="og:url" content="https://savcomponents.com/">
+  <meta property="og:image" content="https://savcomponents.com/docs/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SavComponents: web components you can theme and drop into any website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="docs/logo.svg" type="image/svg+xml">
+  <script>
+    // apply the saved theme before first paint
+    try {
+      const m = JSON.parse(localStorage.getItem('savc-mode') || '"auto"');
+      const dark = m === 'dark' || (m === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+      const st = JSON.parse(localStorage.getItem('savc-style') || '"tilt"');
+      document.documentElement.className = (dark ? 'sav-theme-dark' : 'sav-theme-light') + (st && st !== 'soft' ? ' sav-style-' + st : '');
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="dist/sav.css">
+  <link rel="stylesheet" href="docs/docs.css">
+  <script src="dist/sav.js" defer></script>
+  <script src="docs/components.js" defer></script>
+  <script src="docs/a11y.js" defer></script>
+  <script src="docs/docs.js" defer></script>
+  <script src="docs/account.js" defer></script>
+</head>
+<body class="sav-base">
+  <header class="top">
+    <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open the menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="#">
+      <span class="logo" aria-hidden="true"></span>
+      <span>Sav<b>Components</b></span>
+    </a>
+    <!-- which version of the documentation to read: filled by docs.js from DOC_VERSIONS -->
+    <sav-dropdown id="verPick" class="ver-pick" label="Documentation version"></sav-dropdown>
+    <div class="top-actions">
+      <sav-select id="stylePick" class="style-pick" size="sm" aria-label="Style of the components" sheet-on-mobile></sav-select>
+      <div class="search-wrap">
+        <label class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg>
+          <input id="search" type="search" placeholder="Search components, options, icons" aria-label="Search components, options and icons" autocomplete="off">
+          <kbd>/</kbd>
+        </label>
+        <div id="searchSug" class="search-sug" role="listbox" aria-label="Suggestions" hidden></div>
+      </div>
+      <sav-theme-choice id="modePick" icons-only size="sm" label="Theme"></sav-theme-choice>
+      <span id="accountSlot" class="account-slot"></span>
+      <sav-button id="customizeBtn" size="sm" appearance="soft"><sav-icon slot="prefix" name="settings"></sav-icon><span class="cz-text">Customise</span></sav-button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="side" id="side" aria-label="Documentation"></nav>
+    <main class="main" id="main" tabindex="-1"></main>
+  </div>
+
+  <sav-drawer id="themer" label="Customise the theme" style="--size: 23rem">
+    <div class="themer" id="themerBody"></div>
+    <sav-button slot="footer" appearance="ghost" variant="neutral" id="resetTheme">Reset</sav-button>
+    <sav-button slot="footer" appearance="soft" icon="save" id="saveTheme" hidden>Save</sav-button>
+    <sav-button slot="footer" id="exportTheme"><sav-icon slot="prefix" name="download"></sav-icon>Export CSS</sav-button>
+  </sav-drawer>
+
+  <sav-dialog id="exportDialog" label="Your theme" style="--width: 40rem">
+    <p class="muted">Paste this after <code>sav.css</code> to apply the theme to your site.</p>
+    <sav-code-block id="exportCode" language="css" filename="theme.css"></sav-code-block>
+  </sav-dialog>
+</body>
+</html>

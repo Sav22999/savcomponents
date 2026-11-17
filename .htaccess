@@ -1,0 +1,44 @@
+# SavComponents — savcomponents.com (Aruba, Apache)
+
+DirectoryIndex index.html
+
+# Old hosting file (phpinfo): never serve it, in case a copy is still on the server
+<Files "ver.php">
+  Require all denied
+</Files>
+# Tools, caches and repository files are not for the browser
+RedirectMatch 404 ^/(tools|cache|\.git|\.idea)(/|$)
+<FilesMatch "^\.|\.(md|sh)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # A saved theme, for any site: /theme/<id>.css
+  RewriteRule ^theme/([a-f0-9]{16})\.css$ theme.php?id=$1 [L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # The site itself (pages, docs scripts and styles, dist/) has no version in its address: browsers must check for a newer
+  # copy every time (they reuse it when unchanged), so an update shows up at once. Released versions keep their long cache.
+  <If "%{REQUEST_URI} !~ m#^/(v|icons|flags|maps)/\d+\.\d+\.\d+/#">
+    Header setifempty Cache-Control "no-cache"
+  </If>
+  # The library and the icons can be loaded from any domain
+  <FilesMatch "\.(css|js|svg|json)$">
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  # A released version (library or icon set) never changes: cache it for a year
+  <If "%{REQUEST_URI} =~ m#^/(v|icons|flags|maps)/\d+\.\d+\.\d+/#">
+    ExpiresDefault "access plus 1 year"
+  </If>
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType application/javascript .js
+  AddType image/svg+xml .svg
+</IfModule>

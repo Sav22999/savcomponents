@@ -1,0 +1,7 @@
+# Editors and system files
+.idea/
+.vscode/
+.DS_Store
+
+# Copies of saved themes made by theme.php
+cache/

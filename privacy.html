@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" class="sav-theme-auto sav-style-tilt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy — SavComponents</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="docs/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="dist/sav.css">
+  <script>
+    /* same style and mode as the rest of the site (Tilt unless the visitor chose another) */
+    try {
+      const mode = JSON.parse(localStorage.getItem('savc-mode') || '"auto"');
+      const st = JSON.parse(localStorage.getItem('savc-style') || '"tilt"');
+      const dark = mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.className = (dark ? 'sav-theme-dark' : 'sav-theme-light') + (st && st !== 'soft' ? ' sav-style-' + st : '');
+    } catch (e) {}
+  </script>
+  <script src="dist/sav.js" defer></script>
+  <style>
+    main { max-width: 680px; margin: 0 auto; padding: 32px 16px 48px; line-height: 1.65; }
+    h1 { letter-spacing: -.02em; }
+    h2 { font-size: 1.1rem; margin-top: 1.8rem; }
+  </style>
+</head>
+<body class="sav-base">
+<main>
+  <sav-button href="./" appearance="ghost" variant="neutral" icon="arrow-left">SavComponents</sav-button>
+  <h1>Privacy</h1>
+  <p>An account is optional: the components and the documentation work without one. It only lets you keep favourite components and saved configurations.</p>
+  <h2>What is stored</h2>
+  <p>Your name, your email address, your password (only as a one-way hash), when you created the account and last used it, your favourite components, and the themes and components you save. Nothing else, and nothing is sold or shared.</p>
+  <p>The accounts are kept on the server of saveriomorelli.com, by the same author; savcomponents.com itself stores nothing about you.</p>
+  <h2>Cookies and local storage</h2>
+  <p>There are no cookies, analytics or advertising. When you sign in, a random sign-in key is kept in your browser's local storage for up to 30 days and sent only to the accounts server; signing out deletes it. The customiser also remembers your choices there.</p>
+  <h2>Theme links</h2>
+  <p>A saved theme has a public address (its CSS) so you can use it on your own sites. Anyone who knows that address can read the theme, but not your name or email.</p>
+  <h2>Emails</h2>
+  <p>You only receive the link to confirm your address and, if you ask for it, the link to choose a new password.</p>
+  <h2>Deleting your data</h2>
+  <p>You can delete your account at any time from the account page: everything listed above is removed at once. Accounts whose email is never confirmed are deleted after 7 days. The administrator of the site can also disable or delete accounts.</p>
+  <h2>Contact</h2>
+  <p>Saverio Morelli — <a href="https://www.saveriomorelli.com/contact-me/">saveriomorelli.com/contact-me</a></p>
+</main>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<!-- A demo website made only with SavComponents (lorem ipsum). Every visible piece is a library component. -->
+<html lang="en" class="sav-theme-auto sav-style-tilt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lorem — a demo site made with SavComponents</title>
+  <meta name="description" content="A sample website built only with SavComponents components. All text is placeholder.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="docs/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="dist/sav.css">
+  <script src="dist/sav.js" defer></script>
+  <script>
+    try {
+      const st = JSON.parse(localStorage.getItem('savc-style') || '"tilt"');
+      document.documentElement.classList.remove('sav-style-tilt');
+      if (st && st !== 'soft') document.documentElement.classList.add('sav-style-' + st);
+    } catch (e) {}
+  </script>
+  <style>
+    /* only page layout: spacing between sections and the sticky header */
+    body { margin: 0; }
+    header { position: sticky; top: 0; z-index: 50; background: color-mix(in oklab, var(--sav-color-bg) 85%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--sav-color-border); }
+    .bar { display: flex; align-items: center; gap: 1rem; min-height: 64px; }
+    .brand { display: flex; align-items: center; gap: .6rem; margin-right: auto; color: inherit; text-decoration: none; font-weight: 800; font-size: 1.2rem; }
+    .links { display: flex; gap: .25rem; }
+    section { padding: clamp(2.5rem, 7vw, 5rem) 0; }
+    .center { text-align: center; display: grid; justify-items: center; gap: .6rem; margin-bottom: 2rem; }
+    .lead { font-size: 1.15rem; line-height: 1.6; color: var(--sav-color-text-muted); max-width: 40rem; margin: 0; }
+    .row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+    .stack { display: grid; gap: .8rem; }
+    .price { font-size: 2.2rem; font-weight: 800; }
+    footer { padding: 2.5rem 0 6rem; border-top: 1px solid var(--sav-color-border); color: var(--sav-color-text-muted); font-size: .9rem; }
+    @media (max-width: 760px) { .links, .hide-m { display: none; } }
+  </style>
+</head>
+<body class="sav-base">
+  <header>
+    <sav-container size="lg" class="bar">
+      <div class="bar">
+        <a class="brand" href="#top"><sav-avatar size="sm" label="Lorem" variant="primary"></sav-avatar>Lorem</a>
+        <nav class="links" aria-label="Main">
+          <sav-button appearance="ghost" variant="neutral" href="#features">Features</sav-button>
+          <sav-button appearance="ghost" variant="neutral" href="#pricing">Pricing</sav-button>
+          <sav-button appearance="ghost" variant="neutral" href="#faq">FAQ</sav-button>
+        </nav>
+        <sav-select id="demoStyle" class="hide-m" size="sm" aria-label="Style" style="width: 8.5rem">
+          <option value="soft">Soft</option><option value="tilt">Tilt</option><option value="sharp">Sharp</option><option value="brutal">Brutal</option><option value="glass">Glass</option>
+        </sav-select>
+        <sav-theme-choice appearance="buttons" icons-only apply value="auto"></sav-theme-choice>
+        <sav-button class="hide-m" href="#signup">Sign up</sav-button>
+      </div>
+    </sav-container>
+  </header>
+
+  <main id="top">
+    <section>
+      <sav-container size="lg">
+        <sav-showcase desktop="docs/media/poster.jpg" mobile="docs/sample.svg" desktop-alt="The Lorem dashboard on a computer" mobile-alt="The Lorem app on a phone"
+          eyebrow="Lorem 2.0" heading="Lorem ipsum dolor sit amet, consectetur." text="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.">
+          <div class="row"><sav-badge appearance="soft" variant="success">Free for 30 days</sav-badge><sav-rating value="5" readonly style="--size: 1rem"></sav-rating><small>4.9 from 2,140 reviews</small></div>
+          <sav-button slot="actions" size="lg" href="#signup">Start free<sav-icon slot="suffix" name="arrow-right"></sav-icon></sav-button>
+          <sav-button slot="actions" size="lg" appearance="outline" variant="neutral" href="#features">See how</sav-button>
+        </sav-showcase>
+      </sav-container>
+    </section>
+
+    <section id="features">
+      <sav-container size="lg">
+        <div class="center"><sav-label appearance="soft">Features</sav-label><sav-heading level="2" size="1">Ut enim ad minim veniam</sav-heading><p class="lead">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p></div>
+        <sav-grid min="15rem">
+          <sav-card><sav-heading level="3" size="4" marker>Excepteur sint</sav-heading><p>Occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p></sav-card>
+          <sav-card><sav-heading level="3" size="4" marker>Nemo enim</sav-heading><p>Ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur.</p></sav-card>
+          <sav-card><sav-heading level="3" size="4" marker>Neque porro</sav-heading><p>Quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p></sav-card>
+          <sav-card><sav-heading level="3" size="4" marker>Quis autem</sav-heading><p>Vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae.</p></sav-card>
+        </sav-grid>
+      </sav-container>
+    </section>
+
+    <section>
+      <sav-container size="lg">
+        <sav-grid min="18rem" align="center">
+          <div class="stack">
+            <sav-heading level="2" eyebrow="Numbers" subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit.">Sed ut perspiciatis</sav-heading>
+            <sav-chip-group label="Period" value="year" required id="period">
+              <sav-chip value="month">Month</sav-chip><sav-chip value="year">Year</sav-chip>
+            </sav-chip-group>
+          </div>
+          <sav-card><sav-chart-line id="demoChart" label="Active users" smooth data='{"labels":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"series":[{"name":"Users","values":[120,150,170,160,210,260,240,300,320,360,390,420]}]}'></sav-chart-line></sav-card>
+        </sav-grid>
+      </sav-container>
+    </section>
+
+    <section>
+      <sav-container size="lg">
+        <div class="center"><sav-label appearance="soft">Reviews</sav-label><sav-heading level="2">Lorem ipsum, dicunt</sav-heading></div>
+        <sav-carousel label="Reviews" per-view="2" loop>
+          <sav-slide src="docs/sample.svg" alt="" heading="“Nam libero tempore.”" text="Cum soluta nobis est eligendi optio cumque nihil impedit. — Ada L."></sav-slide>
+          <sav-slide src="docs/media/poster.jpg" alt="" heading="“Temporibus autem.”" text="Quibusdam et aut officiis debitis aut rerum necessitatibus. — Alan T."></sav-slide>
+          <sav-slide src="docs/sample.svg" alt="" heading="“Itaque earum rerum.”" text="Hic tenetur a sapiente delectus, ut aut reiciendis. — Grace H." style="filter: hue-rotate(160deg)"></sav-slide>
+        </sav-carousel>
+      </sav-container>
+    </section>
+
+    <section id="pricing">
+      <sav-container size="lg">
+        <div class="center"><sav-label appearance="soft">Pricing</sav-label><sav-heading level="2">Quis nostrud exercitation</sav-heading>
+          <sav-radio-group appearance="buttons" value="month" id="billing" aria-label="Billing period"><sav-radio value="month">Monthly</sav-radio><sav-radio value="year">Yearly −20%</sav-radio></sav-radio-group></div>
+        <sav-grid min="15rem">
+          <sav-card><div class="stack"><sav-label appearance="plain">Lorem</sav-label><div class="price" data-m="0" data-y="0">€ 0</div><sav-list appearance="plain"><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Ut enim ad minim</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Duis aute irure</sav-list-item></sav-list><sav-button appearance="outline" variant="neutral" block>Start</sav-button></div></sav-card>
+          <sav-card><div class="stack"><div class="row"><sav-label appearance="plain">Ipsum</sav-label><sav-badge>Popular</sav-badge></div><div class="price" data-m="12" data-y="9.6">€ 12</div><sav-list appearance="plain"><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Everything in Lorem</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Excepteur sint</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Sunt in culpa</sav-list-item></sav-list><sav-button block>Choose Ipsum</sav-button></div></sav-card>
+          <sav-card><div class="stack"><sav-label appearance="plain">Dolor</sav-label><div class="price" data-m="29" data-y="23.2">€ 29</div><sav-list appearance="plain"><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Everything in Ipsum</sav-list-item><sav-list-item><sav-icon slot="prefix" name="check"></sav-icon>Nemo enim ipsam</sav-list-item></sav-list><sav-button appearance="outline" variant="neutral" block>Contact us</sav-button></div></sav-card>
+        </sav-grid>
+      </sav-container>
+    </section>
+
+    <section id="faq">
+      <sav-container size="md">
+        <div class="center"><sav-label appearance="soft">FAQ</sav-label><sav-heading level="2">Neque porro quisquam</sav-heading></div>
+        <sav-accordion exclusive>
+          <sav-details summary="Lorem ipsum dolor sit amet?" open>Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.</sav-details>
+          <sav-details summary="Ut enim ad minim veniam?">Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.</sav-details>
+          <sav-details summary="Duis aute irure dolor?">In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</sav-details>
+        </sav-accordion>
+      </sav-container>
+    </section>
+
+    <section id="signup">
+      <sav-container size="sm">
+        <sav-card>
+          <sav-heading level="2" size="3" slot="header" subtitle="Lorem ipsum: no card needed.">Create your account</sav-heading>
+          <form class="stack" id="signupForm">
+            <sav-input name="email" type="email" label="Email" required placeholder="you@example.com"><sav-icon slot="prefix" name="mail"></sav-icon></sav-input>
+            <sav-password name="password" label="Password" rules min-strength="2" required></sav-password>
+            <sav-checkbox name="terms" required>I accept lorem ipsum</sav-checkbox>
+            <sav-button type="submit" block>Sign up</sav-button>
+          </form>
+        </sav-card>
+      </sav-container>
+    </section>
+  </main>
+
+  <footer>
+    <sav-container size="lg">
+      <div class="row" style="justify-content: space-between">
+        <span>© 2026 Lorem — a demo made only with SavComponents. All text is placeholder.</span>
+        <sav-breadcrumb><sav-breadcrumb-item href="index.html">SavComponents</sav-breadcrumb-item><sav-breadcrumb-item>Demo site</sav-breadcrumb-item></sav-breadcrumb>
+      </div>
+    </sav-container>
+  </footer>
+
+  <sav-bottom-nav fixed mobile-only label="Main">
+    <sav-bottom-nav-item icon="home" label="Home" href="#top" current></sav-bottom-nav-item>
+    <sav-bottom-nav-item icon="layers" label="Features" href="#features"></sav-bottom-nav-item>
+    <sav-bottom-nav-item icon="credit-card" label="Pricing" href="#pricing"></sav-bottom-nav-item>
+    <sav-bottom-nav-item icon="user" label="Sign up" href="#signup"></sav-bottom-nav-item>
+  </sav-bottom-nav>
+
+  <script>
+    // the only script of the page: it reacts to the components' events
+    addEventListener('DOMContentLoaded', () => {
+      const style = document.getElementById('demoStyle');
+      style.value = (localStorage.getItem('savc-style') || '"tilt"').replace(/"/g, '');
+      style.addEventListener('change', () => { Sav.setStyle(style.value); try { localStorage.setItem('savc-style', JSON.stringify(style.value)); } catch (e) {} });
+
+      document.getElementById('billing').addEventListener('change', (e) => {
+        const yearly = e.target.value === 'year';
+        document.querySelectorAll('.price').forEach((p) => { const v = Number(yearly ? p.dataset.y : p.dataset.m); p.textContent = '€ ' + v.toLocaleString(undefined, { maximumFractionDigits: 2 }); });
+      });
+
+      document.getElementById('period').addEventListener('change', (e) => {
+        const chart = document.getElementById('demoChart');
+        chart.data = e.detail.value === 'month'
+          ? { labels: ['W1', 'W2', 'W3', 'W4'], series: [{ name: 'Users', values: [360, 375, 381, 420] }] }
+          : JSON.parse(chart.getAttribute('data'));
+      });
+
+      document.getElementById('signupForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        Sav.toast('Welcome! (this is only a demo)', { variant: 'success' });
+      });
+    });
+  </script>
+</body>
+</html>
