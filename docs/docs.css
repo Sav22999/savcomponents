@@ -67,19 +67,6 @@ kbd { font-family: var(--sav-font-mono); font-size: .75em; padding: .1em .4em; b
 .ver-btn { font-variant-numeric: tabular-nums; }
 .top-actions { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
 /* the search box is drawn like the library's fields: a layer that follows the style (leans in Tilt and straightens while typing, ink in Brutal, glass in Glass) */
-.search { position: relative; isolation: isolate; display: flex; align-items: center; gap: .5rem; height: 2.25rem; width: 15rem; padding: 0 .6rem; color: var(--sav-color-text-muted); }
-.search::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius); background: var(--sav-color-input-bg); background-image: var(--sav-sheen, none);
-  border: var(--sav-border-width) solid var(--sav-color-border-strong); box-shadow: var(--sav-control-shadow, none); -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
-  transform: rotate(calc(-1.2deg * var(--lean))); transition: transform .25s var(--sav-easing), border-color var(--sav-duration), box-shadow var(--sav-duration); }
-.search:hover::before { border-color: color-mix(in oklab, var(--sav-color-border-strong), var(--sav-color-text) 22%); }
-.search:focus-within::before { transform: none; border-color: var(--sav-color-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--sav-color-primary) 22%, transparent); }
-.search svg { width: 1rem; height: 1rem; flex: none; }
-.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--sav-color-text); font: inherit; font-size: .9rem; }
-.search input::-webkit-search-cancel-button { display: none; }
-.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; padding: 0; border: 1px solid transparent; border-radius: var(--sav-radius); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
-.icon-btn:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
-.icon-btn:focus-visible { outline: 2px solid var(--sav-color-primary); outline-offset: 1px; }
-.icon-btn svg { width: 1.2rem; height: 1.2rem; }
 .menu-btn { display: none; }
 
 /* ---------- layout */
@@ -294,15 +281,9 @@ sav-button.fancy::part(base) { background: linear-gradient(135deg, #ff7a59, #5b4
 .themer .t-sec { min-width: 0; }
 .t-lbl { font-size: var(--sav-font-size-sm); font-weight: 600; margin-bottom: .5rem; }
 .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
-.preset { display: grid; gap: .35rem; justify-items: center; padding: .55rem .3rem; border: 1px solid var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface); color: var(--sav-color-text); font: inherit; font-size: .8rem; cursor: pointer; }
-.preset:hover { border-color: var(--sav-color-primary); }
-.preset:focus-visible { outline: 3px solid var(--sav-color-focus); }
 .pv { display: flex; } .pv i { width: .95rem; height: .95rem; border-radius: 50%; box-shadow: 0 0 0 2px var(--sav-color-surface); } .pv i + i { margin-left: -.25rem; }
-.colors { display: grid; gap: .4rem; }
-.color { display: flex; align-items: center; gap: .7rem; padding: .35rem .5rem; border: 1px solid var(--sav-color-border); border-radius: var(--sav-radius); cursor: pointer; font-size: .9rem; }
-.color input { width: 1.9rem; height: 1.9rem; padding: 0; border: 0; border-radius: 6px; background: none; cursor: pointer; }
-.color input::-webkit-color-swatch-wrapper { padding: 0; } .color input::-webkit-color-swatch { border: 0; border-radius: 6px; } .color input::-moz-color-swatch { border: 0; border-radius: 6px; }
-.color code { margin-left: auto; background: none; color: var(--sav-color-text-muted); }
+.colors { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem .75rem; }
+.preset::part(label) { font-size: .85rem; }
 .t-preview { display: grid; gap: .6rem; padding: 1rem; border-radius: var(--sav-radius); background: var(--sav-color-surface-2); }
 .t-preview .t-lbl { margin: 0; }
 
@@ -326,18 +307,15 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
   .side { position: fixed; z-index: 15; left: 0; top: var(--top-h); background: var(--sav-color-bg); transform: translateX(-100%); visibility: hidden; transition: transform .25s var(--sav-easing), visibility .25s; }
   .nav-open .side { transform: none; visibility: visible; box-shadow: var(--sav-shadow-lg); }
   .main { padding: 1.5rem 16px 2rem; }
-  .search { width: auto; flex: 1; }
-  .search kbd { display: none; }
+  .search-key { display: none; }
   /* on small screens the search takes only the room that is left, so the top bar never overflows */
   .search-wrap { flex: 1 1 0; min-width: 0; }
-  .search-wrap .search { width: 100%; min-width: 0; }
-  .search input { min-width: 0; }
+  #search { width: 100%; min-width: 0; }
   .top { padding: 0 16px; gap: .6rem; }
   .top-actions { flex: 1; min-width: 0; }
 }
 @media (max-width: 560px) {
   .ver-pick, .brand > span:not(.logo), .cz-text { display: none; }
-  .search { min-width: 0; flex: 1 1 0; }
   #customizeBtn { flex: none; }
   .hero-demo { padding: .75rem; }
   .hero-demo::before { transform: rotate(calc(4deg * var(--lean))); }
@@ -348,20 +326,12 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
   .presets { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* top bar: style picker and search with suggestions */
+/* top bar: style picker and search (the library's sav-search, with its own suggestions) */
 .style-pick { width: 8.5rem; flex: none; }
-.search-wrap { position: relative; }
-.search-sug { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; width: min(26rem, calc(100vw - 32px)); max-height: min(70vh, 30rem); overflow: auto; padding: .35rem;
-  background: var(--sav-color-surface); background-image: var(--sav-sheen, none); border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius);
-  box-shadow: var(--sav-panel-shadow, var(--sav-shadow-lg)); -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); }
-.sug-h { padding: .5rem .55rem .2rem; font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sav-color-text-muted); }
-.sug { position: relative; isolation: isolate; display: flex; align-items: center; gap: .65rem; padding: .45rem .55rem; color: var(--sav-color-text); text-decoration: none; }
-.sug::before { content: ""; position: absolute; inset: 1px; z-index: -1; background: var(--sav-color-surface-2); transform: rotate(calc(-1deg * var(--lean))) scaleX(0); transform-origin: left; transition: transform .18s var(--sav-easing); }
-.sug.on::before, .sug:hover::before { transform: rotate(calc(-1deg * var(--lean))) scaleX(1); }
-.sug sav-icon { flex: none; font-size: 1.05rem; color: var(--sav-color-text-muted); }
-.sug b { display: block; font-size: .9rem; font-weight: 600; }
-.sug small { display: block; font-size: .74rem; color: var(--sav-color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 20rem; }
-.sug-empty { padding: .8rem; color: var(--sav-color-text-muted); font-size: .9rem; }
+.search-wrap { position: relative; display: flex; align-items: center; gap: .4rem; }
+#search { width: 15rem; min-width: 0; }
+.search-key { display: inline-grid; place-items: center; min-width: 1.3rem; height: 1.3rem; padding: 0 .3rem; border: 1px solid var(--sav-color-border-strong); border-radius: 4px;
+  color: var(--sav-color-text-muted); font: 600 .72rem/1 var(--sav-font-mono, monospace); }
 
 /* playground: names with a help tip */
 .knob-l { display: inline-flex; align-items: center; gap: .25rem; }
@@ -377,7 +347,7 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
 .icon-cell sav-icon { font-size: 1.5rem; }
 .icon-cell span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; color: var(--sav-color-text-muted); font-family: var(--sav-font-mono); }
 @media (max-width: 860px) { .style-pick { width: 7rem; } }
-@media (max-width: 560px) { .style-pick { display: none; } .search-sug { position: fixed; left: 16px; right: 16px; width: auto; top: calc(var(--top-h) + 4px); } }
+@media (max-width: 560px) { .style-pick { display: none; } }
 
 /* ---------- versions page */
 .ver-card { position: relative; display: grid; gap: .4rem; margin: 1.5rem 0; padding: 1.25rem 1.4rem; }
@@ -403,9 +373,6 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
 .fav-slot sav-favourite-button { font-size: 1.15rem; }
 
 /* playground: custom colour = a switch with the colour square next to it (faded while off) */
-.play-color { display: flex; align-items: center; justify-content: space-between; gap: .6rem; font-size: var(--sav-font-size-sm); font-weight: 600; }
-.play-color input { flex: none; width: 2rem; height: 2rem; padding: 0; border: 0; background: none; cursor: pointer; opacity: .45; transition: opacity var(--sav-duration); }
-.play-color.on input { opacity: 1; }
 
 /* overview: components by group, with a filter */
 .comp-tools { display: grid; gap: .7rem; margin: 0 0 1.4rem; }
@@ -437,9 +404,8 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
   .top-actions { justify-content: flex-end; } /* with the field folded into a button, the buttons sit on the right */
   .search-wrap { display: none; }
   .search-open .search-wrap { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; gap: .5rem; padding: 0 16px; background: var(--sav-color-bg); }
-  .search-open .search-wrap .search { flex: 1 1 0; width: auto; }
+  .search-open .search-wrap #search { flex: 1 1 0; width: auto; }
   .search-open .search-close { display: inline-flex; flex: none; margin-right: -.4rem; }
-  .search-open .search-sug { position: fixed; left: 16px; right: 16px; width: auto; top: calc(var(--top-h) + 4px); }
 }
 /* phones: Customise shows only its brush, so the button is square like the others */
 @media (max-width: 560px) { #customizeBtn::part(base) { width: var(--_h, 2rem); padding: 0; } #customizeBtn::part(label) { display: none; } }
@@ -461,19 +427,41 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
 .bld-ic { position: relative; isolation: isolate; display: inline-grid; place-items: center; flex: none; width: 1.8rem; height: 1.8rem; color: var(--sav-color-primary); }
 .bld-ic::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-sm); background: color-mix(in oklab, var(--sav-color-primary) 14%, transparent); transform: rotate(calc(-8deg * var(--lean))); }
 .bld-ic svg, .bld-ic sav-icon { width: 1.05rem; height: 1.05rem; }
-.bld-main { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr; gap: 1rem; min-width: 0; align-self: stretch; } /* the preview fills the height of the side columns */
+.bld-main { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto; gap: 1rem; min-width: 0; align-self: stretch; } /* the preview fills the height of the side columns, the event log under it */
+/* event log: what the component fired while you used it, newest first */
+.bld-log { padding: .7rem 1rem; --layer-tilt: .3deg; min-width: 0; }
+.bld-log-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.bld-log-t { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem .5rem; min-width: 0; }
+.bld-log-t sav-icon { color: var(--sav-color-primary); }
+.bld-log-list { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: 2px; max-height: 11rem; overflow: auto; font-size: .85rem; }
+.bld-log-list:empty { display: none; }
+.bld-log-list li { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: baseline; gap: .6rem; padding: .3rem .5rem; border-radius: var(--sav-radius-sm); background: var(--sav-color-surface-2); animation: bld-ev .35s var(--sav-easing); }
+.bld-log-list li:first-child { background: color-mix(in oklab, var(--sav-color-primary) 12%, var(--sav-color-surface-2)); }
+.bld-log-list .ev { font-weight: 700; }
+.bld-log-list .from, .bld-log-list .when { color: var(--sav-color-text-muted); font-size: .8rem; white-space: nowrap; }
+.bld-log-list .data { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sav-color-text-muted); background: none; padding: 0; }
+@keyframes bld-ev { from { opacity: 0; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .bld-log-list li { animation: none; } }
+@media (max-width: 560px) { .bld-log-list li { grid-template-columns: auto minmax(0, 1fr); } .bld-log-list .from, .bld-log-list .when { display: none; } }
+.bld-about { margin: 0 0 .5rem; }
+/* code-like fields (HTML inside, data) in a monospaced font */
+sav-textarea.mono { font-family: var(--sav-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); --sav-font-size-md: .82rem; }
 .bld-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; flex: 1 1 auto; }
 .bld-bar sav-select { width: 8.5rem; }
 .bld-sp { flex: 1; }
-.bld-stage { display: grid; place-items: stretch center; min-height: 20rem; padding: 1.25rem; border: 1px dashed var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface-2); overflow: auto; }
+.bld-stage { display: grid; place-items: start center; min-height: 20rem; padding: 1.25rem 1.25rem 1.75rem; border: 1px dashed var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface-2); overflow: auto; }
 .bld-stage.bg-dots { background-color: var(--sav-color-surface-2); background-image: radial-gradient(color-mix(in oklab, var(--sav-color-text) 18%, transparent) 1px, transparent 1.4px); background-size: 14px 14px; }
 .bld-frame { width: 100%; min-height: 17rem; display: grid; place-items: center; padding: 2rem 1.5rem; background: var(--sav-color-bg); color: var(--sav-color-text); border: 1px solid var(--sav-color-border); border-radius: var(--sav-radius);
   box-shadow: var(--sav-shadow-sm); transition: max-width .3s var(--sav-easing); font-family: var(--sav-font-family, inherit); }
 .bg-surface .bld-frame { background: var(--sav-color-surface); }
 .bg-dots .bld-frame { background: transparent; border-style: dashed; box-shadow: none; }
 .bld-frame.bg-colour { background: radial-gradient(circle at 15% 20%, #ff9a8b 0, transparent 45%), radial-gradient(circle at 85% 30%, #8ec5ff 0, transparent 45%), radial-gradient(circle at 50% 90%, #b8f2c9 0, transparent 50%), var(--sav-color-bg); }
-.dev-tablet .bld-frame { max-width: 768px; }
-.dev-phone .bld-frame { max-width: 375px; padding: 1.5rem 1rem; border-radius: calc(var(--sav-radius) + 14px); border-width: 6px; }
+/* devices: the frame has the real width of the device (set by builder.js) and is scaled down to fit the room, never up */
+.bld-stage { position: relative; }
+.bld-fit { position: relative; margin-inline: auto; }
+.bld-fit > .bld-frame { position: absolute; top: 0; left: 0; transform: scale(var(--k, 1)); transform-origin: top left; }
+.bld-zoom { position: absolute; right: .6rem; bottom: .35rem; font-size: .72rem; pointer-events: none; }
+.dev-phone .bld-frame { padding: 1.5rem 1rem; border-radius: calc(var(--sav-radius) + 14px); border-width: 6px; }
 .bld-preview { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: center; width: 100%; }
 /* most components take the whole width of the preview; small ones keep their own size; fields stay at a readable width */
 .bld-preview > * { flex: 1 1 100%; min-width: 0; max-width: 100%; }
@@ -495,16 +483,11 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
 .bld-sw { display: inline-block; width: .95rem; height: .95rem; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .15); vertical-align: middle; }
 .sav-style-tilt .bld-sw, .sav-style-sharp .bld-sw { border-radius: 0; transform: rotate(calc(-10deg * var(--lean))); }
 .bld-shapes svg { width: 1rem; height: 1rem; display: inline-block; vertical-align: -.15em; margin-right: .25rem; }
-.bld-color, .bld-tok { display: flex; align-items: center; gap: .5rem; }
+.bld-tok { display: flex; align-items: flex-end; gap: .4rem; }
 .bld-tok sav-range { flex: 1; }
-.bld-color label { flex: 1; display: flex; align-items: center; gap: .6rem; cursor: pointer; }
-.bld-color input { flex: none; width: 2rem; height: 2rem; padding: 0; border: 0; background: none; cursor: pointer; opacity: .4; transition: opacity var(--sav-duration); }
-.bld-color.on input { opacity: 1; }
 .bld-tok:not(.on) sav-range { opacity: .65; }
-.bld-x { display: inline-grid; place-items: center; flex: none; width: 1.7rem; height: 1.7rem; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; visibility: hidden; }
-.bld-x svg { width: .95rem; height: .95rem; }
-.bld-x:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
-:is(.bld-color, .bld-tok).on .bld-x { visibility: visible; }
+.bld-x { flex: none; visibility: hidden; }
+.bld-tok.on .bld-x { visibility: visible; }
 @media (max-width: 1380px) { .bld-cols { grid-template-columns: minmax(0, 1fr) 20rem; } }
 /* narrower: a slimmer options column, then (phones) the options go under the preview */
 @media (max-width: 1180px) {
@@ -515,7 +498,7 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
   .bld-panel { position: relative; top: auto; max-height: none; }
   .bld-scroll { overflow: visible; }
   .bld-hide-sm { display: none; }
-  .bld-stage { padding: .75rem; }
+  .bld-stage { padding: .75rem .75rem 1.6rem; }
   .bld-top { padding: .7rem .75rem; }
   .bld-choose { flex-basis: 100%; }
   .bld-pick-select { max-width: none; }

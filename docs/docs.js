@@ -247,7 +247,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   }
 
   function pageComponent(d) {
-    const table = (title, head, rows) => !rows?.length ? '' : `<h2>${title}</h2><div class="tbl"><table><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, i) => `<td>${i === 0 ? `<code>${esc(c)}</code>` : c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const table = (title, head, rows) => !rows?.length ? '' : `<h2>${title}</h2><sav-table hover><table><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, i) => `<td>${i === 0 ? `<code>${esc(c)}</code>` : c}</td>`).join('')}</tr>`).join('')}</tbody></table></sav-table>`;
     const idx = DOCS.indexOf(d), prev = DOCS[idx - 1], next = DOCS[idx + 1];
     return `<div class="doc-head"><sav-label class="eyebrow">${d.group}</sav-label><div class="title-row"><h1>${d.name}</h1><span class="fav-slot" data-fav="${d.id}"></span></div><p class="tagline"><code>${esc(d.tag)}</code></p>${d.builtFrom ? `<p class="built muted small">Built from ${d.builtFrom.map((b) => { const x = DOCS.find((y) => y.id === b); return x ? `<a href="#${b}">${x.name}</a>` : b; }).join(', ')}.</p>` : ''}<p class="lead">${d.desc}</p></div>
       ${d.demos.map((x) => `<h2 id="s-${slug(x.title)}">${x.title}</h2><div class="demo layered"><div class="demo-view">${x.html}</div>${codeBlock(x.html)}</div>`).join('')}
@@ -359,26 +359,90 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   /* ------------------------------------------------------------ playground: one component, your settings */
 
   /** Knobs read from the attribute table: "boolean" rows become switches, "a · b · c" rows become selects. */
+  /* ------------------------------------------------------------ the options of a component (playground and builder) */
+
+  /** Friendlier names than the attribute itself (the attribute stays in the tip and in the code). */
+  const KNOB_LABELS = {
+    'icon-end': 'Icon after the text', noicon: 'No icon', 'no-icon': 'No icon', 'sheet-on-mobile': 'Sheet on phones', 'native-on-mobile': 'Native on phones', native: 'Native control',
+    'show-value': 'Show the value', 'max-chips': 'Chips shown at most', 'min-chars': 'Letters before suggesting or searching', 'max-terms': 'Most terms', 'max-label': 'Text when full', separators: 'Keys that add a term', 'search-keys': 'Keys that search', live: 'Search while typing', 'empty-label': 'Text when nothing is found', 'no-filter': 'Do not filter',
+    'per-view': 'Slides at once', 'no-arrows': 'No arrows', 'touch-arrows': 'Arrows on touch screens', 'no-hint': 'No swipe hint', 'no-dots': 'No dots', 'no-swipe': 'No swipe', 'no-keyboard': 'No arrow keys',
+    'native-controls': 'Browser controls', 'no-header': 'No header', 'no-close': 'No close button', 'stay-open': 'Stays open after a choice', 'mobile-only': 'Only on phones',
+    'max-items': 'Items before folding', 'no-legend': 'No legend', 'show-values': 'Show the values', 'no-fill': 'No fill', 'week-start': 'Week starts on', 'no-meter': 'No strength bar',
+    'min-strength': 'Minimum strength', 'min-length': 'Minimum length', 'min-uppercase': 'Capital letters at least', 'min-lowercase': 'Small letters at least', 'min-digits': 'Digits at least',
+    'min-symbols': 'Symbols at least', 'native-names': 'Names in their own language', 'no-flag': 'No flag', 'no-code': 'No code', 'no-auto': 'No “Auto” choice', 'icons-only': 'Only icons',
+    'apply': 'Switch the page', 'zoom-src': 'Bigger picture for the zoom', 'desktop-alt': 'Desktop picture text', 'mobile-alt': 'Phone picture text', 'no-line-numbers': 'No line numbers',
+    'no-copy': 'No copy button', 'max-size': 'Largest file', 'first-day': 'First day of the week', 'hour-cycle': 'Clock', 'seen-key': 'Hide once seen (key)', 'search-collapse': 'Search as a button',
+    'menu-button': 'Menu button side', 'collapse-button': 'Fold button', 'collapse-label': 'Fold button text', 'expand-label': 'Unfold button text', 'icon-placement': 'Icon position',
+    'min-gap': 'Smallest gap', 'copy-label': 'Text before copying', 'success-label': 'Text after copying', 'error-label': 'Text if copying fails', 'password-toggle': 'Show-password button',
+    'auto-text': 'Readable text (black or white)', 'interactive': 'Clickable', 'antarctica': 'Show Antarctica', 'href': 'Link (href)', 'target': 'Open link in', 'alt': 'Picture text (alt)', 'src': 'Picture or file (src)', 'srcset': 'Picture sizes (srcset)',
+    'help': 'Help text', 'eyebrow': 'Small text above', 'subtitle': 'Text below', 'separator': 'Separator', 'variant': 'Colour',
+  };
+  const knobLabel = (n) => KNOB_LABELS[n] || titleCase(n);
+  /** Options that most people never touch: they go in "Advanced" in the builder. */
+  const ADVANCED = new Set(['name', 'locale', 'sheet-on-mobile', 'native-on-mobile', 'native', 'href', 'target', 'no-keyboard', 'eager', 'srcset', 'sizes', 'zoom-src', 'debounce',
+    'seen-key', 'touch-arrows', 'no-hint', 'first-day', 'hour-cycle', 'week-start', 'breakpoint', 'max-chips', 'data-description', 'required', 'readonly', 'antarctica', 'levels']);
+  /** The order fields appear in (lower first); the rest keep the order of the attribute table. */
+  const KNOB_ORDER = ['label', 'heading', 'eyebrow', 'subtitle', 'content', 'placeholder', 'help', 'value', 'start', 'end', 'min', 'max', 'step', 'unit', 'prefix', 'src', 'poster', 'alt', 'caption', 'icon', 'icon-end',
+    'variant', 'appearance', 'size', 'type', 'orientation', 'placement', 'align', 'shape'];
+  const orderOf = (n) => { const i = KNOB_ORDER.indexOf(n); return i < 0 ? KNOB_ORDER.length : i; };
+  // words that describe a kind of value, not a choice: "tag · list", "number · date", "string · list" are free fields
+  const NOT_CHOICES = /^(string|number|list|url|json|length|bytes|ms|alpha-2)$/;
+
+  /** a data field (JSON): true when it reads well (or is empty); otherwise it says what is wrong under the field */
+  function jsonOk(el, v) {
+    let ok = true; if (v) try { JSON.parse(v); } catch { ok = false; }
+    const msg = 'Not valid JSON yet: check the brackets, the "quotes" and the commas.';
+    el.setCustomValidity?.(ok ? '' : msg); // the field keeps itself red while this is set
+    el.toggleAttribute('data-user-invalid', !ok);
+    ok ? el.removeAttribute('help') : el.setAttribute('help', msg);
+    return ok;
+  }
+
   function knobsFor(d, keep = []) {
     const skip = new Set(['href', 'target', 'download', 'type', 'name', 'value', 'id', 'from', 'for', ...(d.play?.skip || [])].filter((n) => !keep.includes(n)));
+    const main = d.play?.tag || (String(d.tag).match(/sav-[a-z-]+/) || [''])[0];
     const knobs = [];
-    for (const [names, values] of d.attrs || []) {
+    for (const [names, values, desc] of d.attrs || []) {
       if (/[[(<]|^--|^Sav\./.test(names) || /CSS|option|On sav-/i.test(values) || /On sav-/.test(names)) continue;
-      const list = names.split(' · ').map((n) => n.trim()).filter((n) => /^[a-z][a-z-]*$/.test(n) && !skip.has(n));
+      // a row about the elements inside (an item, an option, a slide…) is not an option of this one
+      const about = plain(desc || '');
+      const owner = about.match(/^(sav-[a-z-]+):/);
+      if (/^On (sav-|an? |each )/i.test(about) || (owner && owner[1] !== main)) continue;
+      const list = names.split(' · ').map((n) => n.trim()).filter((n) => /^[a-z][a-z-]*$/.test(n) && !skip.has(n) && !knobs.some((k) => k.name === n));
       if (!list.length) continue;
+      const opts = values.split(' · ').map((v) => v.trim());
       if (values === 'boolean') list.forEach((n) => knobs.push({ name: n, type: 'bool' }));
-      else if (list.length === 1 && list[0] === 'variant') knobs.push({ name: 'variant', type: 'enum', options: ['primary', 'neutral', 'success', 'warning', 'danger'] });
-      else if (/ · /.test(values) && !/…/.test(values) && list.length === 1) knobs.push({ name: list[0], type: 'enum', options: values.split(' · ').map((v) => v.trim()).filter((v) => /^[a-z0-9-]+$/.test(v)) });
-      else if (/string|number|ms|url|icon name/.test(values)) list.forEach((n) => knobs.push({ name: n, type: 'text' }));
+      else if (list.length === 1 && list[0] === 'variant') knobs.push({ name: 'variant', type: 'enum', options: ['primary', 'neutral', 'success', 'warning', 'danger', ...(/protected/.test(values) ? ['protected'] : [])] });
+      // a list of choices ("start · end"); a trailing "…" means more are allowed, the listed ones become the choices
+      else if (/ · /.test(values) && list.length === 1 && opts.filter((o) => o !== '…').every((o) => /^[a-z0-9-]+$/.test(o) && (list[0] === 'type' || !NOT_CHOICES.test(o)))) knobs.push({ name: list[0], type: 'enum', options: opts.filter((o) => o !== '…') });
+      else if (/JSON/.test(values)) list.forEach((n) => knobs.push({ name: n, type: 'text', kind: 'json' }));
+      else if (/^(ms|bytes)$/.test(values)) list.forEach((n) => knobs.push({ name: n, type: 'text', kind: 'number', unit: values }));
+      else if (/string|number|ms|url|icon name|length|date|tag|alpha|list|\d:\d/.test(values)) list.forEach((n) => knobs.push({ name: n, type: 'text' }));
     }
-    const descs = new Map((d.attrs || []).map((r) => [r[0], plain(r[2])]));
-    for (const k of knobs) { const row = (d.attrs || []).find((r) => r[0].split(' · ').map((x) => x.trim()).includes(k.name)); k.desc = row ? plain(row[2]) || plain(row[1]) : ''; k.values = row ? row[1] : ''; }
+    for (const k of knobs) {
+      const row = (d.attrs || []).find((r) => r[0].split(' · ').map((x) => x.trim()).includes(k.name));
+      k.desc = row ? plain(row[2]) || plain(row[1]) : ''; k.values = row ? row[1] : '';
+      k.label = knobLabel(k.name);
+      k.advanced = ADVANCED.has(k.name);
+      if (k.type === 'text' && !k.kind) {
+        if (/icon name/.test(k.values)) k.kind = 'icon';
+        else if (/^number$/.test(k.values.trim())) k.kind = 'number';
+      }
+      if (k.kind === 'number' || k.unit) {
+        // only min, max and value of number fields, ranges and charts can be negative; counts start at 1, the rest at 0
+        const signed = /^(min|max|value)$/.test(k.name) && /^(number-input|range|range-dual|chart-bar|chart-radar|chart-line)$/.test(d.id);
+        if (!signed) k.min = /^(max-terms|max-chips|length|columns|per-view|max-items|page|pages|page-size|current|levels|rows|level|max)$/.test(k.name) ? 1 : 0;
+        if (k.name === 'level') k.max = 6; if (k.name === 'first-day') k.max = 6;
+      }
+      if (k.unit) k.label += ` (${k.unit})`;
+    }
     const own = knobs.find((k) => k.name === 'shape'); // the avatar has its own shapes: merge them
     if (own) own.options = [...new Set([...own.options, 'tilt', 'squared', 'rounded'])];
-    else knobs.push({ name: 'shape', type: 'enum', options: ['tilt', 'squared', 'rounded'] });
+    else knobs.push({ name: 'shape', type: 'enum', options: ['tilt', 'squared', 'rounded'], label: 'Shape' });
     const shape = knobs.find((k) => k.name === 'shape');
     shape.desc = (shape.desc ? shape.desc + ' ' : '') + 'Tilt leans the background (the text stays upright), Squared has no rounded corners, Rounded has softer ones. It changes this component only, whatever the style of the page.';
-    return knobs;
+    // stable order: content first, then the look; within the same rank, the order of the table
+    return knobs.map((k, i) => [k, i]).sort((a, b) => orderOf(a[0].name) - orderOf(b[0].name) || a[1] - b[1]).map(([k]) => k);
   }
 
   /* ------------------------------------------------------------ icons: search among all of them */
@@ -468,17 +532,21 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     const lbl = (name, text) => `<span slot="label" class="knob-l">${esc(name)}${tip(text)}</span>`;
     const field = (k) => {
       const v = playState.attrs[k.name];
-      if (k.type === 'bool') return `<sav-switch size="sm" data-k="${k.name}" ${v ? 'checked' : ''}>${esc(titleCase(k.name))}${tip(k.desc)}</sav-switch>`;
-      if (k.type === 'enum') return `<sav-select size="sm" data-k="${k.name}" value="${esc(v || '')}" sheet-on-mobile aria-label="${esc(titleCase(k.name))}" placeholder="Default">${lbl(titleCase(k.name), k.desc)}<option value="">Default</option>${k.options.map((o) => `<option value="${o}">${titleCase(o)}</option>`).join('')}</sav-select>`;
+      const L = k.label || titleCase(k.name);
+      if (k.type === 'bool') return `<sav-switch size="sm" data-k="${k.name}" ${v ? 'checked' : ''}>${esc(L)}${tip(k.desc)}</sav-switch>`;
+      if (k.type === 'enum') return `<sav-select size="sm" data-k="${k.name}" value="${esc(v || '')}" sheet-on-mobile aria-label="${esc(L)}" placeholder="Default">${lbl(L, k.desc)}<option value="">Default</option>${k.options.map((o) => `<option value="${o}">${titleCase(o)}</option>`).join('')}</sav-select>`;
       // icons: a search among the whole icon set (drawing, name, words); the chosen icon shows next to the label
-      if (/icon name/.test(k.values || '')) return `<sav-search size="sm" data-k="${k.name}" data-icons no-filter max="12" value="${esc(v || '')}" placeholder="Search icons: star, heart, bell…">`
-        + `<span slot="label" class="knob-l">${esc(titleCase(k.name))}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${v ? '' : 'hidden'}></sav-icon></span></sav-search>`;
-      return `<sav-input size="sm" data-k="${k.name}" value="${esc(v || '')}">${lbl(titleCase(k.name), k.desc)}</sav-input>`;
+      if (k.kind === 'icon') return `<sav-search size="sm" data-k="${k.name}" data-icons no-filter max="12" value="${esc(v || '')}" placeholder="Search icons: star, heart, bell…">`
+        + `<span slot="label" class="knob-l">${esc(L)}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${v ? '' : 'hidden'}></sav-icon></span></sav-search>`;
+      if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-k="${k.name}"${k.min !== undefined ? ` min="${k.min}"` : ''}${k.max !== undefined ? ` max="${k.max}"` : ''} value="${esc(v || '')}" placeholder="Default">${lbl(L, k.desc)}</sav-number-input>`;
+      if (k.kind === 'json') return `<sav-textarea size="sm" rows="4" class="mono" data-k="${k.name}" value="${esc(v || '')}">${lbl(L, k.desc)}</sav-textarea>`;
+      return `<sav-input size="sm" data-k="${k.name}" value="${esc(v || '')}">${lbl(L, k.desc)}</sav-input>`;
     };
     box.innerHTML = (d.play.tags ? `<sav-radio-group appearance="buttons" size="sm" data-tag value="${playState.tag || d.play.tag}">${lbl('Component', 'Which version of the component to show.')}${d.play.tags.map((t) => `<sav-radio value="${t.tag}">${t.label}</sav-radio>`).join('')}</sav-radio-group>` : '')
       + (d.play.text !== undefined ? `<sav-input size="sm" data-text value="${esc(playState.text || '')}">${lbl('Text', 'What is written inside the component.')}</sav-input>` : '')
       + knobs.filter((k) => k.type !== 'bool').map(field).join('')
-      + `<div class="play-color ${playState.tokens['--sav-color-primary'] ? 'on' : ''}"><sav-switch size="sm" data-token-on="--sav-color-primary" ${playState.tokens['--sav-color-primary'] ? 'checked' : ''}><span class="knob-l">Custom colour${tip('Gives this component its own main colour (the --sav-color-primary token) instead of the theme one. Pick the colour in the square: the switch turns on by itself; turn it off to go back to the theme colour.')}</span></sav-switch><input type="color" data-token="--sav-color-primary" aria-label="Custom colour" value="${playState.tokens['--sav-color-primary'] || '#66cbff'}"></div>`
+      + `<sav-color-picker size="sm" clearable data-token="--sav-color-primary" value="${esc(playState.tokens['--sav-color-primary'] || '')}" placeholder="Theme colour">${lbl('Custom colour', 'Gives this component its own main colour (the --sav-color-primary token) instead of the theme one. Empty: the theme colour.')}</sav-color-picker>`
+      + ((d.attrs || []).some((r) => r[0] === '--text-color') ? `<sav-color-picker size="sm" clearable data-token="--text-color" value="${esc(playState.tokens['--text-color'] || '')}" placeholder="Fits the background">${lbl('Text colour', 'The colour of the text (the --text-color property), whatever the background. Empty: the colour that fits the background.')}</sav-color-picker>` : '')
       + `<div class="play-bools">${knobs.filter((k) => k.type === 'bool').map(field).join('')}</div>`;
     const update = () => {
       const html = playMarkup(d, playState);
@@ -500,16 +568,16 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         let v = el.localName === 'sav-switch' ? el.checked : el.value;
         // an icon field changes the component only with a real icon name (or when emptied): while typing, the last good icon stays
         if (el.hasAttribute('data-icons') && v) { if (!iconNames?.has(String(v).trim())) return; v = String(v).trim(); }
+        // data (JSON) changes the component only once it reads well; until then the field says what is wrong
+        if (el.classList.contains('mono') && !jsonOk(el, v)) return;
+        if (typeof v === 'number') v = String(v);
+        v = clampKnob(el, v);
         playState.attrs[el.dataset.k] = v;
         const ic = el.querySelector(`[data-icon-of="${el.dataset.k}"]`); if (ic) { if (v) ic.setAttribute('name', v); ic.hidden = !v; }
       }
       else if (el.hasAttribute('data-text')) playState.text = el.value;
       else {
-        const name = el.dataset.token || el.dataset.tokenOn;
-        const on = box.querySelector(`[data-token-on="${name}"]`).checked;
-        if (el.dataset.token) box.querySelector(`[data-token-on="${name}"]`).checked = true;
-        playState.tokens[name] = el.dataset.token || on ? box.querySelector(`[data-token="${name}"]`).value : '';
-        box.querySelector('.play-color')?.classList.toggle('on', !!playState.tokens[name]);
+        playState.tokens[el.dataset.token] = el.value || ''; // the colour field: empty means the theme colour
       }
       update();
     }
@@ -521,9 +589,19 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   }
 
   /** Used by account.js */
+  /** a number field with min/max: a value typed outside goes back inside (the field shows it too) */
+  function clampKnob(el, v) {
+    if (el.localName !== 'sav-number-input' || v === '' || v === null || isNaN(Number(v))) return v;
+    const lo = el.getAttribute('min'), hi = el.getAttribute('max'); let n = Number(v);
+    if (lo !== null && n < Number(lo)) n = Number(lo);
+    if (hi !== null && n > Number(hi)) n = Number(hi);
+    if (n !== Number(v)) { el.value = String(n); return String(n); }
+    return v;
+  }
   window.SavDocs = {
+    clampKnob,
     docs: DOCS, icon: ICON, esc, codeBlock, footer: () => footer(), route: () => route(),
-    playMarkup, knobsFor, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
+    playMarkup, knobsFor, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
     themeConfig: () => ({ style: store.get('savc-style', 'tilt'), mode: store.get('savc-mode', 'auto'), tokens: themeTokens(), settings: { ...theme } }),
     applyThemeConfig(cfg) {
       theme = { ...(cfg.settings || {}) };
@@ -675,10 +753,10 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     const body = $('#themerBody');
     const mode = store.get('savc-mode', 'auto');
     body.innerHTML = `
-      <div class="t-sec"><div class="t-lbl">Presets</div><div class="presets">${Object.entries(PRESETS).map(([n, p]) => `<button type="button" class="preset" data-p="${n}"><span class="pv">${COLOR_KEYS.slice(0, 4).map((k) => `<i style="background:${p[k] || defaultColor(k)}"></i>`).join('')}</span>${n}</button>`).join('')}</div></div>
+      <div class="t-sec"><div class="t-lbl">Presets</div><div class="presets">${Object.entries(PRESETS).map(([n, p]) => `<sav-button class="preset" appearance="outline" variant="neutral" size="sm" block data-p="${n}"><span class="pv" slot="prefix" aria-hidden="true">${COLOR_KEYS.slice(0, 4).map((k) => `<i style="background:${p[k] || defaultColor(k)}"></i>`).join('')}</span>${n}</sav-button>`).join('')}</div></div>
       <div class="t-sec"><sav-select id="tStyle" label="Style" size="sm" value="${store.get('savc-style', 'tilt')}" help="${STYLE_INFO[store.get('savc-style', 'tilt')][1]}">${Sav.styles.map((s) => `<option value="${s}">${STYLE_INFO[s][0]}</option>`).join('')}</sav-select></div>
       <div class="t-sec"><sav-radio-group label="Mode" appearance="buttons" size="sm" id="tMode" value="${mode}"><sav-radio value="light">Light</sav-radio><sav-radio value="dark">Dark</sav-radio><sav-radio value="auto">System</sav-radio></sav-radio-group></div>
-      <div class="t-sec"><div class="t-lbl">Colours</div><div class="colors">${COLOR_KEYS.map((k) => `<label class="color"><input type="color" data-k="${k}" value="${theme[k] || defaultColor(k)}"><span>${k[0].toUpperCase() + k.slice(1)}</span><code>${theme[k] || defaultColor(k)}</code></label>`).join('')}</div></div>
+      <div class="t-sec"><div class="t-lbl">Colours</div><div class="colors">${COLOR_KEYS.map((k) => `<sav-color-picker size="sm" data-k="${k}" label="${k[0].toUpperCase() + k.slice(1)}" value="${theme[k] || defaultColor(k)}"></sav-color-picker>`).join('')}</div></div>
       <div class="t-sec"><sav-range id="tRadius" label="Corner radius" min="0" max="20" value="${theme.radius ?? parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sav-radius'))}" show-value unit="px"></sav-range></div>
       <div class="t-sec"><sav-range id="tScale" label="Text size" min="13" max="18" value="${theme.scale ?? 15}" show-value unit="px"></sav-range></div>
       <div class="t-sec"><sav-select id="tFont" label="Font" value="${theme.font || 'system'}" size="sm">${Object.keys(FONTS).map((f) => `<option value="${f}">${f[0].toUpperCase() + f.slice(1)}</option>`).join('')}</sav-select></div>
@@ -693,7 +771,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         <div class="row"><sav-badge variant="success">Success</sav-badge><sav-badge variant="warning">Warning</sav-badge><sav-badge variant="danger">Danger</sav-badge><sav-switch size="sm" checked>On</sav-switch></div>
       </div>`;
     body.querySelectorAll('.preset').forEach((b) => b.addEventListener('click', () => { theme = { ...PRESETS[b.dataset.p] }; applyTheme(); renderThemer(); }));
-    body.querySelectorAll('input[type="color"]').forEach((i) => i.addEventListener('input', () => { theme[i.dataset.k] = i.value; i.nextElementSibling.nextElementSibling.textContent = i.value; applyTheme(); }));
+    body.querySelectorAll('sav-color-picker[data-k]').forEach((i) => i.addEventListener('input', () => { if (!i.value) return; theme[i.dataset.k] = i.value; applyTheme(); }));
     $('#tRadius').addEventListener('input', (e) => { theme.radius = Number(e.currentTarget.value); applyTheme(); });
     $('#tScale').addEventListener('input', (e) => { theme.scale = Number(e.currentTarget.value); applyTheme(); });
     $('#tTilt').addEventListener('change', (e) => { const v = e.currentTarget.value; if (v === 'style') delete theme.tiltMode; else theme.tiltMode = v; applyTheme(); renderThemer(); });
@@ -768,11 +846,12 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   }
 
   let searchOpener = null; // set by initSearch: opens the search on phones
+  /** The header search is the library's sav-search: it asks for suggestions (sav-query), shows them grouped with icons, and says which one was picked (sav-pick). */
   function initSearch() {
-    const input = $('#search'), box = $('#searchSug');
-    if (!input || !box) return;
+    const field = $('#search');
+    if (!field) return;
     const index = searchIndex();
-    let items = [], active = -1, icons = null;
+    let icons = null;
     const score = (e, t) => {
       const l = e.label.toLowerCase();
       if (l === t) return 100;
@@ -782,55 +861,37 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       if ((e.sub + ' ' + (e.words || '')).toLowerCase().includes(t)) return 20;
       return 0;
     };
-    const close = () => { box.hidden = true; input.setAttribute('aria-expanded', 'false'); active = -1; };
-    const go = (it) => { if (!it) return; location.hash = it.href.slice(1); input.value = ''; close(); input.blur(); renderSide(); setSearchOpen(false); };
+    const GROUP = { Component: 'Components', Page: 'Pages', Section: 'Sections', Option: 'Options', Example: 'Examples', Icon: 'Icons' };
+    const suggest = (t) => {
+      const order = ['Component', 'Page', 'Section', 'Option', 'Example'];
+      const found = index.map((e) => [e, score(e, t)]).filter(([, sc]) => sc > 0).sort((a, b) => b[1] - a[1] || order.indexOf(a[0].kind) - order.indexOf(b[0].kind)).slice(0, 9).map(([e]) => e);
+      found.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
+      const ic = icons ? Object.keys(icons).filter((n) => n.includes(t) || icons[n].some((g) => g.includes(t))).sort((a, b) => (b.startsWith(t) - a.startsWith(t)) || a.length - b.length).slice(0, 6)
+        .map((n) => ({ label: n, sub: 'Icon', href: `#icon?q=${n}`, kind: 'Icon', icon: n })) : [];
+      field.suggestions = [...found, ...ic].map((it) => ({ label: it.label, value: it.href, description: it.sub || '', icon: it.icon || 'search', group: GROUP[it.kind] || it.kind }));
+    };
     // phones: the search button opens the field over the whole header, the X closes it (and clears it)
     const openBtn = $('#searchOpen'), closeBtn = $('#searchClose');
     function setSearchOpen(open) {
       if (!openBtn || document.body.classList.contains('search-open') === open) return;
       document.body.classList.toggle('search-open', open); openBtn.setAttribute('aria-expanded', String(open));
-      if (open) input.focus();
-      else { if (input.value) { input.value = ''; renderSide(); } close(); if (getComputedStyle(openBtn).display !== 'none') openBtn.focus({ preventScroll: true }); }
+      if (open) requestAnimationFrame(() => field.focus());
+      else { if (field.value) { field.value = ''; renderSide(); } field.close?.(); if (getComputedStyle(openBtn).display !== 'none') openBtn.focus({ preventScroll: true }); }
     }
     searchOpener = () => setSearchOpen(true);
     openBtn?.addEventListener('click', () => setSearchOpen(true));
     closeBtn?.addEventListener('click', () => setSearchOpen(false));
     matchMedia('(max-width: 640px)').addEventListener('change', (m) => { if (!m.matches) setSearchOpen(false); });
-    const paint = () => {
-      box.innerHTML = items.length ? items.map((it, i) => `${i === 0 || items[i - 1].kind !== it.kind ? `<div class="sug-h">${it.kind === 'Icon' ? 'Icons' : it.kind + 's'}</div>` : ''}
-        <a href="${it.href}" class="sug${i === active ? ' on' : ''}" role="option" id="sug-${i}" data-i="${i}"><sav-icon name="${esc(it.icon || 'search')}"></sav-icon><span><b>${esc(it.label)}</b><small>${esc(it.sub || '')}</small></span></a>`).join('')
-        : `<div class="sug-empty">Nothing found for “${esc(input.value.trim())}”.</div>`;
-      box.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-      input.setAttribute('aria-activedescendant', active >= 0 ? `sug-${active}` : '');
-    };
-    const update = async () => {
-      const t = input.value.trim().toLowerCase();
-      renderSide(input.value);
-      if (!t) { close(); return; }
-      const order = ['Component', 'Page', 'Section', 'Option', 'Example'];
-      const found = index.map((e) => [e, score(e, t)]).filter(([, sc]) => sc > 0).sort((a, b) => b[1] - a[1] || order.indexOf(a[0].kind) - order.indexOf(b[0].kind)).slice(0, 9).map(([e]) => e);
-      found.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
-      icons ||= await loadIconIndex();
-      const ic = Object.keys(icons).filter((n) => n.includes(t) || icons[n].some((g) => g.includes(t))).sort((a, b) => (b.startsWith(t) - a.startsWith(t)) || a.length - b.length).slice(0, 6)
-        .map((n) => ({ label: n, sub: 'Icon · <sav-icon name="' + n + '">', href: `#icon?q=${n}`, kind: 'Icon', icon: n }));
-      if (input.value.trim().toLowerCase() !== t) return; // a newer search is running
-      items = [...found, ...ic];
-      active = items.length ? 0 : -1;
-      paint();
-    };
-    input.setAttribute('role', 'combobox'); input.setAttribute('aria-controls', 'searchSug'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-expanded', 'false');
-    let tm;
-    input.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(update, 90); });
-    input.addEventListener('focus', () => { if (input.value.trim()) update(); });
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { if (!items.length) return; e.preventDefault(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; paint(); box.querySelector('.sug.on')?.scrollIntoView({ block: 'nearest' }); }
-      else if (e.key === 'Enter') { e.preventDefault(); go(items[active] || items[0]); }
-      else if (e.key === 'Escape') { input.value = ''; close(); renderSide(); input.blur(); setSearchOpen(false); }
+    field.addEventListener('focusin', () => { if (!icons) loadIconIndex().then((all) => { icons = all; const t = field.value.trim().toLowerCase(); if (t) suggest(t); }); });
+    field.addEventListener('sav-query', (e) => suggest(String(e.detail.query || '').trim().toLowerCase()));
+    field.addEventListener('input', () => renderSide(field.value)); // the side menu filters as you type
+    field.addEventListener('sav-pick', (e) => {
+      e.preventDefault(); // the field does not keep the text: the page opens
+      const href = String(e.detail.value || '');
+      field.value = ''; field.close?.(); renderSide(); setSearchOpen(false);
+      if (href.startsWith('#')) location.hash = href.slice(1); else if (href) location.href = href;
     });
-    box.addEventListener('mousedown', (e) => e.preventDefault()); // keep the focus in the field
-    box.addEventListener('click', (e) => { const a = e.target.closest('.sug'); if (a) { e.preventDefault(); go(items[a.dataset.i]); } });
-    input.addEventListener('blur', () => setTimeout(close, 120));
+    field.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !field.isOpen) { field.value = ''; renderSide(); field.blur(); setSearchOpen(false); } });
   }
 
   /* ------------------------------------------------------------ boot */
@@ -841,7 +902,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   menuBtn.addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
   side.addEventListener('click', (e) => { if (e.target.closest('a')) setNav(false); });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('nav-open')) { setNav(false); menuBtn.focus(); } });
-  document.addEventListener('click', (e) => { if (document.body.classList.contains('nav-open') && !e.target.closest('#side, #menuBtn')) setNav(false); });
+  document.addEventListener('click', (e) => { if (document.body.classList.contains('nav-open') && !e.composedPath().some((n) => n.id === 'side' || n.id === 'menuBtn')) setNav(false); });
 
   // every other start-up step runs on its own: one failing does not stop the next ones
   const safely = (name, fn) => { try { fn(); } catch (err) { console.error(`[SavComponents docs] ${name} failed:`, err); } };
@@ -871,6 +932,6 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   safely('search', initSearch);
   safely('version picker', initVersionPicker);
   addEventListener('keydown', (e) => {
-    if (e.key === '/' && !e.target.closest('input, textarea, [contenteditable], sav-input, sav-textarea')) { e.preventDefault(); if (searchOpener && getComputedStyle($('#searchOpen')).display !== 'none') searchOpener(); else $('#search').focus(); }
+    if (e.key === '/' && !e.composedPath().some((n) => n.matches?.('input, textarea, [contenteditable], sav-input, sav-textarea, sav-search'))) { e.preventDefault(); if (searchOpener && getComputedStyle($('#searchOpen')).display !== 'none') searchOpener(); else $('#search').focus(); }
   });
 })();

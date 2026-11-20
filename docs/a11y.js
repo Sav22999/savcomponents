@@ -58,7 +58,7 @@
     alert: ['alert'], toast: ['alert', 'solid'], badge: ['solid', 'soft', 'outline'], tag: ['soft', 'solid'],
     spinner: ['spinner'], progress: ['track', 'pageText'], skeleton: [], input: ['field', 'focus'], textarea: ['field', 'focus'],
     select: ['field', 'text', 'focus'], 'date-picker': ['field', 'text', 'focus'], 'time-picker': ['field', 'text', 'focus'],
-    checkbox: ['control', 'switchTrack', 'focus'], radio: ['control', 'focus'], range: ['track', 'focus'], 'range-dual': ['track', 'focus'], 'number-input': ['field', 'soft', 'focus'], rating: ['rating', 'focus'],
+    checkbox: ['control', 'switchTrack', 'focus'], radio: ['control', 'focus'], range: ['track', 'focus'], 'range-dual': ['track', 'focus'], 'color-picker': ['field', 'focus'], pagination: ['text', 'focus'], steps: ['text', 'focus'], tree: ['text', 'focus'], 'infinite-scroll': ['text'], stat: ['text', 'pageText'], timeline: ['text'], kbd: ['text'], 'relative-time': ['pageText'], 'empty-state': ['pageText'], popover: ['text', 'focus'], command: ['text', 'focus'], 'number-input': ['field', 'soft', 'focus'], rating: ['rating', 'focus'],
     card: ['text'], avatar: ['avatar'], divider: ['pageText'], container: ['text', 'surface2'], icon: [], code: ['code'],
     dialog: ['text'], drawer: ['text'], dropdown: ['text', 'focus'], 'info-tip': ['text', 'pageText'], tooltip: ['tooltip'],
     tabs: ['tabs', 'focus'], accordion: ['text', 'focus'], breadcrumb: ['pageText'],
@@ -73,7 +73,7 @@
   const KEY = '2.1.1 Keyboard', FOCUS = '2.4.7 Focus visible', NAME = '4.1.2 Name, role, value', MOTION = '2.3.3 Animation';
   const LABEL = '3.3.2 Labels', TARGET = '2.5.8 Target size', ALT = '1.1.1 Text alternatives', STATUS = '4.1.3 Status messages';
   const NOTES = {
-    button: [[KEY, 'ok', 'A real button (or link with href): Enter and Space work.'], [FOCUS, 'ok', 'Focus ring shown on keyboard focus.'],
+    button: [[KEY, 'ok', 'A real button (or link with href): Enter and Space work.'], ['1.4.3 Contrast (minimum)', 'ok', 'With auto-text the text turns black or white, whichever reaches 4.5:1 on the colour behind it (also Badge, Tag, Label, Chip, New label, Alert, Avatar, Tooltip, Tabs, Pagination, Steps, Menu, Breadcrumb, Tree and the pickers).'], [FOCUS, 'ok', 'Focus ring shown on keyboard focus.'],
       [NAME, 'ok', 'Name from its text; loading sets aria-busy, disabled sets aria-disabled.'], [ALT, 'you', 'An icon-only button needs a label (label attribute or aria-label).'], [TARGET, 'ok', 'At least 32px high (size sm).']],
     'button-group': [[NAME, 'ok', 'role="group"; give it a label when the group has a meaning.'], [KEY, 'ok', 'Each button stays a normal button.']],
     'copy-button': [[NAME, 'ok', 'Labelled "Copy" (copy-label); the result is announced ("Copied") in a live region.'], [STATUS, 'ok', 'Success or failure announced politely.'], [MOTION, 'ok', 'The stamp animation is off with reduced motion.']],
@@ -96,6 +96,18 @@
     'range-dual': [[KEY, 'ok', 'Two native sliders: Tab goes from the start handle to the end one; arrows, Home, End, PageUp and PageDown move the focused one, never past the other.'],
       [NAME, 'ok', 'A group named by its label; each handle has its own name (start-label, end-label) and says its value with the unit or as a date (aria-valuetext).'],
       ['2.5.7 Dragging movements', 'ok', 'A tap on the track moves the nearest handle there, and the keys work too: dragging is never the only way.']],
+    pagination: [[NAME, 'ok', 'A navigation named “Pages”; every number says “Page 6”, the current one has aria-current="page"; previous and next are named.'], [KEY, 'ok', 'Real buttons or links: Tab and Enter.']],
+    steps: [[NAME, 'ok', 'An ordered list; each step says its state to screen readers (done, current step, not done yet, error) and the current one has aria-current="step".'], [KEY, 'ok', 'With clickable, the done steps are buttons.'], ['1.4.1 Use of colour', 'ok', 'Done steps have a tick, errors a cross: not only the colour.']],
+    tree: [[NAME, 'ok', 'role tree with treeitems: aria-level, aria-expanded on items with children, aria-selected on the chosen one.'], [KEY, 'ok', 'One Tab stop; arrows move, → opens or goes in, ← closes or goes up, Home and End, Enter or Space chooses.']],
+    'infinite-scroll': [[NAME, 'ok', 'role feed, aria-busy while loading; how many items arrived is announced.'], [KEY, 'ok', 'mode="button" for pages where the footer must stay reachable; “Try again” is a button.'], ['2.2.2 Pause, stop, hide', 'ok', 'Nothing moves by itself: loading starts only when you scroll near the end or press the button.']],
+    stat: [[NAME, 'ok', 'Read as one group: “Monthly revenue: € 48,200, better by +12.4%”.'], ['1.4.1 Use of colour', 'ok', 'The change also has an arrow and its sign; the trend line is decoration.']],
+    timeline: [[NAME, 'ok', 'An ordered list (named with label); times can carry a machine date (datetime).'], ['1.4.1 Use of colour', 'ok', 'The colour of a dot repeats what the heading says.']],
+    kbd: [[NAME, 'ok', 'Read as the keys: “Control + K” (Command on a Mac), not as symbols.']],
+    'relative-time': [[NAME, 'ok', 'A time element with the machine date; the full date is in the tooltip.'], ['2.2.1 Timing', 'ok', 'The text updates quietly (not announced) every 30 seconds.']],
+    'empty-state': [[NAME, 'ok', 'The heading is a heading (level 3, or level=…); the drawing is hidden from screen readers.']],
+    popover: [[NAME, 'ok', 'A dialog named by its heading (or label); the trigger has aria-haspopup and aria-expanded.'], [KEY, 'ok', 'Enter on the trigger opens it and moves the focus inside; Esc closes it and gives the focus back.']],
+    command: [[NAME, 'ok', 'A modal dialog with a combobox and a listbox; the highlighted command is aria-activedescendant.'], [KEY, 'ok', 'Opens with the shortcut; ↑ ↓ move, Enter runs, Esc closes and gives the focus back.']],
+    'color-picker': [[NAME, 'ok', 'The hex field carries the label; with compact the swatch (the system colour picker) is the labelled control. Suggested colours are buttons named by their code, the chosen one has aria-pressed.'], [KEY, 'ok', 'Type a code in the field; Tab reaches the suggested colours; the system picker opens from the swatch.'], ['1.4.1 Use of colour', 'ok', 'Every colour also has its code written (field, names of the suggestions).']],
     'number-input': [[KEY, 'ok', 'A native number field (role spinbutton): arrows step, PageUp and PageDown step ten times. The − and + buttons are extra and skipped by Tab.'],
       [NAME, 'ok', 'The buttons are labelled "Decrease" and "Increase" (decrease-label, increase-label) and are disabled at the minimum and maximum.'], [LABEL, 'ok', 'Real <label>; help linked with aria-describedby.'],
       [TARGET, 'partial', 'The buttons are about 30px at the default size but about 22px at size sm: leave space around a small field.']],
@@ -116,7 +128,7 @@
     accordion: [[KEY, 'ok', 'Each header is a button with aria-expanded; the content is a region.'], [MOTION, 'partial', 'The open/close animation is not removed by reduced motion.']],
     otp: [[LABEL, 'ok', 'The group is named by its label; every box says "Character 2 of 6".'], [KEY, 'ok', 'Typing moves to the next box, Backspace goes back, arrows, Home and End move; pasting fills them all.'], ['1.3.5 Input purpose', 'ok', 'autocomplete="one-time-code": phones offer the code from the SMS.']],
     password: [[LABEL, 'ok', 'A labelled password field with a show/hide button.'], [STATUS, 'ok', 'The strength is announced politely while typing; each rule says whether it is met in words, not only colour.'], ['3.3.1 Error identification', 'ok', 'With min-strength the form explains why it refuses the password.']],
-    search: [[NAME, 'ok', 'role="combobox" with a listbox of options and aria-activedescendant.'], [KEY, 'ok', 'Arrows move in the suggestions, Enter chooses or searches, Escape closes.'], ['1.4.1 Use of colour', 'ok', 'Matches are marked with a highlight, the text stays readable.']],
+    search: [[NAME, 'ok', 'role="combobox" with a listbox of options and aria-activedescendant.'], [KEY, 'ok', 'Arrows move in the suggestions, Enter chooses or searches, Escape closes.'], ['1.4.1 Use of colour', 'ok', 'Matches are marked with a highlight, the text stays readable.'], ['4.1.3 Status messages', 'ok', 'With multiple, terms are a list; each × is a button named "Remove …"; adding, removing, a repeated term and the limit are announced (aria-live). Backspace in the empty field removes the last term.']],
     'theme-choice': [[KEY, 'ok', 'Menu: the dropdown keys. Buttons: a radio group with arrows.'], [NAME, 'ok', 'Labelled "Theme"; with icons-only the names stay for screen readers.']],
     'new-label': [[NAME, 'ok', 'The word is real text (the dot keeps it for screen readers), so it is read with what it marks.'], [MOTION, 'ok', 'Shine and pulse stop with reduced motion.'], ['1.4.1 Use of colour', 'ok', 'The word “New” says it, not only the colour (the dot keeps the word hidden for screen readers).']],
     header: [[NAME, 'ok', 'A banner with a navigation landmark named "Main" (label) and a search landmark; the current link has aria-current="page".'], [KEY, 'ok', 'Menu and search buttons are buttons with aria-expanded; Esc closes the open menu or search and gives the focus back.'], ['2.4.3 Focus order', 'ok', 'Opening the search moves the focus into the field; closing it returns it to the search button.']],
@@ -190,9 +202,9 @@
     const cell = (v, min) => `<span class="a11y-r ${v >= min ? 'pass' : 'fail'}" title="${v.toFixed(2)}:1 (needs ${min}:1)">${v.toFixed(1)}</span>`;
     box.innerHTML = `<p class="a11y-sum ${fails ? 'has-fail' : ''}"><sav-icon name="${fails ? 'alert-triangle' : 'check'}"></sav-icon>
         ${fails ? `${fails} of ${total} combinations below the WCAG AA contrast` : `All ${total} combinations meet the WCAG AA contrast`} — measured now, with the current theme.</p>
-      <div class="tbl"><table class="a11y-t"><thead><tr><th>What</th><th>Needs</th>${Sav.styles.map((s) => `<th>${s[0].toUpperCase() + s.slice(1)}<small>light · dark</small></th>`).join('')}</tr></thead><tbody>
+      <sav-table hover compact class="a11y-tw"><table class="a11y-t"><thead><tr><th>What</th><th>Needs</th>${Sav.styles.map((s) => `<th>${s[0].toUpperCase() + s.slice(1)}<small>light · dark</small></th>`).join('')}</tr></thead><tbody>
       ${res.map((r) => `<tr><td>${esc(r.label)}</td><td>${r.min}:1</td>${Sav.styles.map((s) => `<td>${cell(r.cells[s + '-light'], r.min)}${cell(r.cells[s + '-dark'], r.min)}</td>`).join('')}</tr>`).join('')}
-      </tbody></table></div>
+      </tbody></table></sav-table>
       <p class="muted small">Text needs 4.5:1, borders, icons and states 3:1 (WCAG 1.4.3 and 1.4.11). Glass is measured over the plain page colour: over a busy background check it yourself.</p>`;
   }
 

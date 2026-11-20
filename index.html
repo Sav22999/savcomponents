@@ -39,7 +39,7 @@
 </head>
 <body class="sav-base">
   <header class="top">
-    <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open the menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <sav-button class="menu-btn" id="menuBtn" square appearance="ghost" variant="neutral" label="Open the menu" aria-controls="side" aria-expanded="false"><sav-icon name="menu"></sav-icon></sav-button>
     <a class="brand" href="#">
       <span class="logo" aria-hidden="true"></span>
       <span>Sav<b>Components</b></span>
@@ -49,15 +49,10 @@
     <div class="top-actions">
       <sav-select id="stylePick" class="style-pick" size="sm" aria-label="Style of the components" sheet-on-mobile></sav-select>
       <!-- on phones the search is a button: it opens the field across the whole header, with an X to close it -->
-      <button class="icon-btn search-toggle" id="searchOpen" aria-label="Search" aria-controls="searchPanel" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg></button>
+      <sav-button class="search-toggle" id="searchOpen" square appearance="ghost" variant="neutral" label="Search" aria-controls="searchPanel" aria-expanded="false"><sav-icon name="search"></sav-icon></sav-button>
       <div class="search-wrap" id="searchPanel">
-        <label class="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg>
-          <input id="search" type="search" placeholder="Search components, options, icons" aria-label="Search components, options and icons" autocomplete="off">
-          <kbd>/</kbd>
-        </label>
-        <button class="icon-btn search-close" id="searchClose" aria-label="Close the search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-        <div id="searchSug" class="search-sug" role="listbox" aria-label="Suggestions" hidden></div>
+        <sav-search id="search" size="sm" no-filter max="15" placeholder="Search components, options, icons" aria-label="Search components, options and icons" empty-label="Nothing found"><kbd slot="suffix" class="search-key">/</kbd></sav-search>
+        <sav-button class="search-close" id="searchClose" square appearance="ghost" variant="neutral" label="Close the search"><sav-icon name="x"></sav-icon></sav-button>
       </div>
       <sav-theme-choice id="modePick" icons-only size="sm" label="Theme"></sav-theme-choice>
       <span id="accountSlot" class="account-slot"></span>

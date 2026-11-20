@@ -93,7 +93,37 @@ The first public version.
   collapsed, each name shows in a tooltip, a tab without an icon shows its first letter, sub tabs become dots under their main tab
   (the open one bigger and coloured) and the main tab stays marked. `collapse-button="row"` puts the button as a row with text
   at the bottom of the rail instead.
+- New components: `sav-pagination` (page numbers with “…”, links or buttons, simple mode), `sav-steps` / `sav-step` (the steps of a task, across or down,
+  clickable back), `sav-stat` (a KPI with change and trend line), `sav-empty-state`, `sav-popover` (a panel with any content next to a trigger),
+  `sav-timeline` / `sav-timeline-item`, `sav-tree` / `sav-tree-item` (keyboard like a file tree), `sav-command` (command palette with ⌘K / Ctrl+K),
+  `sav-kbd` (keycaps, ⌘ on a Mac and Ctrl elsewhere), `sav-relative-time` (“3 minutes ago”, kept up to date) and `sav-infinite-scroll`
+  (loads more near the end, or with a button, with loading, end and error states).
+- `--text-color` on Button, Badge, Tag, Label, Chip and New label: the colour of the text whatever the background.
+- `auto-text` on the same six: black or white text, whichever reaches WCAG AA (4.5:1) on the colour behind it — the fill mixed with the page where it is see-through —
+  worked out in CSS from the relative luminance, so it follows the theme, the mode and your own colours.
+- `auto-text` also on Alert, Avatar, Tooltip, Pagination, Tabs, Header, Date and time picker, Select (`multiple`), Checkbox, Radio,
+  Video and Audio (the play button), and on groups that pass it to their items: Steps, Timeline, Tree, Menu, Breadcrumb, Button group,
+  Chip group and Radio group. The value on the progress bar is now always black or white by the same exact WCAG formula.
+- Search: `multiple` turns every term into a chip inside the field (on comma, semicolon, Enter and Space, or the keys in `separators`),
+  with `max-terms`, Backspace and × to remove, pasted lists split into terms, `sav-term-add` / `sav-term-remove`; without it the field works as before.
+  `live` fires `sav-search` while typing (from `min-chars`), otherwise only on `search-keys` (Enter by default); `sav-search` now also gives `terms`.
+- Select (and language, country and region choice): when the list opens above the field, the search box moves to its bottom, next to the field;
+  while it is open it stays on the side where it opened, also when filtering makes it shorter. The search box blurs the options
+  scrolling underneath (readable on the see-through Glass surfaces) and sits right against the edge of the list.
+- New: `sav-color-picker`, a colour field (swatch with the system picker, hex code, suggested colours `swatches`, `clearable`, `compact`), form-associated.
+- Button: `aria-expanded`, `aria-pressed`, `aria-controls`, `aria-haspopup` set on `sav-button` reach the real button inside (menu and toggle buttons).
+- Header: it can shrink in a flex or grid row (`min-width: 0`), so when there is no room it folds its links instead of overflowing.
+- Fewer leftovers when components leave the page: Video removes its full-screen listener, Dropdown and the pickers close and remove their outside-press listener, the lean measurer stops watching removed elements.
+- Search: a `suffix` slot (for a key hint or a button).
+- A wrong or half-typed `locale` no longer breaks Language choice, Country choice, Date picker and the charts: the page language is used instead.
+- Button `loading`: the spinner is the library's own, so it follows the style (the leaning tiles in Tilt and Glass, a square in Sharp); Spinner `variant="current"` takes the colour of the text around it.
+- Carousel: a slide with only a picture has no empty band under it.
+- Accordion `appearance="plain"` in Glass: the rows have some room on the sides (`--sav-details-plain-inline`).
+- Theme choice: `no-auto` offers only Light and Dark (with no value, it shows the mode the system uses).
+- Tabs: `placement="end"` puts vertical tabs on the right of the content; the fold handle and the tooltips then sit on their left side.
+- Tabs: the main tab of an open sub tab has a light background in vertical tabs, folded or not (it had only a coloured text when open).
 - Select: options can have an icon (`<option data-icon="…">`), shown in the list and in the field.
+- Tooltip: the arrow is a triangle outside the body, so see-through colours (Glass) no longer show a darker spot where it overlapped.
 - Tabs: the bar scrolls only sideways (the indicator stuck out by a pixel and let it scroll up and down).
 - Radio group `appearance="buttons"`: a row wider than its place scrolls sideways; an icon next to the text keeps a small gap.
 - Avatar: `--ring` draws a ring on the avatar's own shape (leaning square in Tilt, circle, rounded), for avatars that overlap.

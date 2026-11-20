@@ -37,6 +37,18 @@
     footer h4 { margin: 0 0 .5rem; color: var(--sav-color-text); }
     .logo { display: inline-flex; align-items: center; gap: .55rem; }
     .announce { padding-top: 1rem; }
+    .stats { margin-bottom: 1.5rem; }
+    .news { display: grid; gap: .75rem; }
+    .news sav-card p { margin: .3rem 0 0; color: var(--sav-color-text-muted); }
+    .news small { color: var(--sav-color-text-muted); }
+    .pager { display: flex; justify-content: center; margin-top: 1rem; }
+    .files { display: grid; grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    @media (max-width: 640px) { .files { grid-template-columns: 1fr; } }
+    .person sav-popover { cursor: pointer; }
+    .person-card { display: grid; gap: .3rem; min-width: 12rem; }
+    .step-pane[hidden] { display: none; }
+    /* phones: the style is in the command palette and Sign up in the bottom bar, so the header keeps only what fits */
+    @media (max-width: 640px) { #demoStyle, .hdr-signup { display: none; } }
     /* always there: the way back to the library */
     .back-lib { position: fixed; left: 1rem; bottom: 1rem; z-index: 60; box-shadow: var(--sav-shadow-lg); border-radius: var(--sav-radius); }
     @media (max-width: 760px) { .back-lib { bottom: calc(5rem + env(safe-area-inset-bottom)); } }
@@ -56,13 +68,14 @@
     <sav-select slot="actions" id="demoStyle" size="sm" aria-label="Style" style="width: 7.5rem">
       <option value="soft">Soft</option><option value="tilt">Tilt</option><option value="sharp">Sharp</option><option value="brutal">Brutal</option><option value="glass">Glass</option>
     </sav-select>
+    <sav-button slot="actions" id="cmdBtn" size="sm" square appearance="ghost" variant="neutral" label="Commands (Ctrl+K)"><sav-icon name="command"></sav-icon></sav-button>
     <sav-theme-choice slot="actions" icons-only apply value="auto" size="sm" label="Theme"></sav-theme-choice>
-    <sav-button slot="actions" size="sm" href="#signup">Sign up</sav-button>
+    <sav-button slot="actions" size="sm" href="#signup" class="hdr-signup">Sign up</sav-button>
   </sav-header>
 
   <main id="top">
     <sav-container size="lg" class="announce">
-      <sav-alert variant="primary" closable heading="Lorem 2.0 is out">Dark mode, charts and a brand-new editor. <a href="#tour">Take the tour</a>.</sav-alert>
+      <sav-alert variant="primary" closable heading="Lorem 2.0 is out">Dark mode, charts and a brand-new editor. <a href="#tour">Take the tour</a>, or press <sav-kbd>mod+K</sav-kbd> to jump anywhere.</sav-alert>
     </sav-container>
 
     <section>
@@ -102,14 +115,34 @@
             <sav-table sortable striped hover style="width: 100%">
               <table>
                 <thead><tr><th>Name</th><th>Role</th><th>Status</th><th class="num">Tasks</th></tr></thead>
-                <tbody>
-                  <tr><td>Ada Lovelace</td><td>Editor</td><td><sav-tag variant="success" pill>Active</sav-tag></td><td class="num">12</td></tr>
-                  <tr><td>Alan Turing</td><td>Viewer</td><td><sav-tag variant="neutral" pill>Away</sav-tag></td><td class="num">4</td></tr>
-                  <tr><td>Grace Hopper</td><td>Owner</td><td><sav-tag variant="success" pill>Active</sav-tag></td><td class="num">27</td></tr>
-                  <tr><td>Katherine Johnson</td><td>Editor</td><td><sav-tag variant="warning" pill>Invited</sav-tag></td><td class="num">0</td></tr>
-                </tbody>
+                <tbody id="teamRows"></tbody>
               </table>
             </sav-table>
+            <div class="pager"><sav-pagination id="teamPages" pages="3" page="1" size="sm" label="Team pages"></sav-pagination></div>
+          </sav-tab>
+          <sav-tab label="Files" icon="folder">
+            <div class="files">
+              <sav-card><sav-tree id="fileTree" label="Project files">
+                <sav-tree-item label="Brand" icon="folder" icon-open="folder-open" expanded>
+                  <sav-tree-item label="logo.svg" icon="image"></sav-tree-item>
+                  <sav-tree-item label="colours.pdf" icon="file-text"></sav-tree-item>
+                </sav-tree-item>
+                <sav-tree-item label="Website" icon="folder" icon-open="folder-open">
+                  <sav-tree-item label="index.html" icon="file-code"></sav-tree-item>
+                  <sav-tree-item label="styles.css" icon="file-code"></sav-tree-item>
+                </sav-tree-item>
+                <sav-tree-item label="Notes.md" icon="file-text"></sav-tree-item>
+              </sav-tree></sav-card>
+              <sav-card id="fileView"><sav-empty-state size="sm" icon="mouse-pointer-click" heading="Pick a file" text="Choose a file on the left to see it here."></sav-empty-state></sav-card>
+            </div>
+          </sav-tab>
+          <sav-tab label="Activity" icon="activity">
+            <sav-timeline id="activity" label="Recent activity" style="max-width: 34rem"></sav-timeline>
+          </sav-tab>
+          <sav-tab label="Reports" icon="file-chart-column">
+            <sav-empty-state appearance="card" icon="file-chart-column" heading="No reports yet" text="Reports you save from the dashboard show up here, ready to share.">
+              <sav-button id="makeReport"><sav-icon slot="prefix" name="plus"></sav-icon>Create a report</sav-button>
+            </sav-empty-state>
           </sav-tab>
           <sav-tab label="Settings" icon="settings">
             <sav-card style="max-width: 32rem">
@@ -118,6 +151,7 @@
                 <sav-switch>Dark mode follows the system</sav-switch>
                 <sav-language-choice label="Language" value="en-GB"></sav-language-choice>
                 <sav-range label="Text size" min="80" max="140" value="100" step="10"></sav-range>
+                <sav-color-picker id="accent" label="Accent colour" help="Try it: the whole page follows." clearable placeholder="Theme colour" swatches="#3b82f6,#8b5cf6,#ec4899,#f59e0b,#10b981"></sav-color-picker>
               </div>
             </sav-card>
           </sav-tab>
@@ -127,6 +161,12 @@
 
     <section id="numbers">
       <sav-container size="lg">
+        <sav-grid min="13rem" class="stats">
+          <sav-stat label="Monthly revenue" prefix="€ " value="48,200" change="+12.4%" caption="vs last month" icon="wallet" data="20,24,22,30,28,35,41,39,48"></sav-stat>
+          <sav-stat label="Active teams" value="3,912" change="+3.1%" caption="this week" icon="users" data="31,33,32,35,34,37,39"></sav-stat>
+          <sav-stat label="Page load" value="0.9" unit="s" change="−0.2 s" invert caption="faster than last week" icon="timer" data="1.4,1.3,1.2,1.1,1,0.9"></sav-stat>
+          <sav-stat label="Open tickets" value="14" change="+2" invert caption="since yesterday" icon="life-buoy" data="9,10,12,11,12,14"></sav-stat>
+        </sav-grid>
         <sav-grid min="18rem" align="center">
           <div class="stack">
             <sav-heading level="2" eyebrow="Numbers" subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit.">Sed ut perspiciatis</sav-heading>
@@ -162,6 +202,13 @@
       </sav-container>
     </section>
 
+    <section id="news">
+      <sav-container size="md">
+        <div class="center"><sav-label appearance="soft">News</sav-label><sav-heading level="2">From the Lorem blog</sav-heading></div>
+        <sav-infinite-scroll id="newsFeed" mode="button" more-label="Load more news" end-label="You have read everything" class="news"></sav-infinite-scroll>
+      </sav-container>
+    </section>
+
     <section id="pricing">
       <sav-container size="lg">
         <div class="center"><sav-label appearance="soft">Pricing</sav-label><sav-heading level="2">Quis nostrud exercitation</sav-heading>
@@ -178,10 +225,10 @@
       <sav-container size="lg">
         <div class="center"><sav-label appearance="soft">Team</sav-label><sav-heading level="2">Nos sumus</sav-heading></div>
         <div class="team">
-          <div class="person"><sav-avatar initials="AL" variant="primary" style="--size: 4rem"></sav-avatar><b>Ada L.</b><small>Founder</small><sav-favourite-button icon="heart" label="Like Ada"></sav-favourite-button></div>
-          <div class="person"><sav-avatar initials="AT" variant="success" style="--size: 4rem"></sav-avatar><b>Alan T.</b><small>Engineering</small><sav-favourite-button icon="heart" label="Like Alan"></sav-favourite-button></div>
-          <div class="person"><sav-avatar initials="GH" variant="warning" style="--size: 4rem"></sav-avatar><b>Grace H.</b><small>Product</small><sav-favourite-button icon="heart" label="Like Grace"></sav-favourite-button></div>
-          <div class="person"><sav-avatar initials="KJ" variant="danger" style="--size: 4rem"></sav-avatar><b>Katherine J.</b><small>Data</small><sav-favourite-button icon="heart" label="Like Katherine"></sav-favourite-button></div>
+          <div class="person"><sav-popover placement="top" heading="Ada L."><sav-avatar slot="trigger" initials="AL" variant="primary" style="--size: 4rem" tabindex="0" role="button" aria-label="About Ada L."></sav-avatar><div class="person-card"><span>Founder at Lorem</span><span class="muted">ada@example.com</span><sav-button size="sm" appearance="soft"><sav-icon slot="prefix" name="mail"></sav-icon>Write to Ada</sav-button></div></sav-popover><b>Ada L.</b><small>Founder</small><sav-favourite-button icon="heart" label="Like Ada"></sav-favourite-button></div>
+          <div class="person"><sav-popover placement="top" heading="Alan T."><sav-avatar slot="trigger" initials="AT" variant="success" style="--size: 4rem" tabindex="0" role="button" aria-label="About Alan T."></sav-avatar><div class="person-card"><span>Engineering at Lorem</span><span class="muted">alan@example.com</span><sav-button size="sm" appearance="soft"><sav-icon slot="prefix" name="mail"></sav-icon>Write to Alan</sav-button></div></sav-popover><b>Alan T.</b><small>Engineering</small><sav-favourite-button icon="heart" label="Like Alan"></sav-favourite-button></div>
+          <div class="person"><sav-popover placement="top" heading="Grace H."><sav-avatar slot="trigger" initials="GH" variant="warning" style="--size: 4rem" tabindex="0" role="button" aria-label="About Grace H."></sav-avatar><div class="person-card"><span>Product at Lorem</span><span class="muted">grace@example.com</span><sav-button size="sm" appearance="soft"><sav-icon slot="prefix" name="mail"></sav-icon>Write to Grace</sav-button></div></sav-popover><b>Grace H.</b><small>Product</small><sav-favourite-button icon="heart" label="Like Grace"></sav-favourite-button></div>
+          <div class="person"><sav-popover placement="top" heading="Katherine J."><sav-avatar slot="trigger" initials="KJ" variant="danger" style="--size: 4rem" tabindex="0" role="button" aria-label="About Katherine J."></sav-avatar><div class="person-card"><span>Data at Lorem</span><span class="muted">katherine@example.com</span><sav-button size="sm" appearance="soft"><sav-icon slot="prefix" name="mail"></sav-icon>Write to Katherine</sav-button></div></sav-popover><b>Katherine J.</b><small>Data</small><sav-favourite-button icon="heart" label="Like Katherine"></sav-favourite-button></div>
         </div>
       </sav-container>
     </section>
@@ -201,13 +248,24 @@
       <sav-container size="sm">
         <sav-card>
           <sav-heading level="2" size="3" slot="header" subtitle="Lorem ipsum: no card needed.">Create your account</sav-heading>
-          <form class="stack" id="signupForm">
-            <sav-input name="email" type="email" label="Email" required placeholder="you@example.com"><sav-icon slot="prefix" name="mail"></sav-icon></sav-input>
-            <sav-password name="password" label="Password" rules min-strength="2" required></sav-password>
-            <sav-country-choice name="country" label="Country" value="IT"></sav-country-choice>
-            <sav-select name="size" label="Team size" value="small"><option value="solo">Just me</option><option value="small">2–10</option><option value="medium">11–50</option><option value="large">More than 50</option></sav-select>
-            <sav-checkbox name="terms" required>I accept lorem ipsum</sav-checkbox>
-            <sav-button type="submit" block>Sign up</sav-button>
+          <sav-steps id="signupSteps" current="1" clickable label="Sign-up steps" style="margin-bottom: 1.25rem">
+            <sav-step label="Account"></sav-step><sav-step label="Team"></sav-step><sav-step label="Done"></sav-step>
+          </sav-steps>
+          <form class="stack" id="signupForm" novalidate>
+            <div class="stack step-pane" data-step="1">
+              <sav-input name="email" type="email" label="Email" required placeholder="you@example.com"><sav-icon slot="prefix" name="mail"></sav-icon></sav-input>
+              <sav-password name="password" label="Password" rules min-strength="2" required></sav-password>
+              <sav-button type="button" block data-next>Next</sav-button>
+            </div>
+            <div class="stack step-pane" data-step="2" hidden>
+              <sav-country-choice name="country" label="Country" value="IT"></sav-country-choice>
+              <sav-select name="size" label="Team size" value="small"><option value="solo">Just me</option><option value="small">2–10</option><option value="medium">11–50</option><option value="large">More than 50</option></sav-select>
+              <sav-checkbox name="terms" required>I accept lorem ipsum</sav-checkbox>
+              <div class="row"><sav-button type="button" appearance="outline" variant="neutral" data-back>Back</sav-button><sav-button type="submit" style="flex: 1">Create the account</sav-button></div>
+            </div>
+            <div class="step-pane" data-step="3" hidden>
+              <sav-empty-state icon="party-popper" heading="Welcome to Lorem!" text="Your account is ready (this is only a demo)."><sav-button href="#top">Back to the top</sav-button></sav-empty-state>
+            </div>
           </form>
         </sav-card>
       </sav-container>
@@ -230,6 +288,29 @@
   </footer>
 
   <sav-button class="back-lib" href="index.html" size="sm" variant="neutral"><sav-icon slot="prefix" name="arrow-left"></sav-icon>Back to SavComponents</sav-button>
+
+  <sav-command id="cmd" hotkey="mod+k" placeholder="Go to a section, switch the theme…">
+    <optgroup label="Go to">
+      <option value="#features" data-icon="layers">Features</option>
+      <option value="#tour" data-icon="compass">Product tour</option>
+      <option value="#numbers" data-icon="chart-column">Numbers</option>
+      <option value="#news" data-icon="newspaper">News</option>
+      <option value="#pricing" data-icon="credit-card">Pricing</option>
+      <option value="#team" data-icon="users">Team</option>
+      <option value="#signup" data-icon="user-plus" data-description="Three short steps">Sign up</option>
+    </optgroup>
+    <optgroup label="Look">
+      <option value="mode:dark" data-icon="moon" data-keywords="theme night">Dark mode</option>
+      <option value="mode:light" data-icon="sun" data-keywords="theme day">Light mode</option>
+      <option value="style:tilt" data-icon="square" data-keywords="style">Style: Tilt</option>
+      <option value="style:soft" data-icon="circle" data-keywords="style">Style: Soft</option>
+      <option value="style:glass" data-icon="sparkles" data-keywords="style">Style: Glass</option>
+    </optgroup>
+    <optgroup label="Actions">
+      <option value="video" data-icon="circle-play">Watch the video</option>
+      <option value="library" data-icon="arrow-left" data-description="The documentation of the components">Back to SavComponents</option>
+    </optgroup>
+  </sav-command>
 
   <sav-dialog id="videoDialog" label="Lorem in 4 seconds" style="--width: 46rem">
     <sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" label="Lorem in 4 seconds"></sav-video>
@@ -276,9 +357,69 @@
         document.getElementById('countryNote').textContent = value ? `${name}: ${value} teams use Lorem.` : `${name}: no teams yet — be the first!`;
       });
 
-      document.getElementById('signupForm').addEventListener('submit', (e) => {
+      // team: four people a page, the pagination turns the pages
+      const people = [['Ada Lovelace', 'Editor', 'success', 'Active', 12], ['Alan Turing', 'Viewer', 'neutral', 'Away', 4], ['Grace Hopper', 'Owner', 'success', 'Active', 27], ['Katherine Johnson', 'Editor', 'warning', 'Invited', 0],
+        ['Margaret Hamilton', 'Editor', 'success', 'Active', 18], ['Tim Berners-Lee', 'Viewer', 'neutral', 'Away', 2], ['Hedy Lamarr', 'Editor', 'success', 'Active', 9], ['Linus T.', 'Viewer', 'warning', 'Invited', 0],
+        ['Barbara Liskov', 'Owner', 'success', 'Active', 31], ['Dennis R.', 'Editor', 'neutral', 'Away', 6]];
+      const showTeam = (page) => {
+        document.getElementById('teamRows').innerHTML = people.slice((page - 1) * 4, page * 4).map(([n, r, v, s, t]) => `<tr><td>${n}</td><td>${r}</td><td><sav-tag variant="${v}" pill>${s}</sav-tag></td><td class="num">${t}</td></tr>`).join('');
+      };
+      showTeam(1);
+      document.getElementById('teamPages').addEventListener('change', (e) => showTeam(e.detail.page));
+
+      // files: the chosen file shows on the right
+      document.getElementById('fileTree').addEventListener('sav-select', (e) => {
+        const name = e.detail.value;
+        document.getElementById('fileView').innerHTML = `<sav-heading level="3" size="5">${name}</sav-heading><p class="muted">Edited <sav-relative-time datetime="${new Date(Date.now() - 2 * 3600e3).toISOString()}"></sav-relative-time>. Lorem ipsum: the content of ${name} would be here.</p>`;
+      });
+
+      // activity: times written the way people say them
+      const ago = (m) => new Date(Date.now() - m * 60e3).toISOString();
+      document.getElementById('activity').innerHTML = [
+        ['Ada published the new pricing', 'rocket', 'success', 6], ['Alan commented on “Q4 plan”', 'message-circle', '', 48],
+        ['Grace invited 3 people', 'user-plus', 'primary', 60 * 5], ['Backup failed, then retried', 'triangle-alert', 'warning', 60 * 26],
+      ].map(([h, ic, v, m]) => `<sav-timeline-item heading="${h}" icon="${ic}" ${v ? `variant="${v}"` : ''}><sav-relative-time datetime="${ago(m)}"></sav-relative-time></sav-timeline-item>`).join('');
+      document.getElementById('makeReport').addEventListener('click', () => Sav.toast('Reports are only a demo here', { icon: 'file-chart-column' }));
+
+      // news: three more posts each time, four times in all
+      const feed = document.getElementById('newsFeed');
+      const titles = ['Lorem ipsum 2.0 is here', 'How we made it faster', 'Dark mode, finally', 'Meet the new editor', 'Five tips for teams', 'Our year in numbers', 'A better mobile app', 'Charts for everyone', 'Security, explained', 'What is next'];
+      const addPosts = (page) => {
+        for (let i = 0; i < 3; i++) {
+          const n = (page - 1) * 3 + i;
+          feed.insertAdjacentHTML('beforeend', `<sav-card><b>${titles[n % titles.length]}</b><p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem.</p><small><sav-relative-time datetime="${ago((n + 1) * 60 * 30)}"></sav-relative-time></small></sav-card>`);
+        }
+      };
+      addPosts(1);
+      feed.addEventListener('sav-load', (e) => setTimeout(() => { addPosts(e.detail.page + 1); feed.done(e.detail.page < 3); }, 600));
+
+      // settings: the accent colour of the whole page
+      document.getElementById('accent').addEventListener('input', (e) => Sav.setTheme({ primary: e.detail.value || null }));
+
+      // sign-up in three steps
+      const steps = document.getElementById('signupSteps'), form = document.getElementById('signupForm');
+      const showStep = (n) => { form.querySelectorAll('.step-pane').forEach((p) => (p.hidden = Number(p.dataset.step) !== n)); steps.current = n; };
+      const paneOk = (n) => [...form.querySelectorAll(`[data-step="${n}"] [required]`)].every((f) => f.reportValidity ? f.reportValidity() : true);
+      form.querySelector('[data-next]').addEventListener('click', () => { if (paneOk(1)) showStep(2); });
+      form.querySelector('[data-back]').addEventListener('click', () => showStep(1));
+      steps.addEventListener('change', (e) => showStep(e.detail.current));
+      form.addEventListener('submit', (e) => {
         e.preventDefault();
+        if (!paneOk(2)) return;
+        showStep(3); steps.current = 4; // every step done
         Sav.toast('Welcome! (this is only a demo)', { variant: 'success' });
+      });
+
+      // the command palette: ⌘K / Ctrl+K, or the button in the header
+      const cmd = document.getElementById('cmd');
+      document.getElementById('cmdBtn').addEventListener('click', () => cmd.show());
+      cmd.addEventListener('sav-select', (e) => {
+        const v = e.detail.value;
+        if (v.startsWith('#')) location.hash = v;
+        else if (v.startsWith('mode:')) { Sav.setMode(v.slice(5)); document.querySelector('sav-theme-choice').value = v.slice(5); }
+        else if (v.startsWith('style:')) { Sav.setStyle(v.slice(6)); style.value = v.slice(6); try { localStorage.setItem('savc-style', JSON.stringify(v.slice(6))); } catch (err) {} }
+        else if (v === 'video') document.getElementById('videoDialog').show();
+        else if (v === 'library') location.href = 'index.html';
       });
     });
   </script>

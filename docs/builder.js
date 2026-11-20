@@ -8,6 +8,8 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const STYLES = { soft: 'Soft', tilt: 'Tilt', sharp: 'Sharp', brutal: 'Brutal', glass: 'Glass' };
   const DEVICES = [['desktop', 'monitor', 'Desktop'], ['tablet', 'tablet', 'Tablet'], ['phone', 'smartphone', 'Phone']];
+  /** the width of each device: the preview is drawn at this width and scaled down when the screen has less room */
+  const DEVICE_W = { desktop: 1280, tablet: 768, phone: 390 };
   const BGS = { page: 'Page', surface: 'Surface', dots: 'Dots', colour: 'Colourful' };
   const VARIANTS = ['primary', 'neutral', 'success', 'warning', 'danger'];
   const SIZES = { sm: 'S', md: 'M', lg: 'L' };
@@ -47,7 +49,7 @@
   }
   const comps = () => D().docs.filter((d) => baseOf(d));
   /** overlays are closed at first: the code gets a button that opens them */
-  const OPENER = { dialog: 'Open the dialog', drawer: 'Open the drawer' };
+  const OPENER = { dialog: 'Open the dialog', drawer: 'Open the drawer', command: 'Open the command palette' };
   const lit = (v) => (typeof v === 'boolean' || (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v)) ? String(v) : `'${String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`);
   const camelKey = (k) => k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
   /** the toast is a function: Sav.toast('message', { options }) */
@@ -70,12 +72,8 @@
     const ks = D().knobsFor(d, ['value', 'name', 'href', 'target', 'type']);
     const have = new Set(ks.map((k) => k.name));
     // every attribute of the starting example can be edited, even when the table does not list it as an option
-    for (const [k, v] of Object.entries(baseOf(d).attrs || {})) if (!have.has(k)) ks.push({ name: k, type: typeof v === 'boolean' ? 'bool' : 'text', desc: '', values: '' });
-    for (const k of ks) {
-      if (k.type !== 'text') continue;
-      if (/icon name/.test(k.values)) k.kind = 'icon';
-      else if (/\bnumber\b/.test(k.values) && !/date|string/.test(k.values)) k.kind = 'number';
-    }
+    for (const [k, v] of Object.entries(baseOf(d).attrs || {})) if (!have.has(k)) ks.push({ name: k, type: typeof v === 'boolean' ? 'bool' : 'text', desc: '', values: '', label: D().knobLabel(k) });
+    for (const k of ks) if (k.type === 'text' && !k.kind && /\bnumber\b/.test(k.values) && !/date|string/.test(k.values)) k.kind = 'number';
     return ks;
   }
   /** CSS custom properties listed in the attribute table (rows "--size · --color", "CSS") */
@@ -83,13 +81,16 @@
     const out = [];
     for (const [names, values, desc] of d.attrs || []) {
       if (!/CSS/.test(values) && !/^--/.test(names)) continue;
-      for (const n of names.split(' · ').map((x) => x.trim())) if (/^--[a-z0-9-]+$/.test(n) && !out.some((o) => o.name === n)) out.push({ name: n, colour: /colou?r|bg|background|empty|fill|ink/.test(n), desc: D().plain(desc) });
+      for (const n of names.split(' · ').map((x) => x.trim())) if (/^--[a-z0-9-]+$/.test(n) && !out.some((o) => o.name === n)) out.push({ name: n, label: n === '--text-color' ? 'Text colour' : undefined, colour: /colou?r|bg|background|empty|fill|ink/.test(n), desc: D().plain(desc) });
     }
     return out;
   }
+  /** components people click on: their click is offered as an event too (the browser's own) */
+  const CLICKABLE = new Set(['button', 'button-group', 'card', 'list', 'avatar', 'badge', 'tag', 'label', 'image', 'icon', 'flag', 'new-label', 'chip']);
   function eventsOf(d) {
     const out = [];
-    for (const [names, desc] of d.events || []) for (const n of names.split(' · ').map((x) => x.trim())) if (/^[a-z][a-z-]*$/.test(n)) out.push({ name: n, desc: D().plain(desc) });
+    for (const [names, desc] of d.events || []) for (const n of names.split(' · ').map((x) => x.trim())) if (/^[a-z][a-z-]*$/.test(n) && !out.some((e) => e.name === n)) out.push({ name: n, desc: D().plain(desc) });
+    if (CLICKABLE.has(d.id) && !out.some((e) => e.name === 'click')) out.push({ name: 'click', desc: 'The browser’s own click (or Enter and Space on a button).' });
     return out;
   }
   const siteStyle = () => D().store.get('savc-style', 'tilt');
@@ -98,7 +99,7 @@
     const ev = eventsOf(d);
     const b = baseOf(d);
     return { c: d.id, tag: b.tag, attrs: { ...b.attrs }, text: b.text, children: b.children || '', tokens: {},
-      events: ev.some((e) => e.name === 'change') ? ['change'] : ev.slice(0, 1).map((e) => e.name), id: '', style: siteStyle(), mode: siteMode(), device: 'desktop', bg: 'page' };
+      events: ev.some((e) => e.name === 'change') ? ['change'] : ev.some((e) => e.name === 'click') ? ['click'] : ev.slice(0, 1).map((e) => e.name), id: '', style: siteStyle(), mode: siteMode(), device: 'desktop', bg: 'page' };
   }
 
   /* ------------------------------------------------------------ settings that come from outside (a shared link, a saved item) */
@@ -172,10 +173,10 @@
     const v = camel(elId() || cur.id), id = elId();
     const opens = OPENER[cur.id] ? `\n\n// open and close it from your code\n${v}.show();\n${v}.hide();` : '';
     const evs = eventsOf(cur).filter((e) => S.events.includes(e.name));
-    if (!evs.length && !opens) return `// Tick one or more events in “Events” to get the code that listens to them.\n// The element: document.querySelector('${S.tag}')`;
+    if (!evs.length && !opens) return `// Tick one or more events in “Events” (in the options) to get the code that listens to them.\n// The element: document.querySelector('${S.tag}')`;
     const head = ts ? `const ${v} = document.getElementById('${id}') as HTMLElement;\n` : `const ${v} = document.getElementById('${id}');\n`;
     const head2 = ts && opens ? `const ${v} = document.getElementById('${id}') as HTMLElement & { show(): void; hide(): void };\n` : head;
-    return head2 + evs.map((e) => `\n${e.desc ? `// ${e.desc}\n` : ''}${v}.addEventListener('${e.name}', (event${ts ? ': Event' : ''}) => {\n${ts ? `  const { detail } = event as CustomEvent;\n  console.log('${e.name}', detail);` : `  console.log('${e.name}', event.detail);`}\n});`).join('\n') + opens;
+    return head2 + evs.map((e) => `\n${e.desc ? `// ${e.desc}\n` : ''}${v}.addEventListener('${e.name}', (event${ts ? ': Event' : ''}) => {\n${e.name === 'click' ? `  console.log('clicked', event.currentTarget);` : ts ? `  const { detail } = event as CustomEvent;\n  console.log('${e.name}', detail);` : `  console.log('${e.name}', event.detail);`}\n});`).join('\n') + opens;
   }
   function reactCode() {
     if (baseOf(cur).call === 'toast') return `// Sav comes from sav.js, loaded once in the page.\nexport function SaveButton() {\n  return <sav-button onClick={() => ${toastCall()}}>Show the toast</sav-button>;\n}`;
@@ -190,7 +191,7 @@
     const name = 'My' + pascal(cur.id);
     if (opener && !evs.length) return `import { useRef } from 'react';\n\nexport function ${name}() {\n  const ref = useRef(null);\n  return (\n    ${el}\n  );\n}`;
     if (!evs.length) return `// React 19 passes attributes to custom elements as they are.\nexport function ${name}() {\n  return (\n    ${el}\n  );\n}`;
-    return `import { useEffect, useRef } from 'react';\n\n// Library events are read with addEventListener (names with a dash, like sav-select, need it in every React version).\nexport function ${name}() {\n  const ref = useRef(null);\n  useEffect(() => {\n    const el = ref.current;\n${evs.map((e) => `    const on${pascal(e.name)} = (event) => console.log('${e.name}', event.detail);\n    el.addEventListener('${e.name}', on${pascal(e.name)});`).join('\n')}\n    return () => {\n${evs.map((e) => `      el.removeEventListener('${e.name}', on${pascal(e.name)});`).join('\n')}\n    };\n  }, []);\n  return (\n    ${el}\n  );\n}`;
+    return `import { useEffect, useRef } from 'react';\n\n// Library events are read with addEventListener (names with a dash, like sav-select, need it in every React version).\nexport function ${name}() {\n  const ref = useRef(null);\n  useEffect(() => {\n    const el = ref.current;\n${evs.map((e) => `    const on${pascal(e.name)} = (event) => console.log('${e.name}', ${e.name === 'click' ? 'event.currentTarget' : 'event.detail'});\n    el.addEventListener('${e.name}', on${pascal(e.name)});`).join('\n')}\n    return () => {\n${evs.map((e) => `      el.removeEventListener('${e.name}', on${pascal(e.name)});`).join('\n')}\n    };\n  }, []);\n  return (\n    ${el}\n  );\n}`;
   }
   function vueCode() {
     if (baseOf(cur).call === 'toast') return `<script setup>\n// Sav comes from sav.js, loaded once in the page.\nfunction showToast() {\n  window.${toastCall()};\n}\n</script>\n\n<template>\n  <sav-button @click="showToast">Show the toast</sav-button>\n</template>`;
@@ -201,7 +202,7 @@
     if (OPENER[cur.id]) a.unshift('ref="box"');
     const tagEl = `<${S.tag}${a.length > 2 ? '\n' + a.map((x) => '    ' + x).join('\n') + '\n  ' : a.map((x) => ' ' + x).join('')}>${text}${kids ? '\n' + kidsBlock(kids, '    ') + '\n  ' : ''}</${S.tag}>`;
     const el = OPENER[cur.id] ? `<sav-button @click="$refs.box.show()">${OPENER[cur.id]}</sav-button>\n  ${tagEl}` : tagEl;
-    const script = evs.length ? `<script setup>\n${evs.map((e) => `function on${pascal(e.name)}(event) {\n  console.log('${e.name}', event.detail);\n}`).join('\n\n')}\n</script>\n\n` : '';
+    const script = evs.length ? `<script setup>\n${evs.map((e) => `function on${pascal(e.name)}(event) {\n  console.log('${e.name}', ${e.name === 'click' ? 'event.currentTarget' : 'event.detail'});\n}`).join('\n\n')}\n</script>\n\n` : '';
     return `<!-- vite.config.js: vue({ template: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('sav-') } } }) -->\n${script}<template>\n  ${el}\n</template>`;
   }
   function pageCode() {
@@ -217,7 +218,7 @@
   function html() {
     const groups = [...new Set(comps().map((d) => d.group))];
     return `<div class="doc-head"><sav-label class="eyebrow">Start</sav-label><h1>Component builder</h1>
-      <p class="lead">Choose a component, change every option with the controls and see it live in any style, colour mode and screen size. The code below is ready to paste: HTML, and JavaScript, TypeScript, React or Vue when you listen to events.</p></div>
+      <p class="lead">Pick a component and set it up with the options on the right: what it says, how it looks, how it behaves. The preview changes as you go, in any style, colour mode and screen size; use it to see which events it fires. The code at the bottom is ready to paste, in HTML, JavaScript, TypeScript, React or Vue.</p></div>
       <div class="bld">
         <div class="bld-top layered">
           <div class="bld-choose">
@@ -232,13 +233,17 @@
             <sav-radio-group appearance="buttons" size="sm" id="bldMode" aria-label="Colour mode"><sav-radio value="light" title="Light"><sav-icon name="sun"></sav-icon></sav-radio><sav-radio value="dark" title="Dark"><sav-icon name="moon"></sav-icon></sav-radio></sav-radio-group>
             <sav-select size="sm" id="bldBg" aria-label="Background of the preview" sheet-on-mobile>${Object.entries(BGS).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</sav-select>
             <span class="bld-sp"></span>
-            <sav-button size="sm" appearance="ghost" variant="neutral" id="bldReset"><sav-icon slot="prefix" name="refresh"></sav-icon>Reset</sav-button>
-            <sav-button size="sm" appearance="soft" id="bldShare"><sav-icon slot="prefix" name="link"></sav-icon>Copy link</sav-button>
+            <sav-tooltip content="Every option back to how the component starts"><sav-button size="sm" appearance="ghost" variant="neutral" id="bldReset"><sav-icon slot="prefix" name="refresh"></sav-icon>Start over</sav-button></sav-tooltip>
+            <sav-tooltip content="A link that opens the builder with these settings"><sav-button size="sm" appearance="soft" id="bldShare"><sav-icon slot="prefix" name="link"></sav-icon>Copy link</sav-button></sav-tooltip>
           </div>
         </div>
         <div class="bld-cols">
         <section class="bld-main">
-          <div class="bld-stage" id="bldStage"><div class="bld-frame" id="bldFrame"><div class="bld-preview" id="bldPreview"></div></div></div>
+          <div class="bld-stage" id="bldStage"><div class="bld-fit" id="bldFit"><div class="bld-frame" id="bldFrame"><div class="bld-preview" id="bldPreview"></div></div></div><span class="bld-zoom muted small" id="bldZoom"></span></div>
+          <div class="bld-log layered" aria-live="polite">
+            <div class="bld-log-head"><span class="bld-log-t"><sav-icon name="activity"></sav-icon><b>Events</b><span class="muted small" id="bldLogHint"></span></span><sav-button size="sm" appearance="ghost" variant="neutral" id="bldLogClear" hidden>Clear</sav-button></div>
+            <ol class="bld-log-list" id="bldLogList"></ol>
+          </div>
         </section>
         <aside class="bld-panel layered" aria-label="Options"><div class="bld-scroll" id="bldPanel"></div></aside>
         </div>
@@ -262,7 +267,7 @@
 
   function field(k) {
     const v = S.attrs[k.name];
-    const name = T(k.name);
+    const name = k.label || T(k.name);
     if (k.type === 'bool') return `<sav-switch size="sm" data-a="${k.name}" ${isOn(v) ? 'checked' : ''}>${esc(name)}${tip(k.desc)}</sav-switch>`;
     if (k.type === 'enum') {
       const val = isOn(v) ? v : '_';
@@ -272,7 +277,9 @@
       if (k.options.length <= 3) return `<sav-radio-group appearance="buttons" size="sm" data-a="${k.name}" value="${esc(val)}">${lbl(name, k.desc)}<sav-radio value="_">Default</sav-radio>${k.options.map((o) => `<sav-radio value="${o}">${esc(T(o))}</sav-radio>`).join('')}</sav-radio-group>`;
       return `<sav-select size="sm" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}" sheet-on-mobile placeholder="Default">${lbl(name, k.desc)}<option value="">Default</option>${k.options.map((o) => `<option value="${o}">${esc(T(o))}</option>`).join('')}</sav-select>`;
     }
-    if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}" placeholder="Default">${lbl(name, k.desc)}</sav-number-input>`;
+    if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-a="${k.name}"${k.min !== undefined ? ` min="${k.min}"` : ''}${k.max !== undefined ? ` max="${k.max}"` : ''} value="${esc(isOn(v) ? v : '')}" placeholder="Default">${lbl(name, k.desc)}</sav-number-input>`;
+    // data (JSON): a box with several lines; the component changes only once the text reads well
+    if (k.kind === 'json') return `<sav-textarea size="sm" rows="5" class="mono" data-a="${k.name}" data-json value="${esc(isOn(v) ? v : '')}">${lbl(name, (k.desc ? k.desc + ' ' : '') + 'Written as JSON: the preview follows once brackets, quotes and commas are right.')}</sav-textarea>`;
     // icons: a search among the whole icon set, each suggestion with its drawing and name; the chosen one shows next to the label
     if (k.kind === 'icon') return `<sav-search size="sm" data-a="${k.name}" data-icons no-filter max="12" value="${esc(isOn(v) ? v : '')}" placeholder="Search icons: star, heart, bell…">`
       + `<span slot="label" class="knob-l">${esc(name)}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${isOn(v) ? '' : 'hidden'}></sav-icon></span></sav-search>`;
@@ -280,8 +287,9 @@
   }
   function tokenField(t) {
     const v = S.tokens[t.name] || '';
-    if (t.colour) return `<div class="bld-color ${v ? 'on' : ''}"><label><input type="color" data-t="${t.name}" value="${/^#[0-9a-f]{6}$/i.test(v) ? v : '#66cbff'}"><span class="knob-l">${esc(t.label || t.name)}${tip(t.desc)}</span></label><button type="button" class="bld-x" data-clear="${t.name}" aria-label="Back to the default">${D().icon('x')}</button></div>`;
-    if (t.range) return `<div class="bld-tok ${v ? 'on' : ''}"><sav-range size="sm" data-t="${t.name}" data-unit="${t.range[3]}" min="${t.range[0]}" max="${t.range[1]}" step="${t.range[2]}" value="${parseFloat(v) || t.range[4]}" show-value unit="${t.range[3]}">${lbl(t.label, t.desc)}</sav-range><button type="button" class="bld-x" data-clear="${t.name}" aria-label="Back to the default">${D().icon('x')}</button></div>`;
+    // a colour: the library's colour field; empty means the theme colour
+    if (t.colour) return `<sav-color-picker size="sm" clearable data-t="${t.name}" value="${esc(/^#[0-9a-f]{6}$/i.test(v) ? v : '')}" placeholder="Theme colour">${lbl(t.label || t.name, t.desc)}</sav-color-picker>`;
+    if (t.range) return `<div class="bld-tok ${v ? 'on' : ''}"><sav-range size="sm" data-t="${t.name}" data-unit="${t.range[3]}" min="${t.range[0]}" max="${t.range[1]}" step="${t.range[2]}" value="${parseFloat(v) || t.range[4]}" show-value unit="${t.range[3]}">${lbl(t.label, t.desc)}</sav-range><sav-button class="bld-x" size="sm" square appearance="ghost" variant="neutral" data-clear="${t.name}" label="Back to the default"><sav-icon name="x"></sav-icon></sav-button></div>`;
     return `<sav-input size="sm" data-t="${t.name}" value="${esc(v)}" placeholder="Default" clearable>${lbl(t.name, t.desc)}</sav-input>`;
   }
   const GENERAL_TOKENS = [
@@ -295,20 +303,66 @@
   }
   function renderPanel() {
     const d = cur, ks = knobs(d);
-    const texts = ks.filter((k) => k.type === 'text'), enums = ks.filter((k) => k.type === 'enum'), bools = ks.filter((k) => k.type === 'bool');
+    const main = ks.filter((k) => !k.advanced), adv = ks.filter((k) => k.advanced);
+    // choices about what it holds (its value, its type, its mode) belong with the content, not with the look
+    const CONTENT_CHOICES = /^(value|type|mode|kind|code|level)$/;
+    const texts = main.filter((k) => k.type === 'text' || (k.type === 'enum' && CONTENT_CHOICES.test(k.name))), enums = main.filter((k) => k.type === 'enum' && !CONTENT_CHOICES.test(k.name)), bools = main.filter((k) => k.type === 'bool');
     const evs = eventsOf(d);
+    const first = D().plain(d.desc || '').split(/(?<=[.!?])\s/)[0];
     $('#bldPanel').innerHTML = `<div class="bld-panel-head"><span class="bld-ic">${D().icon(d.icon)}</span><span><b>${esc(d.name)}</b><code>${esc(S.tag)}</code></span></div>
+      <p class="muted small bld-about">${esc(first)} <a href="#${d.id}">All about it</a></p>
       <sav-accordion appearance="plain" class="bld-acc">
       ${baseOf(d).tags ? section('Version', 'layers', `<sav-radio-group appearance="buttons" size="sm" data-tag value="${S.tag}" aria-label="Version">${baseOf(d).tags.map((t) => `<sav-radio value="${t.tag}">${esc(t.label)}</sav-radio>`).join('')}</sav-radio-group>`) : ''}
-      ${section('Content and values', 'text-cursor-input', (baseOf(d).text !== undefined ? `<sav-input size="sm" data-text value="${esc(S.text || '')}">${lbl('Text', 'What is written inside the component.')}</sav-input>` : '')
+      ${section('Content', 'text-cursor-input', (baseOf(d).text !== undefined ? `<sav-input size="sm" data-text value="${esc(S.text || '')}" placeholder="What it says">${lbl('Text', 'What is written in the component.')}</sav-input>` : '')
         + texts.map(field).join('')
-        + (baseOf(d).children ? `<sav-textarea size="sm" data-children rows="4" value="${esc(S.children)}">${lbl('Inside (HTML)', 'The elements inside the component, such as the options of a list. Edit them freely.')}</sav-textarea>` : ''))}
+        + (baseOf(d).children ? `<sav-textarea size="sm" class="mono" data-children rows="5" value="${esc(S.children)}">${lbl('What is inside (HTML)', 'The elements inside the component: options, items, tabs, slides… Change, add or remove them; the preview follows.')}</sav-textarea>` : ''))}
       ${section('Look', 'palette', enums.map(field).join(''))}
       ${section('Behaviour', 'toggle-right', bools.length ? `<div class="bld-bools">${bools.map(field).join('')}</div>` : '')}
+      ${section('Events', 'activity', evs.length
+        ? `<p class="muted small">Tick the events your code should listen to: the code below gets a listener for each. Use the component in the preview to see them fire.</p><div class="bld-evs">${evs.map((e) => `<sav-checkbox size="sm" data-ev="${e.name}" ${S.events.includes(e.name) ? 'checked' : ''}><code>${esc(e.name)}</code>${tip(e.desc)}</sav-checkbox>`).join('')}</div>`
+        : '<p class="muted small">This component fires no events of its own: it only shows something.</p>')}
       ${section('Colours and sizes', 'paintbrush', GENERAL_TOKENS.map(tokenField).join('') + tokenKnobs(d).map(tokenField).join(''), false)}
-      ${section('Events and id', 'code-xml', `<sav-input size="sm" data-id value="${esc(S.id)}" placeholder="${esc(d.id)}">${lbl('Element id', 'The id used by the JavaScript to find the element. Without one, ' + d.id + ' is used when you listen to events.')}</sav-input>`
-        + (evs.length ? `<div class="bld-evs"><span class="knob-l">Listen to${tip('Each ticked event gets a listener in the JavaScript, TypeScript, React and Vue code.')}</span>${evs.map((e) => `<sav-checkbox size="sm" data-ev="${e.name}" ${S.events.includes(e.name) ? 'checked' : ''}><code>${esc(e.name)}</code>${tip(e.desc)}</sav-checkbox>`).join('')}</div>` : '<p class="muted small">This component fires no events of its own.</p>'), false)}
+      ${section('Advanced', 'sliders-horizontal', `<sav-input size="sm" data-id value="${esc(S.id)}" placeholder="${esc(d.id)}">${lbl('Element id', 'The id the JavaScript uses to find the element. Without one, ' + d.id + ' is used when you listen to events.')}</sav-input>`
+        + adv.filter((k) => k.type !== 'bool').map(field).join('')
+        + (adv.some((k) => k.type === 'bool') ? `<div class="bld-bools">${adv.filter((k) => k.type === 'bool').map(field).join('')}</div>` : ''), false)}
       </sav-accordion>`;
+    logReset();
+  }
+
+  /* ------------------------------------------------------------ the event log: what the component fires while you use it */
+
+  const logged = new Set(); // event names already listened to on the preview
+  function logReset() {
+    const list = $('#bldLogList'); if (!list) return;
+    list.innerHTML = '';
+    $('#bldLogClear').hidden = true;
+    const evs = eventsOf(cur);
+    $('#bldLogHint').textContent = evs.length ? `Use the component: ${evs.map((e) => e.name).join(', ')} show up here.` : 'This component fires no events.';
+    const pv = $('#bldPreview');
+    for (const e of evs) if (!logged.has(e.name)) { logged.add(e.name); pv.addEventListener(e.name, onFired, true); }
+  }
+  /** a short, readable version of what an event carries */
+  function brief(ev) {
+    const t = ev.target;
+    let data = ev.detail;
+    if (data === undefined || data === null || (typeof data === 'number' && ev.type === 'click')) data = ev.type === 'click' ? undefined : t && 'value' in t ? { value: t.value } : undefined;
+    if (data === undefined) return '';
+    try {
+      const txt = JSON.stringify(data, (k, v) => (v instanceof Element ? `<${v.localName}>` : v instanceof Event ? `[${v.type}]` : v));
+      return txt && txt.length > 140 ? txt.slice(0, 139) + '…' : txt || '';
+    } catch { return ''; }
+  }
+  function onFired(ev) {
+    if (!eventsOf(cur).some((e) => e.name === ev.type)) return;
+    const list = $('#bldLogList'); if (!list) return;
+    // only events of the component itself (or of what it is made of), not of the page around it
+    const src = ev.composedPath()[0];
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const li = document.createElement('li');
+    li.innerHTML = `<code class="ev">${esc(ev.type)}</code><span class="from">on &lt;${esc(ev.target?.localName || src?.localName || '?')}&gt;</span><code class="data">${esc(brief(ev))}</code><span class="when">${time}</span>`;
+    list.prepend(li);
+    while (list.children.length > 25) list.lastElementChild.remove();
+    $('#bldLogClear').hidden = false;
   }
 
   function update(save = true) {
@@ -316,6 +370,7 @@
     if (!st) return;
     $('#bldPreview').innerHTML = markup(false);
     st.className = `bld-stage bg-${S.bg} dev-${S.device}`;
+    fit(); requestAnimationFrame(fit); // now, and again once the new content has its height
     const fr = $('#bldFrame');
     fr.className = `bld-frame sav-theme-${S.mode}${S.style !== 'soft' ? ' sav-style-' + S.style : ' sav-style-soft'}${S.bg === 'colour' ? ' bg-colour' : ''}`;
     for (const [k, , lang] of TABS) $(`[data-code="${k}"]`).innerHTML = D().codeBlock(codeFor(k), lang, k === 'page' ? `${cur.id}.html` : k === 'react' ? `My${pascal(cur.id)}.jsx` : k === 'vue' ? `My${pascal(cur.id)}.vue` : '');
@@ -326,6 +381,21 @@
     $('#bldCount').textContent = `${at + 1} of ${all.length}`;
     if (save) history.replaceState(null, '', `#builder?c=${cur.id}&cfg=${enc(S)}`);
   }
+
+  /** draws the preview at the real width of the device and scales it down to the room there is (never up) */
+  function fit() {
+    const st = $('#bldStage'), box = $('#bldFit'), fr = $('#bldFrame'); if (!st || !box || !fr) return;
+    const w = DEVICE_W[S.device] || 1280;
+    const cs = getComputedStyle(st), room = st.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const k = Math.min(1, room / w);
+    fr.style.width = w + 'px';
+    fr.style.setProperty('--k', k);
+    box.style.width = Math.floor(w * k) + 'px';
+    box.style.height = Math.ceil(fr.offsetHeight * k) + 'px';
+    const dev = DEVICES.find(([v]) => v === S.device)?.[2] || '';
+    $('#bldZoom').textContent = `${dev} · ${w} px${k < 1 ? ` · shown at ${Math.round(k * 100)}%` : ''}`;
+  }
+  let fitObs = null;
 
   function choose(d, state) {
     cur = d;
@@ -344,8 +414,10 @@
       const k = el.dataset.a;
       let v = el.localName === 'sav-switch' ? el.checked : el.value;
       if (v === '_' || v === null) v = '';
+      v = D().clampKnob(el, v);
       // an icon field changes the component only with a real icon name (or when emptied): while typing, the last good icon stays
       if (el.hasAttribute('data-icons') && v) { iconIndex(); if (!iconNames || !iconNames.has(String(v).trim())) return; v = String(v).trim(); }
+      if (el.hasAttribute('data-json') && !D().jsonOk(el, v)) return;
       S.attrs[k] = typeof v === 'number' ? String(v) : v;
       const ic = el.querySelector(`[data-icon-of="${k}"]`); if (ic) { if (v) ic.setAttribute('name', v); ic.hidden = !v; }
     } else if (el.dataset.t) {
@@ -375,6 +447,16 @@
     $('#bldPrev').addEventListener('click', () => step(-1));
     $('#bldNext').addEventListener('click', () => step(1));
     const panel = $('#bldPanel');
+    // the scale follows the room (window resized, panel folded) and the height of what is shown (a menu that opens, a longer text)
+    // the preview is for trying: its links and forms do not leave the builder (the settings would be lost); the event log still sees the click
+    const pv = $('#bldPreview');
+    pv.addEventListener('click', (e) => { if (e.composedPath().some((n) => n.localName === 'a' && n.hasAttribute?.('href'))) e.preventDefault(); });
+    pv.addEventListener('submit', (e) => e.preventDefault(), true);
+    // suggestions and commands with a link would open it from code: in the preview they only close
+    for (const t of ['sav-pick', 'sav-select']) pv.addEventListener(t, (e) => { if (e.detail?.item?.href) { e.preventDefault(); e.target.hide?.(); e.target.close?.(); } });
+    fitObs?.disconnect();
+    fitObs = new ResizeObserver(() => fit());
+    fitObs.observe($('#bldStage')); fitObs.observe($('#bldFrame'));
     iconIndex(); // ready before the first letter is typed
     // suggestions for the icon fields: exact name, then names that start with the text, contain it, or have it among their words
     panel.addEventListener('sav-query', async (e) => {
@@ -395,6 +477,7 @@
     const bar = (id, key) => $(id).addEventListener('change', (e) => { if (e.target !== $(id)) return; S[key] = $(id).value; update(); });
     bar('#bldDevice', 'device'); bar('#bldStyle', 'style'); bar('#bldMode', 'mode'); bar('#bldBg', 'bg');
     $('#bldReset').addEventListener('click', () => choose(cur, { c: cur.id })); // back to the defaults; a saved item stays the one Save updates
+    $('#bldLogClear').addEventListener('click', () => { $('#bldLogList').innerHTML = ''; $('#bldLogClear').hidden = true; });
     $('#bldShare').addEventListener('click', () => {
       navigator.clipboard?.writeText(location.href).then(() => Sav.toast('Link copied: it opens the builder with these settings', { variant: 'success', icon: 'link' }), () => Sav.toast('Copy the address from the address bar', { variant: 'neutral' }));
     });

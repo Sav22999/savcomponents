@@ -52,7 +52,7 @@ window.SAVC_DOCS = [
       ['type · name · value', 'button · submit · reset', 'Behaviour inside a form.'],
       ['icon · icon-end', 'icon name', 'An icon before or after the text. Without text the button becomes a square icon button.'],
       ['label', 'string', 'Accessible name, required for icon-only buttons.'],
-    ],
+    ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.'], ['--text-color', 'CSS', 'The colour of the text, whatever the background (unset: the colour that fits the background).']],
     slots: [['(default)', 'Label'], ['prefix', 'Before the label, e.g. an icon'], ['suffix', 'After the label']],
     parts: ['base', 'label', 'spinner'],
   },
@@ -74,7 +74,7 @@ window.SAVC_DOCS = [
   </sav-dropdown>
 </sav-button-group>` },
     ],
-    attrs: [['label', 'string', 'Accessible name of the group.']],
+    attrs: [['label', 'string', 'Accessible name of the group.'], ['auto-text', 'boolean', 'Every button of the group gets black or white text, whichever is readable on its colour (WCAG AA, at least 4.5:1), also with your own colours.']],
   },
   {
     id: 'copy-button', name: 'Copy button', play: { tag: 'sav-copy-button', attrs: { value: 'Hello!' }, text: '' }, tag: 'sav-copy-button', group: 'Actions', icon: 'copy',
@@ -128,7 +128,7 @@ window.SAVC_DOCS = [
 <sav-alert appearance="outline" variant="success">Outline on the surface colour.</sav-alert>
 <sav-alert appearance="solid" variant="primary" closable>Solid colour for strong messages.</sav-alert>` },
     ],
-    attrs: [['variant', 'primary · neutral · success · warning · danger · protected', 'Colour and icon; protected shows a shield.'], ['appearance', 'soft · accent · outline · solid', 'Default soft.'], ['heading', 'string', 'Bold first line.'], ['closable', 'boolean', 'Shows a close button.'], ['noicon', 'boolean', 'Hides the icon.'], ['duration', 'ms', 'Closes itself after this time.']],
+    attrs: [['variant', 'primary · neutral · success · warning · danger · protected', 'Colour and icon; protected shows a shield.'], ['appearance', 'soft · accent · outline · solid', 'Default soft.'], ['heading', 'string', 'Bold first line.'], ['closable', 'boolean', 'Shows a close button.'], ['noicon', 'boolean', 'Hides the icon.'], ['duration', 'ms', 'Closes itself after this time.'], ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours: useful with appearance="solid". A --text-color you set still wins.']],
     slots: [['(default)', 'Message'], ['heading', 'Rich heading'], ['icon', 'Custom icon']],
     events: [['sav-close', 'Cancelable, before hiding.']],
     methods: [['close()', 'Hides the alert.']],
@@ -157,7 +157,7 @@ window.SAVC_DOCS = [
 <sav-badge variant="success" dot pulse></sav-badge>` },
       { title: 'Inside a button', html: `<sav-button appearance="outline" variant="neutral">Inbox <sav-badge pill>12</sav-badge></sav-button>` },
     ],
-    attrs: [['variant', 'primary · neutral · success · warning · danger', ''], ['appearance', 'solid · soft · outline', ''], ['pill · dot · pulse', 'boolean', 'Shape and attention effect.']],
+    attrs: [['variant', 'primary · neutral · success · warning · danger', ''], ['appearance', 'solid · soft · outline', ''], ['pill · dot · pulse', 'boolean', 'Shape and attention effect.'], ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.'], ['--text-color', 'CSS', 'The colour of the text, whatever the background (unset: the colour that fits the background).']],
   },
   {
     builtFrom: ['badge'],
@@ -190,7 +190,7 @@ window.SAVC_DOCS = [
     attrs: [['appearance', 'badge · soft · ribbon · corner · dot · text', 'ribbon and corner sit in the top corner of the parent (give it position: relative).'], ['variant', 'primary · neutral · success · warning · danger · protected', ''],
       ['placement', 'end · start', 'Which top corner, for ribbon and corner.'], ['sparkle', 'boolean', 'A sparkles icon before the word.'], ['shine', 'boolean', 'A gloss crosses it now and then (off with reduced motion).'],
       ['until', 'date', 'Hidden after this day (2026-12-31) or moment.'], ['seen-key', 'string', 'Hidden for good after the first click on its parent; remembered in the browser under this name. reset() shows it again.'],
-      ['--transform · --offset', 'CSS', 'Text case (default uppercase); distance from the corner.']],
+      ['--transform · --offset', 'CSS', 'Text case (default uppercase); distance from the corner.'], ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.'], ['--text-color', 'CSS', 'The colour of the text, whatever the background (unset: the colour that fits the background).']],
     events: [['sav-seen', 'detail.key']],
   },
   {
@@ -206,7 +206,7 @@ window.SAVC_DOCS = [
 <sav-tag size="sm">Small</sav-tag>
 <sav-tag size="lg">Large</sav-tag>` },
     ],
-    attrs: [['variant', 'neutral · primary · success · warning · danger', 'Default neutral.'], ['appearance', 'soft · solid', ''], ['size', 'sm · md · lg', ''], ['pill · removable', 'boolean', '']],
+    attrs: [['variant', 'neutral · primary · success · warning · danger', 'Default neutral.'], ['appearance', 'soft · solid', ''], ['size', 'sm · md · lg', ''], ['pill · removable', 'boolean', ''], ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.'], ['--text-color', 'CSS', 'The colour of the text, whatever the background (unset: the colour that fits the background).']],
     events: [['sav-remove', 'Cancelable, before the tag removes itself.']],
   },
   {
@@ -216,7 +216,7 @@ window.SAVC_DOCS = [
 <sav-spinner style="font-size: 2rem"></sav-spinner>
 <sav-spinner style="font-size: 3rem; --track-width: 1.5px" variant="success"></sav-spinner>
 <sav-spinner variant="danger" style="font-size: 2rem"></sav-spinner>` }],
-    attrs: [['variant', 'primary · neutral · success · warning · danger', ''], ['label', 'string', 'Accessible name, default "Loading".'], ['--track-width', 'CSS', 'Stroke width.']],
+    attrs: [['variant', 'primary · neutral · success · warning · danger · current', 'current takes the colour of the text around it (the loading button uses it).'], ['label', 'string', 'Accessible name, default "Loading".'], ['--track-width', 'CSS', 'Stroke width.']],
   },
   {
     id: 'progress', name: 'Progress', play: { tag: 'sav-progress-bar', tags: [{ tag: 'sav-progress-bar', label: 'Bar', text: '' }, { tag: 'sav-progress-ring', label: 'Ring', text: '60%' }], text: '', attrs: { value: '60' } }, tag: 'sav-progress-bar · sav-progress-ring', group: 'Feedback', icon: 'chart-no-axes-gantt',
@@ -230,7 +230,7 @@ window.SAVC_DOCS = [
 <sav-progress-ring value="64" variant="success">64%</sav-progress-ring>
 <sav-progress-ring value="90" variant="danger" style="--size: 6rem; --track-width: 10px">90%</sav-progress-ring>` },
     ],
-    attrs: [['value', 'number', '0–100 (or 0–max).'], ['max', 'number', 'Bar only, default 100.'], ['indeterminate · striped · show-value', 'boolean', 'Bar only.'], ['label', 'string', ''], ['variant', 'primary · …', ''], ['--height · --size · --track-width', 'CSS', '']],
+    attrs: [['value', 'number', '0–100 (or 0–max).'], ['max', 'number', 'Bar only, default 100.'], ['indeterminate · striped · show-value', 'boolean', 'Bar only.'], ['label', 'string', ''], ['variant', 'primary · …', ''], ['--height · --size · --track-width', 'CSS', ''], ['--text-color', 'CSS', 'The colour of the value written on the bar. Unset, it is black or white, whichever is readable on the bar (WCAG AA, at least 4.5:1), whatever the colour.']],
   },
   {
     id: 'skeleton', name: 'Skeleton', tag: 'sav-skeleton', group: 'Feedback', icon: 'scan',
@@ -245,6 +245,24 @@ window.SAVC_DOCS = [
 </div>
 <sav-skeleton shape="rect" style="height: 8rem; margin-top: 1rem"></sav-skeleton>` }],
     attrs: [['shape', 'text · rect · circle', ''], ['effect', 'sheen · pulse · none', 'Default sheen.'], ['--color · --sheen', 'CSS', '']],
+  },
+  {
+    builtFrom: ['icon'],
+    id: 'empty-state', name: 'Empty state', play: { tag: 'sav-empty-state', attrs: { icon: 'inbox', heading: 'No messages yet', text: 'When someone writes to you, the message shows up here.' }, children: '<sav-button>Write a message</sav-button>' }, tag: 'sav-empty-state', group: 'Feedback', icon: 'inbox',
+    desc: 'What to show when there is nothing yet — no results, an empty inbox, a new project: a drawing made of the icon on leaning tiles (they lean the way the style does), a heading, a line of text and what to do next.',
+    demos: [
+      { title: 'With an action', html: `<sav-empty-state icon="inbox" heading="No messages yet" text="When someone writes to you, the message shows up here." style="width: 100%">
+  <sav-button><sav-icon slot="prefix" name="pencil"></sav-icon>Write a message</sav-button>
+  <sav-button appearance="ghost" variant="neutral">Learn more</sav-button>
+</sav-empty-state>` },
+      { title: 'No results, in a card, small', html: `<sav-empty-state appearance="card" size="sm" icon="search-x" heading="Nothing matches “zebra”" text="Check the spelling or try fewer words." style="width: 100%">
+  <sav-button size="sm" appearance="outline" variant="neutral">Clear the search</sav-button>
+</sav-empty-state>` },
+    ],
+    attrs: [['heading · text', 'string', 'The title and the line under it.'], ['icon', 'icon name', 'Drawn on the leaning tiles (default inbox).'], ['size', 'sm · md · lg', ''], ['appearance', 'plain · card', 'card puts it in a dashed box.'],
+      ['level', 'number', 'Heading level for screen readers (default 3).']],
+    slots: [['(default)', 'Buttons or links: what to do next.'], ['image', 'Your own picture instead of the icon.'], ['text', 'Richer text than the text attribute (links, bold).']],
+    parts: ['base', 'image', 'heading', 'text', 'actions'],
   },
 
   /* ------------------------------------------------------------ Forms */
@@ -303,11 +321,34 @@ window.SAVC_DOCS = [
     parts: ['form-control', 'label', 'base', 'input', 'button', 'decrease-button', 'increase-button', 'unit', 'help-text'],
   },
   {
+    builtFrom: ['input'],
+    id: 'color-picker', name: 'Color picker', play: { tag: 'sav-color-picker', attrs: { label: 'Brand colour', value: '#3b82f6', swatches: '#ef4444,#f59e0b,#22c55e,#3b82f6,#8b5cf6' } }, tag: 'sav-color-picker', group: 'Forms', icon: 'palette',
+    desc: 'A colour field: a swatch that opens the system colour picker, the hex code you can type, and suggested colours. The value is "#rrggbb" (#abc becomes #aabbcc); with clearable it can be empty. compact keeps only the swatch.',
+    demos: [
+      { title: 'Field, with suggested colours', html: `<sav-color-picker label="Brand colour" value="#3b82f6" swatches="#ef4444,#f59e0b,#22c55e,#3b82f6,#8b5cf6" help="Click the square, type a code or pick one below." style="max-width: 18rem"></sav-color-picker>
+<sav-color-picker label="Highlight (optional)" clearable style="max-width: 18rem"></sav-color-picker>` },
+      { title: 'Compact, only the swatch', html: `<sav-color-picker compact label="Text colour" value="#1f2937"></sav-color-picker>
+<sav-color-picker compact label="Background" value="#fde68a"></sav-color-picker>
+<sav-color-picker compact label="Border" value="#8b5cf6"></sav-color-picker>` },
+      { title: 'In a form', html: `<form class="stack" style="max-width: 18rem" onsubmit="event.preventDefault(); Sav.toast('Saved: ' + new FormData(this).get('accent'), { variant: 'success' })">
+  <sav-color-picker name="accent" label="Accent" required clearable></sav-color-picker>
+  <sav-button type="submit">Save</sav-button>
+</form>` },
+    ],
+    attrs: [['value', 'string', 'A colour in hex: #rrggbb or #rgb.'], ['label · help · placeholder', 'string', ''], ['swatches', 'string', 'Suggested colours, separated by commas: #ef4444,#22c55e…'],
+      ['clearable', 'boolean', 'A button to leave it empty (no colour).'], ['compact', 'boolean', 'Only the swatch: a small square that opens the picker.'],
+      ['size', 'sm · md · lg', ''], ['name · disabled · readonly · required', '', 'Like any form field.']],
+    events: [['input', 'While the colour changes (dragging in the picker, typing a valid code): detail.value.'], ['change', 'The colour is chosen: detail.value ("" when cleared).']],
+    methods: [['value', 'The colour, "#rrggbb" or "".'], ['open()', 'Opens the system colour picker (only from a click or a key, as browsers require).'], ['focus()', '']],
+    parts: ['form-control', 'label', 'base', 'swatch', 'input', 'clear-button', 'swatches', 'help-text'],
+  },
+  {
     id: 'textarea', name: 'Textarea', play: { tag: 'sav-textarea', attrs: { label: 'Message' } }, tag: 'sav-textarea', group: 'Forms', icon: 'letter-text',
     desc: 'Multi-line text, with an optional counter and automatic height.',
     demos: [{ title: 'Basic', html: `<sav-textarea label="Message" placeholder="Write something…" maxlength="200" counter></sav-textarea>
 <sav-textarea label="Grows with the text" resize="auto" rows="2" help="resize=&quot;auto&quot;"></sav-textarea>` }],
     attrs: [['label · help · placeholder · value', 'string', ''], ['rows', 'number', 'Default 4.'], ['resize', 'vertical · none · auto', ''], ['counter', 'boolean', 'Shows the character count.'], ['name · required · disabled · readonly · minlength · maxlength', '', '']],
+    events: [['input', 'At every key: event.target.value.'], ['change', 'When the text changed and the field loses the focus.']],
   },
   {
     id: 'select', name: 'Select', play: { tag: 'sav-select', attrs: { label: 'Fruit', placeholder: 'Choose one' }, children: '<option value="apple">Apple</option><option value="pear">Pear</option><option value="kiwi">Kiwi</option>' }, tag: 'sav-select', group: 'Forms', icon: 'list',
@@ -343,7 +384,7 @@ window.SAVC_DOCS = [
     attrs: [['label · help · placeholder · value', 'string', 'With multiple, value is a comma-separated list.'], ['multiple', 'boolean', 'Choose more than one: the choices show as chips.'], ['searchable', 'boolean', 'A search field at the top of the list.'],
       ['clearable', 'boolean', 'A button that empties the field.'], ['sheet-on-mobile', 'boolean', 'On screens up to 640px the list rises from the bottom.'], ['native-on-mobile · native', 'boolean', 'Use the operating system picker on phones, or always.'],
       ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['pill', 'boolean', ''], ['max-chips', 'number', 'Chips shown before “+N”, default 3.'], ['name · required · disabled · readonly', '', 'Form behaviour.'],
-      ['data-description', 'string', 'On an option: a second line under its label.']],
+      ['data-description', 'string', 'On an option: a second line under its label.'], ['auto-text', 'boolean', 'With multiple: the tick of the chosen options is black or white, whichever is readable on the box (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['input · change', 'When the value changes.'], ['sav-show · sav-hide', 'The list opens or closes.']],
     methods: [['value', 'A string, or an array with multiple.'], ['show() · hide() · focus()', '']],
   },
@@ -360,8 +401,8 @@ window.SAVC_DOCS = [
     ],
     attrs: [['mode', 'date · month · year', 'What to pick. Values: 2026-11-16, 2026-11, 2026.'], ['value · min · max', 'ISO date', 'Same format as the mode.'], ['label · help · placeholder', 'string', ''],
       ['locale', 'string', 'Language of names and the first day of the week; default the page language.'], ['first-day', 'number', '0 = Sunday, 1 = Monday…'], ['format', 'short · medium · long · full', 'How the chosen date is written.'],
-      ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.']],
-    events: [['input · change', 'When a date is chosen.']],
+      ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['auto-text', 'boolean', 'The chosen day and today are black or white, whichever is readable on what is behind them (WCAG AA, at least 4.5:1), also with your own colours.']],
+    events: [['input · change', 'When a date is chosen.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
   },
   {
     id: 'time-picker', name: 'Time picker', play: { tag: 'sav-time-picker', attrs: { label: 'Time', placeholder: 'Pick a time' } }, tag: 'sav-time-picker', group: 'Forms', icon: 'clock',
@@ -373,8 +414,8 @@ window.SAVC_DOCS = [
 <sav-time-picker label="Office hours" min="08:00" max="18:00" native-on-mobile help="From 8 to 18."></sav-time-picker>` },
     ],
     attrs: [['value · min · max', 'HH:MM', '24-hour time.'], ['step', 'number', 'Minutes between choices, default 5.'], ['hour-cycle', '12 · 24', 'Default from the language.'], ['locale', 'string', ''],
-      ['label · help · placeholder', 'string', ''], ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.']],
-    events: [['input', 'At every change in the columns.'], ['change', 'When the popup closes with a new time.']],
+      ['label · help · placeholder', 'string', ''], ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['auto-text', 'boolean', 'The chosen time is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
+    events: [['input', 'At every change in the columns.'], ['change', 'When the popup closes with a new time.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
   },
   {
     id: 'checkbox', name: 'Checkbox & Switch', play: { tag: 'sav-switch', tags: [{ tag: 'sav-switch', label: 'Switch' }, { tag: 'sav-checkbox', label: 'Checkbox' }], text: 'Notifications', attrs: { checked: true } }, tag: 'sav-checkbox · sav-switch', group: 'Forms', icon: 'square-check',
@@ -389,7 +430,7 @@ window.SAVC_DOCS = [
 <sav-switch size="lg" variant="danger" checked>Large</sav-switch>
 <sav-switch size="sm">Small</sav-switch>` },
     ],
-    attrs: [['checked · indeterminate', 'boolean', ''], ['value', 'string', 'Sent with the form, default "on".'], ['variant', 'primary · …', ''], ['size', 'sm · md · lg', ''], ['help', 'string', ''], ['name · required · disabled', '', '']],
+    attrs: [['checked · indeterminate', 'boolean', ''], ['value', 'string', 'Sent with the form, default "on".'], ['variant', 'primary · …', ''], ['size', 'sm · md · lg', ''], ['help', 'string', ''], ['name · required · disabled', '', ''], ['auto-text', 'boolean', 'sav-checkbox: the tick (or dash) is black or white, whichever is readable on the checked box (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['change', '']],
   },
   {
@@ -410,8 +451,8 @@ window.SAVC_DOCS = [
   <sav-radio value="month">Month</sav-radio>
 </sav-radio-group>` },
     ],
-    attrs: [['label · help · value · name', 'string', 'On the group.'], ['orientation', 'vertical · horizontal', ''], ['appearance', 'buttons', 'Segmented control.'], ['size', 'sm · md · lg', ''], ['required · disabled', '', ''], ['value · disabled', '', 'On each sav-radio.']],
-    events: [['change', 'On the group.']],
+    attrs: [['label · help · value · name', 'string', 'On the group.'], ['orientation', 'vertical · horizontal', ''], ['appearance', 'buttons', 'Segmented control.'], ['size', 'sm · md · lg', ''], ['required · disabled', '', ''], ['value · disabled', '', 'On each sav-radio.'], ['auto-text', 'boolean', 'The dot of the chosen option is black or white, whichever is readable on the filled circle (WCAG AA, at least 4.5:1), also with your own colours. On the group it reaches every sav-radio.']],
+    events: [['change', 'On the group.'], ['input', 'Another option chosen (as it happens).']],
   },
   {
     builtFrom: ['tag'],
@@ -429,7 +470,7 @@ window.SAVC_DOCS = [
 <sav-chip removable selected>Rome</sav-chip>` },
     ],
     attrs: [['selected', 'boolean', 'sav-chip: on.'], ['value', 'string', 'sav-chip: its value in a group.'], ['removable', 'boolean', 'sav-chip: a × that removes it.'], ['variant · size · disabled', '', 'sav-chip.'],
-      ['multiple', 'boolean', 'sav-chip-group: more than one at a time.'], ['required', 'boolean', 'sav-chip-group: one must stay selected.'], ['label', 'string', 'sav-chip-group: name of the group.'], ['value', 'string · list', 'sav-chip-group: selected value(s); a list with multiple.']],
+      ['multiple', 'boolean', 'sav-chip-group: more than one at a time.'], ['required', 'boolean', 'sav-chip-group: one must stay selected.'], ['label', 'string', 'sav-chip-group: name of the group.'], ['value', 'string · list', 'sav-chip-group: selected value(s); a list with multiple.'], ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.'], ['--text-color', 'CSS', 'The colour of the text, whatever the background (unset: the colour that fits the background).'], ['auto-text', 'boolean', 'sav-chip-group: auto-text on the group reaches every chip.']],
     events: [['change', 'sav-chip: detail.selected · sav-chip-group: detail.value'], ['sav-remove', 'Before a removable chip goes away, cancelable.']],
   },
   {
@@ -461,7 +502,7 @@ window.SAVC_DOCS = [
   {
     builtFrom: ['input'],
     id: 'search', name: 'Search', play: { tag: 'sav-search', attrs: { placeholder: 'Search fruit' }, children: '<option>Apple</option><option>Apricot</option><option>Banana</option><option>Blueberry</option><option>Cherry</option>' }, tag: 'sav-search', group: 'Forms', icon: 'search',
-    desc: 'A search field that suggests as you type: highlighted matches, arrows and Enter to choose. Suggestions come from <option> children, or from the page on every "sav-query" (for a server search).',
+    desc: 'A search field that suggests as you type: highlighted matches, arrows and Enter to choose. Suggestions come from <option> children, or from the page on every "sav-query" (for a server search). With <code>multiple</code> every term becomes a chip inside the field (on comma, semicolon, Enter or Space, as you set); with <code>live</code> it searches while you type instead of only on Enter.',
     demos: [
       { title: 'From options', html: `<sav-search placeholder="Search a city" style="max-width: 22rem">
   <optgroup label="Italy"><option>Rome</option><option>Milan</option><option>Naples</option></optgroup>
@@ -477,11 +518,29 @@ window.SAVC_DOCS = [
       .map((d) => ({ label: d.name, value: d.id, description: d.tag, icon: d.icon, href: '#' + d.id }));
   });
 </script>` },
+      { title: 'Several terms, as chips', html: `<sav-search multiple max-terms="5" label="Tags" placeholder="Add a tag and press comma or Enter" value="design, accessibility" style="max-width: 26rem">
+  <option>colour</option><option>contrast</option><option>forms</option><option>keyboard</option><option>motion</option>
+</sav-search>
+<sav-search multiple separators="enter ;" label="Only Enter and semicolon (Space and comma stay in the term)" placeholder="New York; San Francisco" style="max-width: 26rem; margin-top: 1rem"></sav-search>` },
+      { title: 'Live search', html: `<sav-search id="srch-run" live min-chars="2" placeholder="Search while you type (from 2 letters)" style="max-width: 22rem"></sav-search>
+<sav-search id="srch-enter" multiple search-keys="enter" placeholder="Only on Enter, with terms" style="max-width: 22rem; margin-top: 1rem"></sav-search>
+<p id="srch-out" style="color: var(--sav-color-text-muted); font-size: .9rem">Nothing searched yet.</p>
+<script>
+  for (const id of ['srch-run', 'srch-enter']) document.getElementById(id).addEventListener('sav-search', (e) => {
+    document.getElementById('srch-out').textContent = e.detail.terms.length ? 'Searching: ' + e.detail.terms.join(' + ') : 'Empty: showing everything';
+  });
+</script>` },
     ],
-    attrs: [['placeholder · label · help · name · value', '', ''], ['min-chars', 'number', 'Characters before suggesting (default 1).'], ['debounce', 'ms', 'Wait after typing before asking (default 120).'],
+    attrs: [['placeholder · label · help · name', '', ''], ['value', 'string · list', 'The text; with multiple, the terms (a comma-separated list, or a list in JS).'],
+      ['multiple', 'boolean', 'Each term becomes a chip inside the field; Backspace in the empty field removes the last one, the × on a chip removes that one. Off: one text, as always.'],
+      ['separators', 'list', 'Keys that turn the text into a chip, separated by spaces: enter, space, tab, comma, semicolon or any character (default ", ; enter space"). Pasted text is split at them too.'],
+      ['max-terms', 'number', 'Most terms (default no limit); when reached the field takes no more text and says so.'], ['max-label', 'string', 'What the field says when it is full (default "Up to N terms").'],
+      ['live', 'boolean', 'sav-search fires while you type (after min-chars and debounce) and when the field is emptied; off: only on the search keys.'],
+      ['search-keys', 'list', 'Keys that fire sav-search, separated by spaces (default enter). With multiple, Enter also adds the term first.'],
+      ['min-chars', 'number', 'Characters before suggesting, and before the live search (default 1).'], ['debounce', 'ms', 'Wait after typing before asking for suggestions (default 120) or, with live, before searching (default 250).'],
       ['max', 'number', 'Suggestions shown (default 8).'], ['no-filter', 'boolean', 'Do not filter here: the page sends already-filtered suggestions.'], ['empty-label', 'string', 'Text when nothing matches.']],
-    events: [['sav-query', 'While typing (debounced): set .suggestions here. detail.query'], ['sav-pick', 'A suggestion was chosen, cancelable. detail.value, detail.label, detail.item'], ['sav-search', 'Enter without choosing a suggestion. detail.query'], ['input · change · sav-clear', '']],
-    methods: [['suggestions', 'Property: strings or { label, value, description, icon, group, href }.']],
+    events: [['sav-query', 'While typing (debounced): set .suggestions here. detail.query'], ['sav-pick', 'A suggestion was chosen, cancelable. detail.value, detail.label, detail.item'], ['sav-search', 'Search now: on the search keys (Enter) or, with live, while typing. detail.query (the text), detail.terms (the chips and the text)'], ['sav-term-add · sav-term-remove', 'multiple: a term is about to be added or removed, cancelable. detail.term'], ['input · change · sav-clear', 'change with multiple: detail.value is the list of terms.']],
+    methods: [['suggestions', 'Property: strings or { label, value, description, icon, group, href }.'], ['terms', 'Property (multiple): the list of terms; set it to replace them.'], ['text', 'Property: what is typed right now.'], ['search()', 'Fires sav-search now.']],
   },
   {
     builtFrom: ['select'],
@@ -494,7 +553,7 @@ window.SAVC_DOCS = [
     ],
     attrs: [['value', 'tag · list', 'BCP 47 tags (it-IT, en-GB…); a comma-separated list with multiple.'], ['multiple', 'boolean', ''], ['native-names', 'boolean', 'Each language in itself (Italiano, Deutsch…).'], ['locale', 'string', 'Language of the names (default: the page).'],
       ['code', 'iso3 · tag', 'What the code on the right shows (default ISO 639-3).'], ['no-flag · no-code', 'boolean', 'Hide the flag or the code.'], ['include · exclude', 'list', 'Only these tags, or all but these.'], ['label · placeholder · required · name · sheet-on-mobile · native-on-mobile', '', 'Like the select.']],
-    events: [['change · input', 'Like the select.']],
+    events: [['change · input', 'Like the select.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
   },
   {
     builtFrom: ['select'],
@@ -506,18 +565,21 @@ window.SAVC_DOCS = [
     ],
     attrs: [['value', 'alpha-2 · list', 'IT, FR…; a comma-separated list with multiple.'], ['multiple', 'boolean', ''], ['code', 'alpha3 · alpha2 · numeric', 'Code on the right (default alpha-3).'], ['locale', 'string', 'Language of the names.'],
       ['no-flag · no-code', 'boolean', ''], ['include · exclude', 'list', 'Only these countries (alpha-2), or all but these.'], ['label · placeholder · required · name · sheet-on-mobile · native-on-mobile', '', 'Like the select.']],
-    events: [['change · input', 'Like the select.']],
+    events: [['change · input', 'Like the select.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
   },
   {
     builtFrom: ['dropdown', 'button'],
     id: 'theme-choice', name: 'Theme choice', play: { tag: 'sav-theme-choice', attrs: {} }, tag: 'sav-theme-choice', group: 'Forms', icon: 'theme-auto',
-    desc: 'Light, Dark or Auto (follows the system), each with its icon: a menu or three buttons. With apply it switches the page by itself.',
+    desc: 'Light, Dark or Auto (follows the system), each with its icon: a menu or buttons. no-auto leaves only Light and Dark. With apply it switches the page by itself.',
     demos: [
       { title: 'Menu and buttons', html: `<sav-theme-choice value="auto"></sav-theme-choice>
 <sav-theme-choice appearance="buttons" value="light"></sav-theme-choice>
 <sav-theme-choice appearance="buttons" icons-only value="dark"></sav-theme-choice>` },
+      { title: 'Only light and dark (no Auto)', html: `<sav-theme-choice no-auto value="light"></sav-theme-choice>
+<sav-theme-choice appearance="buttons" no-auto value="dark"></sav-theme-choice>
+<sav-theme-choice appearance="buttons" icons-only no-auto></sav-theme-choice>` },
     ],
-    attrs: [['value', 'light · dark · auto', ''], ['appearance', 'menu · buttons', 'Default menu.'], ['icons-only', 'boolean', 'Only the icons (the names stay for screen readers).'], ['apply', 'boolean', 'Calls Sav.setMode() on change.'], ['label', 'string', 'Name for screen readers (default "Theme").']],
+    attrs: [['value', 'light · dark · auto', 'With no-auto, “auto” (or no value) shows the mode the system uses right now.'], ['no-auto', 'boolean', 'Only Light and Dark: the Auto choice is not offered.'], ['appearance', 'menu · buttons', 'Default menu.'], ['icons-only', 'boolean', 'Only the icons (the names stay for screen readers).'], ['apply', 'boolean', 'Calls Sav.setMode() on change.'], ['label', 'string', 'Name for screen readers (default "Theme").']],
     events: [['change', 'detail.value']],
   },
   {
@@ -535,6 +597,7 @@ window.SAVC_DOCS = [
     demos: [{ title: 'Basic', html: `<sav-range label="Volume" value="40" show-value unit="%"></sav-range>
 <sav-range label="Rating" min="1" max="5" value="3" labels="Bad, Poor, Okay, Good, Great" variant="success"></sav-range>` }],
     attrs: [['label · help', 'string', ''], ['value · min · max · step', 'number', ''], ['show-value', 'boolean', ''], ['unit', 'string', 'Appended to the shown value.'], ['labels', 'comma list', 'Labels under the track.'], ['variant', 'primary · …', '']],
+    events: [['input', 'While the thumb moves: event.target.value.'], ['change', 'When the thumb is let go: event.target.value.']],
   },
   {
     id: 'range-dual', name: 'Double range', play: { tag: 'sav-range-dual', attrs: { label: 'Price', start: '20', end: '80', 'show-value': true, prefix: '€ ' }, skip: ['name-start', 'name-end', 'start-label', 'end-label'] }, tag: 'sav-range-dual', group: 'Forms', icon: 'ruler-dimension-line',
@@ -612,7 +675,7 @@ window.SAVC_DOCS = [
   <sav-avatar label="Alan Turing" style="--ring: 0 0 0 3px var(--sav-color-bg); margin-left: -.4rem"></sav-avatar>
   <sav-avatar label="Grace Hopper" variant="primary" style="--ring: 0 0 0 3px var(--sav-color-bg); margin-left: -.4rem"></sav-avatar>
 </div>` }],
-    attrs: [['image', 'url', 'Falls back to initials if it fails.'], ['label', 'string', 'Name: gives the initials and the accessible name.'], ['initials', 'string', 'Overrides the computed initials.'], ['shape', 'circle · rounded · square · tilt', 'Tilt is a square leaning 10°, like the logo.'], ['size', 'sm · md · lg · xl', 'Or --size.'], ['variant', 'neutral · primary', ''], ['--size · --ring', 'CSS', '--size: width and height. --ring: a ring that follows the shape (circle, rounded, leaning square in Tilt), for example 0 0 0 2px white to separate avatars that overlap.']],
+    attrs: [['image', 'url', 'Falls back to initials if it fails.'], ['label', 'string', 'Name: gives the initials and the accessible name.'], ['initials', 'string', 'Overrides the computed initials.'], ['shape', 'circle · rounded · square · tilt', 'Tilt is a square leaning 10°, like the logo.'], ['size', 'sm · md · lg · xl', 'Or --size.'], ['variant', 'neutral · primary', ''], ['--size · --ring', 'CSS', '--size: width and height. --ring: a ring that follows the shape (circle, rounded, leaning square in Tilt), for example 0 0 0 2px white to separate avatars that overlap.'], ['auto-text', 'boolean', 'Black or white initials, whichever is readable on the colour behind them (WCAG AA, at least 4.5:1), also with your own colours.']],
   },
   {
     id: 'divider', name: 'Divider', tag: 'sav-divider', group: 'Layout', icon: 'separator-horizontal',
@@ -731,6 +794,67 @@ window.SAVC_DOCS = [
     parts: ['base', 'eyebrow', 'subtitle'],
   },
   {
+    id: 'stat', name: 'Stat card', play: { tag: 'sav-stat', attrs: { label: 'Monthly revenue', value: '48,200', prefix: '€ ', change: '+12.4%', caption: 'vs last month', icon: 'wallet', data: '20,24,22,30,28,35,41,39,48' } }, tag: 'sav-stat', group: 'Content', icon: 'chart-no-axes-combined',
+    desc: 'A number that matters, for dashboards: its name, the value, how it changed — green when it goes the good way, red when not (invert for numbers that should go down) — a caption and a small trend line.',
+    demos: [
+      { title: 'A row of numbers', html: `<sav-grid min="13rem" style="width: 100%">
+  <sav-stat label="Monthly revenue" prefix="€ " value="48,200" change="+12.4%" caption="vs last month" icon="wallet" data="20,24,22,30,28,35,41,39,48"></sav-stat>
+  <sav-stat label="Active users" value="3,912" change="+3.1%" caption="this week" icon="users" data="31,33,32,35,34,37,39"></sav-stat>
+  <sav-stat label="Page load" value="1.8" unit="s" change="+0.3 s" invert caption="slower than last week" icon="timer" data="1.4,1.5,1.5,1.6,1.7,1.8"></sav-stat>
+  <sav-stat label="Refunds" value="12" change="−4" invert caption="fewer is better" icon="undo-2" data="20,18,17,16,14,12"></sav-stat>
+</sav-grid>` },
+      { title: 'Plain, without a card', html: `<sav-stat appearance="plain" label="Downloads" value="1.2M" change="0%" caption="no change"></sav-stat>` },
+    ],
+    attrs: [['label · value', 'string', 'The name and the number (written as you want it: 48,200 or 1.2M).'], ['prefix · unit', 'string', 'Before and after the number: € , %, s…'],
+      ['change', 'string', 'How it changed: +12%, −4, 0%; the sign decides up or down.'], ['trend', 'up · down · flat', 'Overrides what the sign of change says.'], ['invert', 'boolean', 'Going down is good (load time, refunds): down is green, up is red.'],
+      ['caption', 'string', 'A short note: vs last month.'], ['icon', 'icon name', ''], ['data', 'string', 'Numbers for the trend line, separated by commas.'], ['appearance', 'card · plain', ''], ['--sav-stat-size · --spark-width', 'CSS', 'Size of the number, width of the trend line.']],
+    slots: [['(default)', 'Anything under it: a link, a button.']],
+    parts: ['base', 'label', 'icon', 'value', 'change', 'caption', 'sparkline'],
+  },
+  {
+    id: 'timeline', name: 'Timeline', play: { tag: 'sav-timeline', attrs: {}, children: '<sav-timeline-item time="09:12" heading="Order placed" variant="primary">3 items, € 48.</sav-timeline-item><sav-timeline-item time="11:40" heading="Shipped" icon="truck"></sav-timeline-item><sav-timeline-item time="Tomorrow" heading="Delivery"></sav-timeline-item>' }, tag: 'sav-timeline · sav-timeline-item', group: 'Content', icon: 'git-commit-vertical',
+    desc: 'Things that happened, in order: an order on its way, the history of a document, the steps of a project. Each item has a time, a heading and any content, on a line with a dot or an icon — coloured with a variant; the dots take the shape of the style.',
+    demos: [
+      { title: 'An order', html: `<sav-timeline label="Order 1042" style="max-width: 26rem">
+  <sav-timeline-item time="Mon 09:12" heading="Order placed" variant="success" icon="check">3 items, € 48. Paid by card.</sav-timeline-item>
+  <sav-timeline-item time="Mon 16:40" heading="Shipped" variant="primary" icon="truck">Tracking number <code>AB123456IT</code>.</sav-timeline-item>
+  <sav-timeline-item time="Wed" heading="Out for delivery"></sav-timeline-item>
+  <sav-timeline-item time="Wed" heading="Delivered"></sav-timeline-item>
+</sav-timeline>` },
+      { title: 'History, with avatars and relative times', html: `<sav-timeline style="max-width: 26rem">
+  <sav-timeline-item heading="Ada changed the title" icon="pencil"><sav-relative-time datetime="${new Date(Date.now() - 5 * 60e3).toISOString()}"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Alan left a comment" icon="message-circle">“Looks good to me.” · <sav-relative-time datetime="${new Date(Date.now() - 3 * 3600e3).toISOString()}"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Build failed" variant="danger" icon="x">2 tests did not pass · yesterday</sav-timeline-item>
+</sav-timeline>` },
+    ],
+    attrs: [['label', 'string', 'Name of the list for screen readers.'], ['time · datetime · heading · icon · variant', '', 'On sav-timeline-item: datetime is the machine date behind the written time; variant colours the dot.'], ['auto-text', 'boolean', 'The icons in the coloured dots are black or white, whichever is readable on the dot (WCAG AA, at least 4.5:1), also with your own colours.']],
+    slots: [['(default)', 'On sav-timeline-item: the details.']],
+    parts: ['base', 'dot', 'time', 'heading', 'content'],
+  },
+  {
+    id: 'kbd', name: 'Keyboard key', play: { tag: 'sav-kbd', text: 'mod+K', attrs: {} }, tag: 'sav-kbd', group: 'Content', icon: 'keyboard',
+    desc: 'Keys to press, drawn as keycaps that follow the style: mod+K shows ⌘ K on a Mac and Ctrl K elsewhere; several shortcuts with commas, or “then” for one after the other. Screen readers hear “Control + K”.',
+    demos: [{ title: 'Shortcuts', html: `<p>Search: <sav-kbd>mod+K</sav-kbd> · Save: <sav-kbd>mod+S</sav-kbd> · New tab: <sav-kbd>mod+shift+T</sav-kbd></p>
+<p>Go to the inbox: <sav-kbd>G then I</sav-kbd> · Close: <sav-kbd size="sm">Esc</sav-kbd> · Move: <sav-kbd size="lg">up, down</sav-kbd></p>` }],
+    attrs: [['keys', 'string', 'The keys, if not written inside: mod+K, shift+enter, G then I. mod is ⌘ on a Mac and Ctrl elsewhere.'], ['size', 'sm · md · lg', '']],
+    parts: ['base', 'key'],
+  },
+  {
+    id: 'relative-time', name: 'Relative time', play: { tag: 'sav-relative-time', attrs: { datetime: '2026-11-01T09:00' } }, tag: 'sav-relative-time', group: 'Content', icon: 'clock',
+    desc: 'A moment written the way people say it — “3 minutes ago”, “yesterday”, “in 2 weeks” — in the page language, and kept up to date while the page is open; the full date shows on hover. Or the date itself with format.',
+    demos: [{ title: 'Past, future, and dates', html: `<ul style="margin: 0; line-height: 1.9">
+  <li>Saved <sav-relative-time datetime="${new Date(Date.now() - 20e3).toISOString()}"></sav-relative-time></li>
+  <li>Edited <sav-relative-time datetime="${new Date(Date.now() - 42 * 60e3).toISOString()}"></sav-relative-time></li>
+  <li>Created <sav-relative-time datetime="${new Date(Date.now() - 86400e3).toISOString()}"></sav-relative-time></li>
+  <li>Renews <sav-relative-time datetime="${new Date(Date.now() + 12 * 86400e3).toISOString()}"></sav-relative-time></li>
+  <li>In Italian: <sav-relative-time locale="it" datetime="${new Date(Date.now() - 3 * 3600e3).toISOString()}"></sav-relative-time></li>
+  <li>As a date: <sav-relative-time format="date" datetime="2026-11-01T09:00"></sav-relative-time></li>
+</ul>` }],
+    attrs: [['datetime', 'string', 'The moment: a date (2026-11-19T10:30, with or without time) or milliseconds since 1970. Empty: now.'], ['format', 'relative · date · datetime', 'Default relative (“3 minutes ago”).'],
+      ['numeric', 'auto · always', 'auto says “yesterday”, always says “1 day ago”.'], ['locale', 'string', 'Language (default the page language).']],
+    parts: ['base'],
+  },
+  {
     id: 'label', name: 'Label', play: { tag: 'sav-label', text: 'Feedback', attrs: {} }, tag: 'sav-label', group: 'Content', icon: 'bookmark',
     desc: 'A short caption that names a section or a category — the small "eyebrow" above a title. Unlike a tag it is not removable and does not filter; unlike a badge it is not a status or a count.',
     demos: [
@@ -740,7 +864,7 @@ window.SAVC_DOCS = [
 <sav-label appearance="plain">Chapter 2</sav-label>
 <sav-label variant="success" case="normal"><sav-icon slot="prefix" name="check"></sav-icon>Approved</sav-label>` },
     ],
-    attrs: [['variant', 'primary · neutral · success · warning · danger · protected', ''], ['appearance', 'solid · soft · outline · plain', 'Default solid.'], ['case', 'upper · normal', 'Upper case by default.'], ['--sav-label-size', 'CSS', 'Font size (default .72rem).']],
+    attrs: [['variant', 'primary · neutral · success · warning · danger · protected', ''], ['appearance', 'solid · soft · outline · plain', 'Default solid.'], ['case', 'upper · normal', 'Upper case by default.'], ['--sav-label-size', 'CSS', 'Font size (default .72rem).'], ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.'], ['--text-color', 'CSS', 'The colour of the text, whatever the background (unset: the colour that fits the background).']],
     slots: [['(default)', 'The text.'], ['prefix', 'An icon before it.']],
   },
   {
@@ -752,6 +876,7 @@ window.SAVC_DOCS = [
     ],
     attrs: [['src · srcset · sizes', 'string', 'Like a normal img.'], ['alt', 'string', 'Describes the image; leave empty for decoration.'], ['ratio', '16:9 · 4:3 · 1:1 · …', 'Keeps the shape while it loads.'], ['fit', 'cover · contain', 'Default cover.'],
       ['caption', 'string', 'A line under the image.'], ['zoom', 'boolean', 'Opens it large on click.'], ['zoom-src', 'url', 'A bigger file for the zoom.'], ['eager', 'boolean', 'Loads at once instead of when it comes into view.']],
+    events: [['sav-zoom', 'The picture opened bigger (zoom).']],
     parts: ['base', 'frame', 'image', 'caption', 'zoom'],
   },
   {
@@ -822,7 +947,7 @@ window.SAVC_DOCS = [
       { title: 'Large', html: `<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" label="Gradient demo" caption="A 4-second sample made for this page: try the controls, the keys and full screen." style="max-width: 46rem"></sav-video>` },
       { title: 'Small, square, with the browser controls', html: `<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" ratio="1:1" style="max-width: 16rem"></sav-video>
 <sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" native-controls style="max-width: 22rem"></sav-video>` } ],
-    attrs: [['src', 'url', 'Or <source> elements inside.'], ['poster', 'url', 'Image before playing.'], ['ratio', '16:9 · 4:3 · 1:1 · 9:16', ''], ['caption · label', 'string', 'Line below; name of the play button.'], ['native-controls', 'boolean', 'The browser\u2019s own control bar instead of this one.'], ['autoplay · muted · loop', 'boolean', ''], ['<track kind="captions">', 'child', 'Captions: the CC button appears.']],
+    attrs: [['src', 'url', 'Or <source> elements inside.'], ['poster', 'url', 'Image before playing.'], ['ratio', '16:9 · 4:3 · 1:1 · 9:16', ''], ['caption · label', 'string', 'Line below; name of the play button.'], ['native-controls', 'boolean', 'The browser\u2019s own control bar instead of this one.'], ['autoplay · muted · loop', 'boolean', ''], ['<track kind="captions">', 'child', 'Captions: the CC button appears.'], ['auto-text', 'boolean', 'The play icon is black or white, whichever is readable on the play button (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['play · pause · ended', '']], methods: [['play() · pause()', ''], ['video', 'Property: the <video> element.']],
   },
   {
@@ -830,7 +955,7 @@ window.SAVC_DOCS = [
     id: 'audio', name: 'Audio', play: { tag: 'sav-audio', attrs: { src: 'docs/media/sample.wav', title: 'Little melody', artist: 'SavComponents' } }, tag: 'sav-audio', group: 'Media', icon: 'music',
     desc: 'A small player in the style: play/pause, a seek bar, time, mute, with title, artist and cover.',
     demos: [ { title: 'Player', html: `<sav-audio src="docs/media/sample.wav" title="Little melody" artist="SavComponents" cover="docs/media/poster.jpg" style="max-width: 26rem"></sav-audio>` } ],
-    attrs: [['src', 'url', 'Or <source> elements inside.'], ['title · artist', 'string', ''], ['cover', 'url', 'A small picture.']],
+    attrs: [['src', 'url', 'Or <source> elements inside.'], ['title · artist', 'string', ''], ['cover', 'url', 'A small picture.'], ['auto-text', 'boolean', 'The play icon is black or white, whichever is readable on the play button (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['play · pause · ended', '']], methods: [['play() · pause()', ''], ['audio', 'Property: the <audio> element.']],
   },
   /* ------------------------------------------------------------ Overlays */
@@ -873,6 +998,7 @@ window.SAVC_DOCS = [
 <sav-drawer id="drw-start" label="Menu" placement="start" style="--size: 17rem">Navigation goes here.</sav-drawer>
 <sav-drawer id="drw-bottom" label="Share" placement="bottom" style="--size: 14rem">A bottom sheet, handy on phones.</sav-drawer>` }],
     attrs: [['placement', 'end · start · top · bottom', 'Default end.'], ['--size', 'CSS', 'Width or height, default 24rem.'], ['open · label · persistent', '', 'As in the dialog.']],
+    events: [['sav-show · sav-hide', 'Starts to open or to close.'], ['sav-after-show · sav-after-hide', 'Finished opening or closing (after the animation).'], ['sav-request-close', 'Esc, the backdrop or the × asks to close: call event.preventDefault() to keep it open.']],
   },
   {
     id: 'dropdown', name: 'Dropdown', tag: 'sav-dropdown · sav-menu-item', group: 'Overlays', icon: 'chevron-down',
@@ -936,8 +1062,65 @@ window.SAVC_DOCS = [
 <sav-tooltip content="On the left" placement="left"><sav-button appearance="outline" variant="neutral">Left</sav-button></sav-tooltip>
 <sav-tooltip placement="right"><sav-button appearance="outline" variant="neutral">Rich</sav-button><span slot="content"><b>Tip:</b> press <kbd>/</kbd> to search</span></sav-tooltip>
 <sav-tooltip content="Opened by click" trigger="click"><sav-button appearance="soft">Click</sav-button></sav-tooltip>` }],
-    attrs: [['content', 'string', 'Text of the tooltip.'], ['placement', 'top · bottom · left · right (+ -start / -end)', ''], ['trigger', 'hover focus · click', 'Space separated.'], ['delay', 'ms', 'Default 150.'], ['disabled', 'boolean', ''], ['--max-width', 'CSS', '']],
+    attrs: [['content', 'string', 'Text of the tooltip.'], ['placement', 'top · bottom · left · right (+ -start / -end)', ''], ['trigger', 'hover focus · click', 'Space separated.'], ['delay', 'ms', 'Default 150.'], ['disabled', 'boolean', ''], ['--max-width', 'CSS', ''], ['auto-text', 'boolean', 'Black or white text, whichever is readable on the tooltip colour (--sav-color-tooltip-bg) (WCAG AA, at least 4.5:1), also with your own colours.']],
     slots: [['(default)', 'The trigger'], ['content', 'Rich content']],
+  },
+  {
+    id: 'popover', name: 'Popover', play: { tag: 'sav-popover', attrs: { heading: 'Share this page' }, children: '<sav-button slot="trigger" appearance="outline" variant="neutral"><sav-icon slot="prefix" name="share"></sav-icon>Share</sav-button><p style="margin:0 0 .6rem">Anyone with the link can see it.</p><sav-input size="sm" value="https://example.com/p/42" readonly></sav-input>' }, tag: 'sav-popover', group: 'Overlays', icon: 'message-square',
+    desc: 'A panel next to a button with anything inside — text, a small form, a list. A click on the trigger opens it, Esc or a click outside closes it, and the focus goes into the panel and back. Bigger than a tooltip or an info tip, lighter than a dialog; it leans in Tilt and turns to glass in Glass.',
+    demos: [
+      { title: 'A small form', html: `<sav-popover heading="Share this page">
+  <sav-button slot="trigger" appearance="outline" variant="neutral"><sav-icon slot="prefix" name="share"></sav-icon>Share</sav-button>
+  <p style="margin: 0 0 .6rem">Anyone with the link can see it.</p>
+  <div style="display: flex; gap: .5rem; align-items: center">
+    <sav-input size="sm" value="https://example.com/p/42" readonly style="flex: 1"></sav-input>
+    <sav-copy-button value="https://example.com/p/42"></sav-copy-button>
+  </div>
+</sav-popover>` },
+      { title: 'Placement, without a close button', html: `<sav-popover placement="top" no-close label="Profile">
+  <sav-avatar slot="trigger" initials="AL" label="Ada Lovelace" style="cursor: pointer" tabindex="0"></sav-avatar>
+  <b>Ada Lovelace</b><br><span style="color: var(--sav-color-text-muted)">Editor · online</span>
+</sav-popover>
+<sav-popover placement="right-start" heading="Filters" sheet-on-mobile>
+  <sav-button slot="trigger" appearance="soft"><sav-icon slot="prefix" name="sliders-horizontal"></sav-icon>Filters</sav-button>
+  <div style="display: grid; gap: .5rem"><sav-checkbox checked>In stock</sav-checkbox><sav-checkbox>On sale</sav-checkbox><sav-checkbox>Free delivery</sav-checkbox></div>
+</sav-popover>` },
+    ],
+    attrs: [['heading', 'string', 'A title at the top of the panel (also its name for screen readers).'], ['placement', 'bottom-start · bottom · bottom-end · top-start · top · top-end · left · right · right-start', 'Where the panel opens (it flips when there is no room). Default bottom-start.'],
+      ['no-close', 'boolean', 'No × button (Esc and a click outside still close it).'], ['sheet-on-mobile', 'boolean', 'On phones it slides up from the bottom.'], ['label', 'string', 'Name for screen readers when there is no heading.'], ['--width', 'CSS', 'Widest the panel gets (default 20rem).']],
+    slots: [['trigger', 'The button (or any focusable element) that opens it.'], ['(default)', 'The content of the panel.']],
+    events: [['sav-show · sav-hide', 'The panel opened or closed.']],
+    methods: [['show() · hide()', ''], ['open', 'true while it is open.']],
+    parts: ['body', 'heading', 'close-button'],
+  },
+  {
+    builtFrom: ['kbd', 'icon'],
+    id: 'command', name: 'Command palette', play: { tag: 'sav-command', attrs: { hotkey: 'mod+k' }, children: '<optgroup label="Pages"><option value="home" data-icon="home" data-description="Start page">Home</option><option value="settings" data-icon="settings" data-shortcut="mod+,">Settings</option></optgroup><optgroup label="Actions"><option value="new" data-icon="plus" data-shortcut="mod+n">New project</option><option value="theme" data-icon="moon">Switch to dark mode</option></optgroup>' }, tag: 'sav-command', group: 'Overlays', icon: 'command',
+    desc: 'A search box over the page with everything you can do or open: type a few letters, move with the arrows, Enter. It opens with a shortcut from anywhere (⌘K on a Mac, Ctrl+K elsewhere), groups commands, shows their icons and shortcuts and highlights what matches.',
+    demos: [
+      { title: 'Press the shortcut, or the button', html: `<sav-button id="cmdOpen" appearance="outline" variant="neutral"><sav-icon slot="prefix" name="search"></sav-icon>Search commands <sav-kbd slot="suffix" size="sm">mod+K</sav-kbd></sav-button>
+<sav-command id="cmdDemo" hotkey="mod+k" placeholder="What do you want to do?">
+  <optgroup label="Pages">
+    <option value="home" data-icon="home" data-description="Start page">Home</option>
+    <option value="components" data-icon="blocks" data-description="Every component" data-keywords="list library">Components</option>
+    <option value="settings" data-icon="settings" data-shortcut="mod+,">Settings</option>
+  </optgroup>
+  <optgroup label="Actions">
+    <option value="new" data-icon="plus" data-shortcut="mod+n">New project</option>
+    <option value="invite" data-icon="user-plus" data-description="Send an invitation by email">Invite people</option>
+    <option value="dark" data-icon="moon">Switch to dark mode</option>
+  </optgroup>
+</sav-command>
+<script>
+  document.getElementById('cmdOpen').addEventListener('click', () => document.getElementById('cmdDemo').show());
+  document.getElementById('cmdDemo').addEventListener('sav-select', (e) => Sav.toast('Chosen: ' + e.detail.value));
+</script>` },
+    ],
+    attrs: [['hotkey', 'string', 'The shortcut that opens and closes it: mod+k (⌘K on a Mac, Ctrl+K elsewhere), ctrl+p, alt+space…'], ['placeholder', 'string', 'Text in the empty search box.'], ['empty-label', 'string', 'Text when nothing matches (default “Nothing found”).'], ['label', 'string', 'Name for screen readers (default “Commands”).']],
+    slots: [['(default)', '<option> commands, in <optgroup> for groups: value, data-icon, data-description, data-shortcut, data-keywords, data-href.']],
+    events: [['sav-select', 'A command was chosen: detail.value, detail.item (cancel it to keep the palette open).'], ['sav-show · sav-hide', 'Opened or closed.']],
+    methods: [['show() · hide()', ''], ['commands', 'The commands as a list ({ label, value, icon, description, shortcut, keywords, group, href }); set it to fill the palette from code.']],
+    parts: ['dialog', 'base', 'input', 'list', 'close-button'],
   },
 
   /* ------------------------------------------------------------ Navigation */
@@ -997,6 +1180,15 @@ window.SAVC_DOCS = [
   <sav-tab label="Team" icon="users">The people of the team.</sav-tab>
   <sav-tab label="Reports" icon="chart-column">Monthly reports.</sav-tab>
 </sav-tabs>` },
+      { title: 'Vertical on the right', html: `<sav-tabs placement="end" collapsible>
+  <sav-tab label="Details" icon="info">placement="end": the tabs on the right, the content on the left. The fold handle sits on the left border of the tabs and folds them towards the right.</sav-tab>
+  <sav-tab label="Comments" icon="message-circle">Comments on this item.</sav-tab>
+  <sav-tab label="History" icon="history">Who changed what, and when.</sav-tab>
+</sav-tabs>
+<sav-tabs placement="end" collapsible collapse-button="row">
+  <sav-tab label="Layers" icon="layers">With collapse-button="row" the button is a row at the bottom, as on the left.</sav-tab>
+  <sav-tab label="Assets" icon="image">Pictures and files.</sav-tab>
+</sav-tabs>` },
       { title: 'Vertical with sub tabs', html: `<sav-tabs placement="start" active="profile" collapsible>
   <sav-tab label="Account" icon="user" name="account">Your account in short.</sav-tab>
   <sav-tab label="Profile" level="sub" name="profile">Name, picture and bio.</sav-tab>
@@ -1007,7 +1199,7 @@ window.SAVC_DOCS = [
   <sav-tab label="Billing" icon="credit-card" name="billing">Plan and invoices.</sav-tab>
 </sav-tabs>` },
     ],
-    attrs: [['appearance', 'underline · pills · segmented', 'Default underline.'], ['placement', 'top · start', ''], ['active', 'tab name', 'Tab to open first.'], ['label · name · icon · active · disabled', '', 'On sav-tab.'], ['collapsible', 'boolean', 'Vertical tabs: a button under the tabs folds them to icons only (collapsed) and opens them again (expanded).'], ['collapsed', 'boolean', 'Vertical tabs: only the icons show (or the first letter of a tab without icon); the names become tooltips. Set it to start collapsed; the button changes it.'], ['collapse-label · expand-label', 'string', 'Text of the fold button. Default "Collapse" and "Expand".'], ['collapse-button', 'edge · row', 'Where the fold button goes: edge (a small handle on the right border of the rail, next to the first tab, the default) or row (a row with text at the bottom of the rail).'], ['icon-placement', 'start · after · end', 'Where the icon of a tab goes: start (before the text, the default), after (right after the text) or end (at the far end of the tab, with space in between; clearest in vertical tabs). On sav-tabs it applies to every tab; on one sav-tab it applies to that tab only.'], ['level', 'normal · sub', 'On sav-tab: sub sits under the tab before it, smaller and indented (two levels; clearest with placement="start").'], ['--sav-tab-sub-indent', 'CSS', 'How far sub tabs are indented (default .9rem).'], ['--sav-tab-padding', 'CSS', 'Panel padding.']],
+    attrs: [['appearance', 'underline · pills · segmented', 'Default underline.'], ['placement', 'top · start · end', 'top: a bar above the panels (default); start: a vertical column on the left; end: a vertical column on the right (the fold handle and the tooltips then sit on its left side).'], ['active', 'tab name', 'Tab to open first.'], ['label · name · icon · active · disabled', '', 'On sav-tab.'], ['collapsible', 'boolean', 'Vertical tabs: a button under the tabs folds them to icons only (collapsed) and opens them again (expanded).'], ['collapsed', 'boolean', 'Vertical tabs: only the icons show (or the first letter of a tab without icon); the names become tooltips. Set it to start collapsed; the button changes it.'], ['collapse-label · expand-label', 'string', 'Text of the fold button. Default "Collapse" and "Expand".'], ['collapse-button', 'edge · row', 'Where the fold button goes: edge (a small handle on the outer border of the rail — right with start, left with end — next to the first tab, the default) or row (a row with text at the bottom of the rail).'], ['icon-placement', 'start · after · end', 'Where the icon of a tab goes: start (before the text, the default), after (right after the text) or end (at the far end of the tab, with space in between; clearest in vertical tabs). On sav-tabs it applies to every tab; on one sav-tab it applies to that tab only.'], ['level', 'normal · sub', 'On sav-tab: sub sits under the tab before it, smaller and indented (two levels; clearest with vertical tabs).'], ['--sav-tab-sub-indent', 'CSS', 'How far sub tabs are indented (default .9rem).'], ['--sav-tab-padding', 'CSS', 'Panel padding.'], ['auto-text', 'boolean', 'The text of the selected tab is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['sav-tab-show', 'detail.name, detail.index'], ['sav-collapse', 'Vertical tabs folded or opened: detail.collapsed.']],
     methods: [['show(nameOrIndex)', 'Opens a tab by its name or position.'], ['collapse() · expand()', 'Vertical tabs: only the icons, or icons and names again.']],
     parts: ['nav', 'tab', 'sub-tab', 'tab-icon', 'tab-label', 'indicator', 'panels', 'rail', 'collapse-button'],
@@ -1090,7 +1282,7 @@ window.SAVC_DOCS = [
     attrs: [['label', 'string', 'Name for screen readers.'], ['appearance', 'plain · card', ''], ['orientation', 'vertical · horizontal', 'horizontal: a bar; its submenus drop down.'],
       ['collapsed', 'boolean', 'A rail: icons only, the labels become tooltips, submenus fly out to the side.'], ['collapsible', 'boolean', 'Adds the button that folds the list into a rail and back.'],
       ['selectable', 'boolean', 'Marks the clicked item as current (also inside submenus).'], ['current · open · value · variant · type · disabled', '', 'sav-menu-item; open shows its submenu.'],
-      ['<sav-menu slot="submenu">', 'child', 'Inside a sav-menu-item: its submenu (it can hold more).']],
+      ['<sav-menu slot="submenu">', 'child', 'Inside a sav-menu-item: its submenu (it can hold more).'], ['auto-text', 'boolean', 'The current item is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours. Set it on the outer sav-menu: it reaches the submenus too.']],
     events: [['sav-select', 'detail.value, detail.item'], ['sav-toggle', 'detail.item, detail.open (a submenu) · detail.collapsed (the rail)']],
   },
   {
@@ -1142,7 +1334,7 @@ window.SAVC_DOCS = [
       ['sticky', 'boolean', 'Stays at the top while the page scrolls.'], ['breakpoint', 'number', 'Below this width (px, of the header itself) the links fold behind a menu button. Without it they fold when everything no longer fits on one line.'],
       ['search-collapse', 'auto · always · never', 'When the search becomes a button that opens the field across the header: when narrow (default), always, or never.'], ['menu-button', 'start · end', 'Side of the menu button when narrow.'],
       ['label', 'string', 'Name of the navigation (default “Main”).'], ['slot="logo" · slot="search" · slot="actions"', '', 'The links go in the default slot; mark the current one with aria-current="page".'],
-      ['--height · --padding · --search-width · --sav-header-bg', 'CSS', 'Size, side padding, width of the open search, background.'], ['toggleMenu() · toggleSearch()', 'method', 'Open or close the folded menu or search (pass true or false).']],
+      ['--height · --padding · --search-width · --sav-header-bg', 'CSS', 'Size, side padding, width of the open search, background.'], ['toggleMenu() · toggleSearch()', 'method', 'Open or close the folded menu or search (pass true or false).'], ['auto-text', 'boolean', 'The link of the current page (aria-current="page") is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['sav-toggle', 'detail.part (menu · search), detail.open']],
   },
   {
@@ -1179,7 +1371,121 @@ window.SAVC_DOCS = [
   <sav-breadcrumb-item>Hiking backpack 30 L</sav-breadcrumb-item>
 </sav-breadcrumb>` }],
     attrs: [['separator', 'string', 'On the breadcrumb; default a chevron.'], ['appearance', 'plain · contained', 'contained puts the path in a bar.'], ['max-items', 'number', 'Longer paths show the first item, “…” (click to open) and the last ones.'],
-      ['label', 'string', 'Accessible name (default “Breadcrumb”).'], ['href', 'url', 'On each item.'], ['--sav-breadcrumb-current-bg · -fg · -shadow', 'CSS', 'How the current page is highlighted.']],
+      ['label', 'string', 'Accessible name (default “Breadcrumb”).'], ['href', 'url', 'On each item.'], ['--sav-breadcrumb-current-bg · -fg · -shadow', 'CSS', 'How the current page is highlighted.'], ['auto-text', 'boolean', 'The current page is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
+  },
+  {
+    id: 'pagination', name: 'Pagination', play: { tag: 'sav-pagination', attrs: { pages: '20', page: '6' } }, tag: 'sav-pagination', group: 'Navigation', icon: 'ellipsis',
+    desc: 'Page numbers for long lists and tables: always the first and the last, the pages around the current one and “…” in between, previous and next. The current page is highlighted like the breadcrumb, by style. Links (href="?page={page}") or buttons that fire sav-page.',
+    demos: [
+      { title: 'Numbers, and simple', html: `<sav-pagination pages="20" page="6"></sav-pagination>
+<sav-pagination pages="20" page="6" siblings="2" labels size="sm"></sav-pagination>
+<sav-pagination appearance="simple" pages="12" page="3"></sav-pagination>` },
+      { title: 'From the number of items, centred', html: `<sav-pagination total="248" page-size="25" page="1" align="center" style="width: 100%"></sav-pagination>` },
+      { title: 'Links', html: `<sav-pagination pages="9" page="4" href="#pagination?page={page}"></sav-pagination>` },
+    ],
+    attrs: [['page', 'number', 'The current page, from 1.'], ['pages', 'number', 'How many pages; or give total and page-size.'], ['total · page-size', 'number', 'Number of items and items per page (default 10).'],
+      ['siblings', 'number', 'Pages shown on each side of the current one (default 1).'], ['href', 'string', 'Turns pages into links; {page} is replaced with the number.'], ['appearance', 'numbers · simple', 'simple: only ‹ “3 of 12” ›.'],
+      ['labels', 'boolean', 'Writes Previous and Next next to the arrows.'], ['align', 'start · center · end', ''], ['size', 'sm · md · lg', ''], ['label', 'string', 'Name of the navigation (default “Pages”).'], ['auto-text', 'boolean', 'The number of the current page is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
+    events: [['sav-page', 'A page was chosen: detail.page, detail.previous. Cancel it to stay.'], ['change', 'The page changed (buttons): detail.page.']],
+    parts: ['base', 'page', 'previous', 'next', 'summary'],
+  },
+  {
+    id: 'steps', name: 'Steps', play: { tag: 'sav-steps', attrs: { current: '2' }, children: '<sav-step label="Account" description="Email and password"></sav-step><sav-step label="Profile" description="Name and photo"></sav-step><sav-step label="Plan"></sav-step><sav-step label="Done"></sav-step>' }, tag: 'sav-steps · sav-step', group: 'Navigation', icon: 'list-ordered',
+    desc: 'The steps of a task — sign-up, checkout, a set-up: the done ones with a tick and a coloured line, the current one marked, the next ones waiting. Across or down; with clickable people go back to a step already done. The markers take the shape and lean of the style.',
+    demos: [
+      { title: 'Across', html: `<sav-steps current="2" style="width: 100%">
+  <sav-step label="Account" description="Email and password"></sav-step>
+  <sav-step label="Profile" description="Name and photo"></sav-step>
+  <sav-step label="Plan" description="Free or Pro"></sav-step>
+  <sav-step label="Done"></sav-step>
+</sav-steps>` },
+      { title: 'Down, clickable, with icons and an error', html: `<sav-steps orientation="vertical" current="3" clickable id="stepsDemo">
+  <sav-step label="Cart" icon="shopping-cart" description="3 items"></sav-step>
+  <sav-step label="Delivery" icon="truck" description="Click to go back here"></sav-step>
+  <sav-step label="Payment" icon="credit-card" status="error" description="The card was declined"></sav-step>
+  <sav-step label="Confirmation" icon="check"></sav-step>
+</sav-steps>
+<div class="row"><sav-button size="sm" appearance="outline" variant="neutral" onclick="document.getElementById('stepsDemo').previous()">Back</sav-button><sav-button size="sm" onclick="document.getElementById('stepsDemo').next()">Next</sav-button></div>` },
+    ],
+    attrs: [['current', 'number', 'The step you are on, from 1 (steps before it are done; one past the last means all done).'], ['orientation', 'horizontal · vertical', ''], ['clickable', 'boolean', 'Steps already done can be clicked to go back.'],
+      ['label', 'string', 'Name of the list (default “Steps”).'], ['label · description · icon · status', '', 'On sav-step; status="error" marks a step that went wrong.'], ['auto-text', 'boolean', 'The number or tick of the done, current and failed steps is black or white, whichever is readable on its marker (WCAG AA, at least 4.5:1), also with your own colours.']],
+    events: [['sav-step', 'A done step was clicked: detail.index (cancel it to stay).'], ['change', 'The current step changed: detail.current.']],
+    methods: [['next() · previous()', 'One step forward or back.'], ['current', 'The current step (number).']],
+    parts: ['base', 'marker', 'label', 'description', 'line'],
+  },
+  {
+    id: 'tree', name: 'Tree', play: { tag: 'sav-tree', attrs: { label: 'Files' }, children: '<sav-tree-item label="src" icon="folder" icon-open="folder-open" expanded><sav-tree-item label="index.html" icon="file-code"></sav-tree-item><sav-tree-item label="styles.css" icon="file-code" selected></sav-tree-item></sav-tree-item><sav-tree-item label="README.md" icon="file-text"></sav-tree-item>' }, tag: 'sav-tree · sav-tree-item', group: 'Navigation', icon: 'list-tree',
+    desc: 'Items inside items that open and close — folders and files, sections and pages. The arrow keys move, → opens or goes in, ← closes or goes to the parent, Enter chooses. The chosen item is highlighted like the current page of the breadcrumb.',
+    demos: [
+      { title: 'Folders and files', html: `<sav-tree label="Project files" style="width: 18rem">
+  <sav-tree-item label="src" icon="folder" icon-open="folder-open" expanded>
+    <sav-tree-item label="components" icon="folder" icon-open="folder-open">
+      <sav-tree-item label="button.js" icon="file-code"></sav-tree-item>
+      <sav-tree-item label="card.js" icon="file-code"></sav-tree-item>
+    </sav-tree-item>
+    <sav-tree-item label="index.html" icon="file-code" selected></sav-tree-item>
+    <sav-tree-item label="styles.css" icon="file-code"></sav-tree-item>
+  </sav-tree-item>
+  <sav-tree-item label="images" icon="folder" icon-open="folder-open">
+    <sav-tree-item label="logo.svg" icon="image"></sav-tree-item>
+  </sav-tree-item>
+  <sav-tree-item label="README.md" icon="file-text"></sav-tree-item>
+  <sav-tree-item label="secret.env" icon="lock" disabled></sav-tree-item>
+</sav-tree>` },
+      { title: 'Sections you can choose too (selectable)', html: `<sav-tree selectable label="Settings" style="width: 16rem">
+  <sav-tree-item label="Account" expanded><sav-tree-item label="Profile"></sav-tree-item><sav-tree-item label="Security"></sav-tree-item></sav-tree-item>
+  <sav-tree-item label="Notifications"><sav-tree-item label="Email"></sav-tree-item><sav-tree-item label="Phone"></sav-tree-item></sav-tree-item>
+</sav-tree>` },
+    ],
+    attrs: [['label', 'string', 'Name of the tree for screen readers.'], ['selectable', 'boolean', 'Items with children can be chosen too (otherwise a click opens or closes them).'],
+      ['label · value · icon · icon-open · expanded · selected · disabled', '', 'On sav-tree-item; icon-open is the icon while it is open (an open folder).'], ['auto-text', 'boolean', 'The selected item is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
+    events: [['sav-select', 'An item was chosen: detail.value, detail.item.'], ['sav-toggle', 'An item opened or closed: detail.item, detail.expanded.']],
+    parts: ['base', 'item', 'toggle', 'icon', 'label', 'children'],
+  },
+  {
+    builtFrom: ['spinner', 'button'],
+    id: 'infinite-scroll', name: 'Infinite scroll', play: { tag: 'sav-infinite-scroll', attrs: { mode: 'button' }, children: '<p>Item 1</p><p>Item 2</p><p>Item 3</p>' }, tag: 'sav-infinite-scroll', group: 'Navigation', icon: 'arrow-down-to-line',
+    desc: 'Loads more as you reach the end of a list. When the end comes near it fires sav-load; you add the items and call done() — or done(false) when there is nothing more, or fail() on an error. Meanwhile a spinner (the style’s own), at the end a line, on an error “Try again”. It watches the page, or itself when it scrolls; mode="button" waits for a “Load more” button instead.',
+    demos: [
+      { title: 'In a box that scrolls', html: `<sav-infinite-scroll id="feedDemo" end-label="You have seen every post" style="display: block; width: 100%; max-height: 18rem; overflow: auto; padding: .25rem">
+  <sav-card>Post 1</sav-card><sav-card>Post 2</sav-card><sav-card>Post 3</sav-card>
+</sav-infinite-scroll>
+<script>
+  {
+    const feed = document.getElementById('feedDemo');
+    // a pretend server: 3 more posts each time, 4 pages in all
+    feed.addEventListener('sav-load', (e) => {
+      setTimeout(() => {
+        const start = feed.children.length;
+        for (let i = 1; i <= 3; i++) feed.insertAdjacentHTML('beforeend', '<sav-card>Post ' + (start + i) + '</sav-card>');
+        feed.done(e.detail.page < 4);
+      }, 700);
+    });
+  }
+</script>` },
+      { title: 'With a button, and an error', html: `<sav-infinite-scroll id="moreDemo" mode="button" more-label="Show more products" style="width: 100%">
+  <sav-list><sav-list-item>Backpack</sav-list-item><sav-list-item>Tent</sav-list-item></sav-list>
+</sav-infinite-scroll>
+<script>
+  {
+    const more = document.getElementById('moreDemo');
+    let tries = 0;
+    more.addEventListener('sav-load', () => {
+      setTimeout(() => {
+        // the second time it fails, to show "Try again"
+        if (++tries === 2) { more.fail(); return; }
+        more.querySelector('sav-list').insertAdjacentHTML('beforeend', '<sav-list-item>Sleeping bag</sav-list-item><sav-list-item>Stove</sav-list-item>');
+        more.done(tries < 4);
+      }, 600);
+    });
+  }
+</script>` },
+    ],
+    attrs: [['mode', 'auto · button', 'auto loads by itself near the end (default); button waits for “Load more”.'], ['threshold', 'number', 'How many pixels before the end it starts loading (default 300).'],
+      ['loading-label · more-label · end-label · error-label', 'string', 'The texts: “Loading…”, “Load more”, “That’s all”, “It did not load.”']],
+    events: [['sav-load', 'Time to load more: detail.page (1, 2, 3…). Add the items, then call done() or fail().']],
+    methods: [['done(more = true)', 'The items are in; false when there is nothing more.'], ['fail()', 'Loading failed: shows “Try again”.'], ['reset()', 'Starts again from page 0 (a new search).'], ['load()', 'Loads the next page now.'], ['page · loading', 'Pages loaded so far; true while loading.']],
+    parts: ['base', 'footer', 'loading', 'more-button', 'error', 'end'],
   },
   /* ------------------------------------------------------------ Charts */
   {

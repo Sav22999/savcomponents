@@ -223,6 +223,8 @@
   const TILT = 'var(--sav-tilt, atan2(var(--sav-tilt-lift, 0px), var(--_tw, 160px)))';
   const tiltRO = typeof ResizeObserver === 'function' ? new ResizeObserver((entries) => {
     for (const e of entries) {
+      // an element that left the page is no longer watched (so the browser can free it); tiltWatch watches it again if it comes back
+      if (!e.target.isConnected) { tiltRO.unobserve(e.target); e.target._tiltOn = false; continue; }
       const w = e.borderBoxSize?.[0]?.inlineSize ?? e.contentRect.width;
       (e.target._tiltTarget || e.target).style.setProperty('--_tw', Math.max(Math.round(w), 24) + 'px');
     }
@@ -231,6 +233,16 @@
   const tiltWatch = (src, target = src) => { if (tiltRO && src && !src._tiltOn) { src._tiltOn = true; src._tiltTarget = target; tiltRO.observe(src); } };
   Sav.tiltWatch = tiltWatch;
 
+  /** auto-text: near-black on light backgrounds, white on dark ones. --_eb is the colour behind the text (the fill, mixed with the
+      page where it is see-through); the switch sits where both reach 4.5:1 (WCAG AA). An explicit --text-color still wins. */
+  // the WCAG relative luminance (Y) of what is behind, worked out in CSS: white when Y is below 0.179, black above (there both reach 4.58:1)
+  const AUTO_TEXT = 'var(--text-color, color(from var(--_eb) srgb clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) / 1))';
+  const SOLID_EB = 'color-mix(in oklab, var(--_c) var(--sav-fill-opacity, 100%), var(--sav-color-bg))';
+  const SOFT_EB = 'color-mix(in oklab, var(--_c) 13%, var(--sav-color-bg))';
+  /* behind the current item (breadcrumb, menu, header, pagination, tree): a tint, or the solid tile of Tilt and Brutal (--sav-current-behind) */
+  const CUR_EB = (pct) => `var(--sav-current-behind, color-mix(in oklab, var(--sav-color-primary) ${pct}%, var(--sav-color-bg)))`;
+  /** auto-text on a group (steps, timeline, tree, menu, breadcrumb, button, chip and radio groups) reaches its items as data-auto-text */
+  const passAutoText = (group, items) => items.forEach((el) => el.toggleAttribute('data-auto-text', group.hasAttribute('auto-text')));
   const SIZES = `
     :host { --_h: var(--sav-control-md); --_fs: var(--sav-font-size-md); }
     :host([size="sm"]) { --_h: var(--sav-control-sm); --_fs: var(--sav-font-size-sm); }
@@ -507,7 +519,7 @@
       .btn {
         position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: .5em;
         width: 100%; min-height: var(--_h); margin: 0; padding: 0 var(--_px);
-        border: 0; border-radius: var(--sav-radius); background: none; color: var(--_fg);
+        border: 0; border-radius: var(--sav-radius); background: none; color: var(--text-color, var(--_fg));
         font: inherit; font-size: calc(var(--_fs) * var(--sav-button-font-scale, 1)); font-weight: var(--sav-font-weight-semibold); line-height: 1.1;
         letter-spacing: var(--sav-button-letter-spacing, normal); text-transform: var(--sav-button-text-transform, none);
         text-decoration: none; white-space: nowrap; cursor: pointer; user-select: none; -webkit-user-select: none;
@@ -541,10 +553,11 @@
       .label { display: inline-flex; align-items: center; gap: .5em; }
       ::slotted(sav-icon), ::slotted(svg) { font-size: 1.1em; }
       .caret { width: 1em; height: 1em; margin-right: -.2em; opacity: .8; }
-      .spin { display: none; position: absolute; width: 1.1em; height: 1.1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: sav-spin .7s linear infinite; }
+      /* loading: the library's own spinner in the colour of the text, so it follows the style (tiles in Tilt and Glass, a square in Sharp, a ring in Soft and Brutal) */
+      .spin { display: none; position: absolute; font-size: 1.15em; }
       :host([loading]) .btn { pointer-events: none; }
       :host([loading]) .btn > :not(.spin) { visibility: hidden; }
-      :host([loading]) .spin { display: block; }
+      :host([loading]) .spin { display: inline-flex; }
       :host([data-group="middle"]) .btn { border-radius: 0; }
       :host([data-group="first"]) .btn { border-start-end-radius: 0; border-end-end-radius: 0; }
       :host([data-group="last"]) .btn { border-start-start-radius: 0; border-end-start-radius: 0; }
@@ -553,6 +566,11 @@
       :host([data-group]:not([appearance])), :host([data-group][appearance="solid"]) { --_bd: color-mix(in oklab, var(--_c), #000 14%); --_bd-h: var(--_bd); }
       :host([data-group]) .btn::before { transform: none; }
       @keyframes sav-spin { to { transform: rotate(360deg); } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${SOLID_EB}; }
+      :host([appearance="soft"]) { --_eb: ${SOFT_EB}; }
+      :host(:is([appearance="outline"], [appearance="ghost"], [appearance="link"])) { --_eb: var(--sav-color-bg); }
+      :host(:is([auto-text], [data-auto-text])) .btn { color: ${AUTO_TEXT}; }
     `];
     constructor() {
       super();
@@ -581,7 +599,7 @@
       const tag = this.href ? 'a' : 'button';
       const ic = this.getAttribute('icon'), ice = this.getAttribute('icon-end');
       [ic, ice].forEach((n) => n && !ICONS[n] && Sav.loadIcon(n).then((svg) => svg && this.isConnected && this.render()));
-      this.shadowRoot.innerHTML = `<${tag} part="base" class="btn">${ic ? svgIcon(ic, 'ic') : ''}<slot name="prefix"></slot><span part="label" class="label"><slot></slot></span><slot name="suffix"></slot>${ice ? svgIcon(ice, 'ic') : ''}${this.caret ? svgIcon('chevron-down', 'caret') : ''}<span class="spin" part="spinner"></span></${tag}>`;
+      this.shadowRoot.innerHTML = `<${tag} part="base" class="btn">${ic ? svgIcon(ic, 'ic') : ''}<slot name="prefix"></slot><span part="label" class="label"><slot></slot></span><slot name="suffix"></slot>${ice ? svgIcon(ice, 'ic') : ''}${this.caret ? svgIcon('chevron-down', 'caret') : ''}<sav-spinner class="spin" part="spinner" variant="current" aria-hidden="true"></sav-spinner></${tag}>`;
       this.$('slot:not([name])').addEventListener('slotchange', () => this.syncLabel());
       tiltWatch(this.$('.btn'));
       this.sync();
@@ -612,11 +630,15 @@
       const label = this.getAttribute('label');
       label ? b.setAttribute('aria-label', label) : b.removeAttribute('aria-label');
       this.loading ? b.setAttribute('aria-busy', 'true') : b.removeAttribute('aria-busy');
+      // the state of a menu or toggle button, set on sav-button, is read on the real button inside
+      for (const a of BUTTON_ARIA) { const v = this.getAttribute(a); v === null ? b.removeAttribute(a) : b.setAttribute(a, v); }
     }
     focus(o) { this.$('.btn')?.focus(o); }
     blur() { this.$('.btn')?.blur(); }
     click() { this.$('.btn')?.click(); }
   }
+  const BUTTON_ARIA = ['aria-expanded', 'aria-pressed', 'aria-controls', 'aria-haspopup', 'aria-describedby', 'aria-current'];
+  { const own = SavButton.observedAttributes || []; Object.defineProperty(SavButton, 'observedAttributes', { configurable: true, get: () => [...own, ...BUTTON_ARIA] }); }
   props(SavButton, { icon: String, iconEnd: String, variant: String, appearance: String, size: String, pill: Boolean, square: Boolean, circle: Boolean, block: Boolean, caret: Boolean, disabled: Boolean, loading: Boolean, href: String, target: String, download: String, type: String, name: String, value: String, label: String });
   define('sav-button', SavButton);
 
@@ -631,7 +653,11 @@
       if (label) this.$('.g').setAttribute('aria-label', label);
       this.sync();
     }
+    static get observedAttributes() { return ['auto-text']; }
+    changed() { this.sync(); }
     sync() {
+      if (!this.$('slot')) return;
+      passAutoText(this, this.querySelectorAll('sav-button'));
       const btns = this.$('slot').assignedElements().filter((e) => e.localName === 'sav-button' || e.localName === 'sav-dropdown');
       btns.forEach((b, i) => {
         const target = b.localName === 'sav-dropdown' ? b.querySelector('[slot="trigger"]') : b;
@@ -652,7 +678,7 @@
       :host([appearance="soft"]) { --_bb: var(--_c-soft); --_bf: var(--_c-text); }
       :host([appearance="outline"]) { --_bb: transparent; --_bf: var(--_c-text); --_bsh: inset 0 0 0 1px var(--_c-line); }
       .b { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .3em; padding: .2em .55em; border-radius: var(--sav-radius-sm);
-           color: var(--_bf); font-size: .75em; font-weight: var(--sav-font-weight-bold); line-height: 1.25; white-space: nowrap; letter-spacing: .01em; }
+           color: var(--text-color, var(--_bf)); font-size: .75em; font-weight: var(--sav-font-weight-bold); line-height: 1.25; white-space: nowrap; letter-spacing: .01em; }
       /* background on a layer: the tilt shape rotates it, the text stays upright */
       .b::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_bb); background-image: var(--sav-sheen, none); box-shadow: var(--_bsh); -webkit-backdrop-filter: var(--sav-button-backdrop, none); backdrop-filter: var(--sav-button-backdrop, none); transform: rotate(${TILT}); }
       :host([dot]) .b::before { transform: none; }
@@ -660,6 +686,11 @@
       :host([dot]) .b { width: .6em; height: .6em; padding: 0; border-radius: 50%; font-size: 1em; }
       :host([pulse]) .b { animation: sav-pulse 1.6s ease-out infinite; }
       @keyframes sav-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--_c) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 .5em transparent; } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${SOLID_EB}; }
+      :host([appearance="soft"]) { --_eb: ${SOFT_EB}; }
+      :host([appearance="outline"]) { --_eb: var(--sav-color-bg); }
+      :host([auto-text]) .b { color: ${AUTO_TEXT}; }
     `];
     connectedCallback() { if (!this.shadowRoot.firstChild) { this.shadowRoot.innerHTML = '<span class="b" part="base"><slot></slot></span>'; tiltWatch(this.$('.b')); } }
   }
@@ -676,7 +707,7 @@
       :host([hidden]) { display: none !important; }
       :host([appearance="soft"]) { --_bb: var(--_c-soft); --_bf: var(--_c-text); }
       .b { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .3em; padding: .2em .55em; border-radius: var(--sav-radius-sm); overflow: hidden;
-           color: var(--_bf); font-size: .72em; font-weight: var(--sav-font-weight-bold); line-height: 1.25; white-space: nowrap; letter-spacing: .04em; text-transform: var(--transform, uppercase); }
+           color: var(--text-color, var(--_bf)); font-size: .72em; font-weight: var(--sav-font-weight-bold); line-height: 1.25; white-space: nowrap; letter-spacing: .04em; text-transform: var(--transform, uppercase); }
       .b::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_bb); background-image: var(--sav-sheen, none); box-shadow: var(--sav-badge-shadow, none); transform: rotate(${TILT}); }
       .ic { width: 1.05em; height: 1.05em; flex: none; display: none; }
       :host([sparkle]) .ic { display: block; }
@@ -686,7 +717,7 @@
       @keyframes sav-new-shine { 0%, 55% { left: -60%; opacity: 0; } 60% { opacity: 1; } 85%, 100% { left: 130%; opacity: 0; } }
       .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       /* text: just the coloured word, next to a menu item or a heading */
-      :host([appearance="text"]) .b { padding: 0; color: var(--_c-text); } :host([appearance="text"]) .b::before { display: none; }
+      :host([appearance="text"]) .b { padding: 0; color: var(--text-color, var(--_c-text)); } :host([appearance="text"]) .b::before { display: none; }
       /* dot: a small pulsing dot; the word stays for screen readers */
       :host([appearance="dot"]) .b { width: .55rem; height: .55rem; padding: 0; border-radius: 50%; overflow: visible; }
       :host([appearance="dot"]) .b::before { border-radius: 50%; transform: none; animation: sav-new-dot 1.8s ease-out infinite; }
@@ -701,6 +732,11 @@
       :host([placement="start"][appearance="ribbon"]) .b { right: auto; left: -2.35rem; transform: rotate(-45deg); }
       :host([placement="start"][appearance="corner"]) { right: auto; left: var(--offset, .6rem); }
       @media (prefers-reduced-motion: reduce) { .b::after, :host([appearance="dot"]) .b::before { animation: none !important; } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${SOLID_EB}; }
+      :host([appearance="soft"]) { --_eb: ${SOFT_EB}; }
+      :host(:is([appearance="text"], [appearance="dot"])) { --_eb: var(--sav-color-bg); }
+      :host([auto-text]) .b { color: ${AUTO_TEXT}; }
     `];
     static get observedAttributes() { return ['until', 'seen-key']; }
     connectedCallback() {
@@ -742,13 +778,17 @@
       :host { --_tb: var(--_c-soft); --_tf: var(--_c-text); --_tbd: var(--_c-line); }
       :host([appearance="solid"]) { --_tb: var(--_c); --_tf: var(--_on); --_tbd: transparent; }
       .t { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .35em; height: calc(var(--_h) * .72); padding: 0 .65em;
-           border-radius: var(--sav-radius); color: var(--_tf);
+           border-radius: var(--sav-radius); color: var(--text-color, var(--_tf));
            font-size: calc(var(--_fs) * .9); font-weight: var(--sav-font-weight-semibold); white-space: nowrap; }
       .t::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_tb); background-image: var(--sav-sheen, none); border: var(--sav-border-width) solid var(--sav-ink-border, var(--_tbd)); -webkit-backdrop-filter: var(--sav-button-backdrop, none); backdrop-filter: var(--sav-button-backdrop, none); transform: rotate(${TILT}); }
       :host([pill]) .t { border-radius: var(--sav-radius-pill); }
       .x { display: inline-flex; padding: 1px; margin: 0 -.3em 0 0; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; opacity: .7; }
       .x:hover { opacity: 1; background: var(--_c-soft); }
       .x svg { width: 1em; height: 1em; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${SOFT_EB}; }
+      :host([appearance="solid"]) { --_eb: ${SOLID_EB}; }
+      :host([auto-text]) .t { color: ${AUTO_TEXT}; }
     `];
     connectedCallback() { if (!this.shadowRoot.firstChild) this.render(); }
     changed(n) { if (n === 'removable') this.render(); }
@@ -796,6 +836,11 @@
       :host([toast]:not([duration])) .a::after, :host([toast][duration="0"]) .a::after { display: none; }
       :host(:hover) .a::after { animation-play-state: paused; }
       @keyframes sav-countdown { to { transform: scaleX(0); } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: color-mix(in oklab, var(--_c) 9%, var(--sav-color-bg)); }
+      :host([appearance="solid"]) { --_eb: var(--_c); }
+      :host(:is([appearance="outline"], [toast])) { --_eb: var(--sav-color-bg); }
+      :host([auto-text]) .a { color: ${AUTO_TEXT}; }
     `];
     connectedCallback() {
       if (!this.shadowRoot.firstChild) this.render();
@@ -945,6 +990,9 @@
       .ph { position: absolute; inset: var(--_ai); overflow: hidden; border-radius: var(--_ar); transform: rotate(var(--_at)); box-shadow: var(--ring, none); }
       img { width: 100%; height: 100%; object-fit: cover; display: block; transform: rotate(calc(var(--_at) * -1)) scale(var(--_is)); }
       svg { width: 55%; height: 55%; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: color-mix(in oklab, var(--_c) 22%, var(--sav-color-bg)); }
+      :host([auto-text]) .a { color: ${AUTO_TEXT}; }
     `];
     connectedCallback() { this.render(); }
     changed() { this.render(); }
@@ -979,6 +1027,11 @@
       .tiles .t3 { animation-delay: .5s; } .tiles .t4 { animation-delay: .75s; }
       @keyframes sav-spin { to { transform: rotate(360deg); } }
       @keyframes sav-tile { 0%, 100% { opacity: .3; } 25% { opacity: 1; } }
+      /* variant="current": the colour of the text around it (inside a button, a link, a badge) */
+      :host([variant="current"]) .tr { stroke: color-mix(in oklab, currentColor 25%, transparent); }
+      :host([variant="current"]) .in, :host([variant="current"]) .tiles rect { stroke: currentColor; fill: currentColor; }
+      :host([variant="current"]) .in { fill: none; }
+      :host([variant="current"]) .tiles .t2 { fill: color-mix(in oklab, currentColor 60%, transparent); }
       @media (prefers-reduced-motion: reduce) { .ring { animation-duration: 2.4s; } .tiles rect { animation-duration: 3s; } }
     `];
     connectedCallback() {
@@ -1000,9 +1053,9 @@
     static styles = [VARIANTS, `
       :host { display: block; --height: .6rem; }
       .t { position: relative; height: var(--height); border-radius: var(--sav-radius-pill); background: var(--sav-color-surface-2); overflow: hidden; box-shadow: var(--sav-track-shadow, inset 0 0 0 1px var(--sav-color-border)); -webkit-backdrop-filter: var(--sav-button-backdrop, none); backdrop-filter: var(--sav-button-backdrop, none); }
-      /* the value on the bar takes its colour from the bar: near-black on light fills, white on dark ones (the switch is where both reach 4.5:1) */
+      /* the value on the bar is always black or white, whichever is readable on the bar (WCAG); --text-color sets it by hand */
       .i { --_fill: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); height: 100%; width: var(--_v, 0%); border-radius: inherit; background: var(--_fill); background-image: var(--sav-sheen, none); transform: skewX(calc(var(--sav-tilt, 0deg) * 4)); transform-origin: left;
-           color: oklch(from var(--_fill) clamp(0.1, (0.565 - l) * 1000, 1) calc(c * .2) h); transition: width .35s var(--sav-easing);
+           --_eb: var(--_fill); color: ${AUTO_TEXT}; transition: width .35s var(--sav-easing);
            display: flex; align-items: center; justify-content: flex-end; padding-right: .5em; font-size: calc(var(--height) * .7); font-weight: var(--sav-font-weight-bold); white-space: nowrap; overflow: hidden; }
       :host([striped]) .i { background-image: linear-gradient(45deg, rgb(255 255 255 / .2) 25%, transparent 25% 50%, rgb(255 255 255 / .2) 50% 75%, transparent 75%); background-size: 1rem 1rem; animation: sav-stripes 1s linear infinite; }
       :host([indeterminate]) .i { width: 40%; position: absolute; animation: sav-indet 1.4s var(--sav-easing) infinite; }
@@ -1339,6 +1392,125 @@
   props(SavNumberInput, { variant: String });
   define('sav-number-input', SavNumberInput);
 
+  /* ================================================================== sav-color-picker */
+
+  /** A colour field: a swatch that opens the system colour picker, the hex code you can type, and suggested colours (swatches).
+      The value is "#rrggbb", or empty with clearable. compact shows only the swatch. */
+  const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+  const toHex = (v) => { const m = String(v ?? '').trim().match(HEX); if (!m) return null; let h = m[1].toLowerCase(); if (h.length === 3) h = [...h].map((c) => c + c).join(''); return '#' + h; };
+  class SavColorPicker extends SavFormControl {
+    static styles = [SIZES, FIELD, `
+      :host { min-width: 9.5rem; }
+      :host([compact]) { min-width: 0; display: inline-block; }
+      .ctl { font-family: var(--sav-font-mono, ui-monospace, monospace); font-size: .92em; text-transform: lowercase; letter-spacing: .02em; }
+      .ctl::placeholder { font-family: var(--sav-font); text-transform: none; letter-spacing: 0; }
+      /* the swatch: the colour itself; the system picker sits invisibly on top of it */
+      .sw { position: relative; flex: none; width: calc(var(--_h) - .75rem); height: calc(var(--_h) - .75rem); margin-inline-start: -.2rem; border-radius: var(--sav-radius-sm);
+            background: var(--_v); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 22%, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); overflow: hidden; }
+      .sw.none { background: repeating-conic-gradient(color-mix(in oklab, var(--sav-color-text) 16%, transparent) 0 25%, transparent 0 50%) 50% / 8px 8px; }
+      .pick { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); padding: 0; border: 0; opacity: 0; cursor: pointer; }
+      :host([disabled]) .pick { cursor: not-allowed; }
+      .x { display: none; flex: none; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; margin-inline-end: -.3rem; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
+      .x:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
+      .x svg { width: .95em; height: .95em; }
+      :host([clearable]) .has-value .x { display: inline-flex; }
+      /* compact: only the swatch, the field around it becomes a small square */
+      :host([compact]) .box { width: var(--_h); padding: 0; justify-content: center; }
+      :host([compact]) .ctl, :host([compact]) .x { display: none; }
+      :host([compact]) .sw { margin: 0; }
+      :host([compact]) .sw:focus-within { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; }
+      /* suggested colours under the field */
+      .sws { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }
+      .sws:empty { display: none; }
+      .sws button { width: 1.45rem; height: 1.45rem; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: var(--_v); cursor: pointer;
+            box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 20%, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform .15s var(--sav-easing); }
+      .sws button:hover { transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.12); }
+      .sws button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--sav-color-bg), 0 0 0 4px var(--sav-color-text); }
+      .sws button:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; }
+      @media (prefers-reduced-motion: reduce) { .sws button { transition: none; } }
+    `];
+    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'placeholder', 'swatches', 'clearable', 'compact', 'readonly']; }
+    connectedCallback() {
+      if (this.shadowRoot.firstChild) return;
+      const id = nextId('co');
+      this.shadowRoot.innerHTML = `<div class="w" part="form-control">
+        <label class="lbl" part="label" for="${id}"><slot name="label"></slot><span class="lbl-text"></span></label>
+        <div class="box" part="base">
+          <span class="sw" part="swatch"><input class="pick" type="color" tabindex="-1"></span>
+          <input class="ctl" part="input" id="${id}" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" maxlength="7">
+          <button type="button" class="x" part="clear-button" aria-label="No colour">${svgIcon('x')}</button>
+        </div>
+        <div class="sws" part="swatches" role="group" aria-label="Suggested colours"></div>
+        <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span></div>
+      </div>`;
+      const text = (this.native = this.$('.ctl')), pick = this.$('.pick');
+      this._default = toHex(this.getAttribute('value')) || '';
+      this._v = this._default;
+      // typing: the colour changes as soon as the code is a real colour; leaving the field puts back the last good one
+      text.addEventListener('input', (e) => { e.stopPropagation(); const h = toHex(text.value); if (h) this.set(h, 'input'); });
+      text.addEventListener('change', (e) => { e.stopPropagation(); const h = toHex(text.value); if (h || (text.value.trim() === '' && this.hasAttribute('clearable'))) this.set(h || '', 'change'); else this.show(); });
+      text.addEventListener('keydown', (e) => { if (e.key === 'Enter' && this.form && !e.isComposing) { e.preventDefault(); this.form.requestSubmit(); } });
+      // the system picker: input while dragging, change when it closes
+      pick.addEventListener('input', (e) => { e.stopPropagation(); this.set(pick.value, 'input'); });
+      pick.addEventListener('change', (e) => { e.stopPropagation(); this.set(pick.value, 'change'); });
+      this.$('.x').addEventListener('click', () => { this.set('', 'change'); text.focus(); });
+      this.$('.sws').addEventListener('click', (e) => { const b = e.target.closest('button[data-c]'); if (b && !this.isDisabled) this.set(b.dataset.c, 'change'); });
+      this.$$('slot').forEach((sl) => sl.addEventListener('slotchange', () => this.syncLabels(this.$('.w'))));
+      this.sync();
+      this.show();
+    }
+    changed(name, v) {
+      if (name === 'value') { const h = toHex(v) || ''; this._default = h; if (h !== this._v) { this._v = h; this.show(); } return; }
+      this.sync();
+    }
+    sync() {
+      const text = this.native; if (!text) return;
+      const off = this.isDisabled || this.hasAttribute('readonly');
+      text.disabled = this.isDisabled; text.readOnly = this.hasAttribute('readonly');
+      text.placeholder = this.getAttribute('placeholder') ?? (this.hasAttribute('clearable') ? 'None' : '#000000');
+      text.name = this.name || '';
+      this.$('.pick').disabled = off;
+      // compact: the swatch is the field, so it takes the focus and the name
+      const pick = this.$('.pick'), compact = this.hasAttribute('compact');
+      pick.tabIndex = compact ? 0 : -1;
+      compact ? pick.setAttribute('aria-label', this.getAttribute('label') || this.getAttribute('aria-label') || 'Colour') : pick.setAttribute('aria-hidden', 'true');
+      if (compact) pick.removeAttribute('aria-hidden');
+      const lbl = this.getAttribute('aria-label'); if (lbl) text.setAttribute('aria-label', lbl);
+      text.setAttribute('aria-describedby', this.$('.help').id);
+      const list = (this.getAttribute('swatches') || '').split(/[\s,]+/).map(toHex).filter(Boolean);
+      this.$('.sws').innerHTML = list.map((c) => `<button type="button" data-c="${c}" style="--_v:${c}" aria-label="${c}" title="${c}" ${off ? 'disabled' : ''}></button>`).join('');
+      this.syncLabels(this.$('.w'));
+      this.show();
+    }
+    /** puts the value on screen: field text, swatch, picker, chosen suggestion, form value, validity */
+    show() {
+      const text = this.native; if (!text) return;
+      const v = this._v;
+      if (this.shadowRoot.activeElement !== text || toHex(text.value) !== v) text.value = v;
+      const sw = this.$('.sw'); sw.style.setProperty('--_v', v || 'transparent'); sw.classList.toggle('none', !v);
+      this.$('.pick').value = v || '#000000';
+      this.$$('.sws button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === v)));
+      this.$('.w').classList.toggle('has-value', !!v);
+      this.internals.setFormValue(v);
+      if (this.required && !v) this.internals.setValidity({ valueMissing: true }, 'Choose a colour.', text); else this.internals.setValidity({});
+    }
+    set(v, ev) {
+      const h = v ? toHex(v) : '';
+      if (h === null || h === this._v) { if (ev === 'change' && h === this._v) this.show(); return; }
+      this._v = h; this.show();
+      if (ev === 'change') this.markTouched();
+      this.emit(ev, { value: h });
+    }
+    get value() { return this.native ? this._v : toHex(this.getAttribute('value')) || ''; }
+    set value(v) { const h = v ? toHex(v) || '' : ''; if (this.native) { this._v = h; this.show(); } else this.setAttribute('value', h); }
+    formResetCallback() { this._v = this._default; this.show(); this.removeAttribute('data-user-invalid'); }
+    formStateRestoreCallback(st) { this._v = toHex(st) || ''; this.show(); }
+    focus(o) { (this.hasAttribute('compact') ? this.$('.pick') : this.native)?.focus(o); }
+    /** opens the system colour picker (from a click: browsers allow it only after a user action) */
+    open() { try { this.$('.pick').showPicker?.() ?? this.$('.pick').click(); } catch { this.$('.pick').click(); } }
+  }
+  define('sav-color-picker', SavColorPicker);
+
   /* ================================================================== sav-textarea */
 
   class SavTextarea extends SavFormControl {
@@ -1402,7 +1574,9 @@
   /* ================================================================== pickers: shared base */
 
   const MOBILE = typeof matchMedia === 'function' ? matchMedia('(max-width: 640px)') : { matches: false };
-  const userLocale = (el) => el.getAttribute('locale') || el.closest('[lang]')?.getAttribute('lang') || navigator.language || 'en';
+  /** a language tag the browser accepts, or undefined (a half-typed or wrong locale="…" must not break the component) */
+  const safeLocale = (l) => { if (!l) return undefined; try { return Intl.getCanonicalLocales(l)[0]; } catch { return undefined; } };
+  const userLocale = (el) => safeLocale(el.getAttribute('locale')) || safeLocale(el.closest('[lang]')?.getAttribute('lang')) || safeLocale(navigator.language) || 'en';
   const pad = (n) => String(n).padStart(2, '0');
 
   const PICKER = `
@@ -1487,7 +1661,8 @@
       this.$('.clear').addEventListener('click', (e) => { e.stopPropagation(); this.setValue(this.emptyValue(), true); this.trigger.focus(); });
       this.$('.done').addEventListener('click', () => this.hide());
       this.pop.addEventListener('toggle', (e) => { if (e.newState === 'closed') this.afterHide(); });
-      if (!supportsPopover) document.addEventListener('pointerdown', (e) => { if (this.open && !e.composedPath().includes(this)) this.hide(); });
+      // browsers without popovers: a press outside closes it (removed again when the element leaves the page)
+      if (!supportsPopover) { this._outside = (e) => { if (this.open && !e.composedPath().includes(this)) this.hide(); }; document.addEventListener('pointerdown', this._outside); }
       this.native?.addEventListener('change', () => this.fromNative());
       this.$$('slot').forEach((sl) => sl.addEventListener('slotchange', () => this.syncLabels(this.$('.w'))));
       this.init?.();
@@ -1541,15 +1716,17 @@
       this.setAttribute('open', '');
       this.trigger.setAttribute('aria-expanded', 'true');
       this.reposition();
-      this._reflow ||= () => { if (!this.open) return; if (!this.isSheet && anchorGone(this.$('.box'))) { this.hide(); return; } this.reposition(); };
+      this._reflow ||= () => { if (!this.open) return; if (!this.isSheet && anchorGone(this.$('.box'))) { this.hide(); return; } this.reposition(true); };
       addEventListener('scroll', this._reflow, true);
       addEventListener('resize', this._reflow);
       this.focusInitial?.();
     }
-    reposition() {
-      if (this.isSheet) { this.pop.style.left = this.pop.style.top = ''; return; }
+    /** keep = true while it is open (scrolling, filtering): it stays on the side where it opened, so it does not jump */
+    reposition(keep) {
+      if (this.isSheet) { this.pop.style.left = this.pop.style.top = ''; delete this.pop.dataset.side; return; }
       this.pop.style.setProperty('--_pw', this.$('.box').getBoundingClientRect().width + 'px');
-      place(this.pop, this.$('.box'), this.getAttribute('placement') || 'bottom-start', 6);
+      const want = this.getAttribute('placement') || 'bottom-start', side = keep && this.pop.dataset.side, align = want.split('-')[1];
+      place(this.pop, this.$('.box'), side ? side + (align ? '-' + align : '') : want, 6);
     }
     hide() { hidePop(this.pop); if (!supportsPopover) this.afterHide(); }
     afterHide() {
@@ -1570,6 +1747,7 @@
     focus(o) { this.trigger?.focus(o); }
     nativeHtml() { return ''; }
     emptyValue() { return ''; }
+    disconnectedCallback() { if (this._outside) document.removeEventListener('pointerdown', this._outside); if (this.open) this.hide?.(); }
   }
   props(SavPicker, { readonly: Boolean, placeholder: String, label: String, placement: String });
 
@@ -1583,10 +1761,17 @@
       .chip .x:hover { color: var(--sav-color-text); }
       .chip svg { width: .9em; height: .9em; }
       .more { font-size: .85em; color: var(--sav-color-text-muted); }
-      .search { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: .4rem; margin: -.3rem -.3rem .3rem; padding: .5rem .7rem; background: var(--sav-color-surface); border-bottom: var(--sav-border-width) solid var(--sav-color-border); }
+      /* sticky right against the edge of the panel (over its padding), so no option shows above or below it */
+      .search { position: sticky; top: calc(var(--_pp, .3rem) * -1); z-index: 1; display: flex; align-items: center; gap: .4rem; margin: -.3rem -.3rem .3rem; padding: .5rem .7rem; background: var(--sav-color-surface);
+               /* see-through surfaces (Glass): the options scrolling underneath are blurred, so the search stays readable */
+               -webkit-backdrop-filter: blur(16px) saturate(170%); backdrop-filter: blur(16px) saturate(170%); border-bottom: var(--sav-border-width) solid var(--sav-color-border); }
       .search svg { width: 1rem; height: 1rem; color: var(--sav-color-text-muted); flex: none; }
       .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: inherit; font: inherit; font-size: 16px; }
       @media (min-width: 641px) { .search input { font-size: inherit; } }
+      /* opened above the field: the search goes to the bottom, so it is always next to the field */
+      .pop[data-side="top"] .body { display: flex; flex-direction: column; }
+      .pop[data-side="top"] .body > * { flex: none; }
+      .pop[data-side="top"] .search { order: 1; top: auto; bottom: calc(var(--_pp, .3rem) * -1); margin: .3rem -.3rem -.3rem; border-bottom: 0; border-top: var(--sav-border-width) solid var(--sav-color-border); }
       .list { outline: none; }
       .grp { padding: .55rem .6rem .25rem; font-size: .72rem; font-weight: var(--sav-font-weight-bold); letter-spacing: .06em; text-transform: uppercase; color: var(--sav-color-text-muted); }
       .opt { position: relative; isolation: isolate; display: flex; align-items: center; gap: .55rem; padding: .5rem .6rem; border-radius: calc(var(--sav-radius) - 2px); cursor: pointer; user-select: none; }
@@ -1612,6 +1797,8 @@
       .opt[aria-selected="true"] .opt-ic { color: inherit; }
       .opt[hidden], .grp[hidden] { display: none; }
       .empty { padding: .8rem .6rem; color: var(--sav-color-text-muted); font-size: var(--sav-font-size-sm); }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host([auto-text][multiple]) .opt[aria-selected="true"] .ck { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
     `];
     static get observedAttributes() { return [...SavPicker.observedAttributes, 'multiple', 'searchable', 'max-chips']; }
     init() {
@@ -1697,6 +1884,8 @@
       this.$$('.grp').forEach((g) => { g.hidden = !this.$$(`.opt:not([hidden])`).some((o) => o.dataset.g === g.dataset.g); });
       this.$('.empty').hidden = this.$$('.opt:not([hidden])').length > 0;
       this.setActive(this.visibleOpts()[0]);
+      // fewer options, a shorter panel: placed again so that, above the field, it stays against it
+      this.reposition(true);
     }
     listKey(e) {
       const opts = this.visibleOpts(), cur = opts.indexOf(this.$('.opt.active'));
@@ -1818,7 +2007,7 @@
 
   class SavLanguageChoice extends SavRegionChoice {
     readOptions() {
-      const loc = this.getAttribute('locale'), nat = this.hasAttribute('native-names');
+      const loc = safeLocale(this.getAttribute('locale')), nat = this.hasAttribute('native-names');
       const codeKind = this.getAttribute('code') || 'iso3';
       const list = this.filterList(LANGS, (l) => l.tag);
       this.opts = list.map((l) => {
@@ -1832,7 +2021,7 @@
 
   class SavCountryChoice extends SavRegionChoice {
     readOptions() {
-      const loc = this.getAttribute('locale'), codeKind = this.getAttribute('code') || 'alpha3';
+      const loc = safeLocale(this.getAttribute('locale')), codeKind = this.getAttribute('code') || 'alpha3';
       const list = this.filterList(ISO_COUNTRIES, (c) => c.a2);
       this.opts = list.map((c) => {
         const name = displayName(loc, 'region', c.a2);
@@ -1868,6 +2057,9 @@
       .cell.sel { color: var(--sav-color-on-primary); font-weight: var(--sav-font-weight-bold); --_cb: var(--sav-color-primary); }
       .cell:disabled { opacity: .3; cursor: not-allowed; --_cb: transparent; }
       .cell:focus-visible { outline: 2px solid var(--sav-color-focus); outline-offset: 0; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host([auto-text]) .cell.sel { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
+      :host([auto-text]) .cell.today:not(.sel) { --_eb: var(--sav-color-bg); color: ${AUTO_TEXT}; }
     `];
     static get observedAttributes() { return [...SavPicker.observedAttributes, 'mode', 'first-day']; }
     get mode() { return ['month', 'year'].includes(this.getAttribute('mode')) ? this.getAttribute('mode') : 'date'; }
@@ -2024,6 +2216,8 @@
       .t:hover { --_cb: var(--sav-color-surface-2); }
       .t.sel { color: var(--sav-color-on-primary); font-weight: var(--sav-font-weight-bold); --_cb: var(--sav-color-primary); }
       .t:disabled { opacity: .3; cursor: not-allowed; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host([auto-text]) .t.sel { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
     `];
     static get observedAttributes() { return [...SavPicker.observedAttributes, 'step', 'hour-cycle']; }
     init() { this.parse(this.getAttribute('value') || ''); this.$('.body').addEventListener('click', (e) => this.bodyClick(e)); }
@@ -2102,6 +2296,9 @@
       :host([data-user-invalid]) input { border-color: var(--sav-color-danger); }
       .help { display: block; font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); margin: .15rem 0 0 calc(var(--_box) + .55rem); }
       .help:empty { display: none; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: var(--_c); }
+      :host(:is([auto-text], [data-auto-text])) .mark { color: ${AUTO_TEXT}; }
     `];
     static get observedAttributes() { return [...FC, 'checked', 'indeterminate', 'value', 'help']; }
     static ROLE = 'checkbox';
@@ -2203,6 +2400,9 @@
       :host([data-appearance="buttons"]) { flex: 1 0 auto; }
       /* an icon next to the text keeps a small gap from it */
       :host([data-appearance="buttons"]) .lb { display: inline-flex; align-items: center; gap: .4em; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: var(--_c); }
+      :host(:is([auto-text], [data-auto-text])) .dot::after { background: ${AUTO_TEXT}; }
     `];
     connectedCallback() {
       if (!this.shadowRoot.firstChild) this.shadowRoot.innerHTML = '<div class="row" part="base"><span class="dot" part="control"></span><span class="lb" part="label"><slot></slot></span></div>';
@@ -2233,7 +2433,7 @@
       :host([data-user-invalid]) .items { --sav-color-border-strong: var(--sav-color-danger); }
       .native { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
     `];
-    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'appearance', 'size']; }
+    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'appearance', 'size', 'auto-text']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = `<fieldset class="w" part="form-control" role="radiogroup">
@@ -2253,6 +2453,7 @@
     get radios() { return [...this.querySelectorAll('sav-radio')]; }
     syncRadios() {
       const radios = this.radios;
+      passAutoText(this, radios);
       const val = (r) => r.getAttribute('value') ?? '';
       const off = (r) => r.hasAttribute('disabled');
       if (!this._value) { const pre = radios.find((r) => r.hasAttribute('checked')); if (pre) this._value = this._default = val(pre); }
@@ -2290,7 +2491,7 @@
     }
     changed(name, v) {
       if (name === 'value') { this._value = v ?? ''; this.syncRadios(); return; }
-      if (name === 'appearance' || name === 'size') this.syncRadios();
+      if (name === 'appearance' || name === 'size' || name === 'auto-text') this.syncRadios();
       this.sync();
     }
     sync() {
@@ -2525,7 +2726,7 @@
       this.onValue();
     }
     format(n) {
-      const loc = document.documentElement.lang || undefined;
+      const loc = safeLocale(document.documentElement.lang);
       if (this.isDate) { try { return new Date(n * DAY).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); } catch { return isoDay(n); } }
       return (this.getAttribute('prefix') || '') + n.toLocaleString(loc, { maximumFractionDigits: 6 }) + (this.getAttribute('unit') || '');
     }
@@ -2642,13 +2843,17 @@
       :host([block]) { display: block; }
       .tip { max-width: var(--max-width, 260px); padding: .4rem .65rem; border: 0; border-radius: var(--sav-radius-sm); background: var(--sav-color-tooltip-bg); color: var(--sav-color-tooltip-text); -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
              font-family: var(--sav-font); font-size: var(--sav-font-size-sm); line-height: 1.4; box-shadow: var(--sav-tooltip-shadow, var(--sav-shadow)); pointer-events: none; overflow: visible; z-index: 2147483001; }
-      .tip::after { content: ""; position: absolute; width: 8px; height: 8px; background: inherit; transform: rotate(45deg); }
-      .tip[data-side="top"]::after { bottom: -4px; left: calc(var(--_ax) - 4px); }
-      .tip[data-side="bottom"]::after { top: -4px; left: calc(var(--_ax) - 4px); }
-      .tip[data-side="left"]::after { right: -4px; top: calc(var(--_ay) - 4px); }
-      .tip[data-side="right"]::after { left: -4px; top: calc(var(--_ay) - 4px); }
+      /* the arrow is a triangle just outside the body: nothing overlaps, so see-through colours (Glass) stay even */
+      .tip::after { content: ""; position: absolute; background: inherit; }
+      .tip[data-side="top"]::after { bottom: -6px; left: calc(var(--_ax) - 6px); width: 12px; height: 6px; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+      .tip[data-side="bottom"]::after { top: -6px; left: calc(var(--_ax) - 6px); width: 12px; height: 6px; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+      .tip[data-side="left"]::after { right: -6px; top: calc(var(--_ay) - 6px); width: 6px; height: 12px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+      .tip[data-side="right"]::after { left: -6px; top: calc(var(--_ay) - 6px); width: 6px; height: 12px; clip-path: polygon(100% 0, 100% 100%, 0 50%); }
       .tip:popover-open, .tip.open { animation: sav-tip .14s var(--sav-easing); }
       @keyframes sav-tip { from { opacity: 0; transform: scale(.96); } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: var(--sav-color-tooltip-bg); }
+      :host([auto-text]) .tip { color: ${AUTO_TEXT}; }
     `];
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
@@ -2858,7 +3063,7 @@
       .tl { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
       .tab.icon-end .ti { margin-inline-start: auto; padding-inline-start: .6rem; }
       .tab.icon-end .tl { flex: 0 1 auto; }
-      :host([placement="start"]) .tab { justify-content: flex-start; text-align: start; }
+      :host([data-vertical]) .tab { justify-content: flex-start; text-align: start; }
       .ink { position: absolute; bottom: 0; left: 0; height: 2px; background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); border-radius: 2px; transition: transform .25s var(--sav-easing), width .25s var(--sav-easing); }
       :host([appearance="pills"]) .nav { box-shadow: none; gap: .35rem; }
       :host([appearance="pills"]) .tab { border-radius: var(--sav-radius-pill); padding: .5rem 1rem; }
@@ -2872,16 +3077,16 @@
       :host([appearance="segmented"]) .ink { display: none; }
       .rail { display: contents; }
       .fold, .ini, .sd, .tip { display: none; }
-      :host([placement="start"]) .wrap { display: flex; gap: 1.25rem; }
+      :host([data-vertical]) .wrap { display: flex; gap: 1.25rem; }
       /* vertical: one column holds the tabs and, when collapsible, the fold button; the rail look (background, divider) is on it */
-      :host([placement="start"]) .rail { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 2px; align-self: flex-start; flex: none; min-width: 10rem;
+      :host([data-vertical]) .rail { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 2px; align-self: flex-start; flex: none; min-width: 10rem;
         padding: var(--sav-tab-vertical-rail-padding, 4px); background: var(--sav-tab-vertical-rail, var(--sav-color-surface-2)); border-radius: calc(var(--sav-radius) + 2px);
         border-right: var(--sav-tab-vertical-divider, 0 solid transparent); transition: min-width .28s var(--sav-easing); }
       /* labels fold away smoothly; the icons never move */
-      :host([placement="start"]) .tl { max-width: 16rem; white-space: nowrap; transition: max-width .28s var(--sav-easing), opacity .2s; }
-      :host([placement="start"]) .tab { transition: color var(--sav-duration), gap .28s var(--sav-easing); }
+      :host([data-vertical]) .tl { max-width: 16rem; white-space: nowrap; transition: max-width .28s var(--sav-easing), opacity .2s; }
+      :host([data-vertical]) .tab { transition: color var(--sav-duration), gap .28s var(--sav-easing); }
       /* the fold button: a row like the tabs, under a thin line, with the "panel" icons */
-      :host([placement="start"][collapsible]) .fold { position: relative; isolation: isolate; display: flex; align-items: center; gap: .45rem; margin: .35rem 0 0; padding: .5rem .8rem;
+      :host([data-vertical][collapsible]) .fold { position: relative; isolation: isolate; display: flex; align-items: center; gap: .45rem; margin: .35rem 0 0; padding: .5rem .8rem;
         border: 0; border-radius: var(--sav-radius); background: none; color: var(--sav-color-text-muted); font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold);
         text-align: start; white-space: nowrap; cursor: pointer; transition: color var(--sav-duration), gap .28s var(--sav-easing); }
       .fold::before { content: ""; position: absolute; inset: 1px 0; z-index: -1; border-radius: inherit; background: var(--_fb, transparent); transform: rotate(${TILT}); transition: background var(--sav-duration); }
@@ -2891,70 +3096,87 @@
       .fold svg, .fold sav-icon { flex: none; width: 1.1em; height: 1.1em; }
       .fold-t { overflow: hidden; max-width: 12rem; transition: max-width .28s var(--sav-easing), opacity .2s; }
       /* collapsed */
-      :host([placement="start"][collapsed]) .rail { min-width: 0; }
-      :host([placement="start"][collapsed]) :is(.tab, .fold) { gap: 0; }
-      :host([placement="start"][collapsed]) :is(.tl, .fold-t) { max-width: 0; opacity: 0; }
-      :host([placement="start"][collapsed]) .tab.icon-end .ti { margin: 0; padding: 0; }
+      :host([data-vertical][collapsed]) .rail { min-width: 0; }
+      :host([data-vertical][collapsed]) :is(.tab, .fold) { gap: 0; }
+      :host([data-vertical][collapsed]) :is(.tl, .fold-t) { max-width: 0; opacity: 0; }
+      :host([data-vertical][collapsed]) .tab.icon-end .ti { margin: 0; padding: 0; }
       /* a tab without an icon shows its first letter, drawn like an icon */
-      :host([placement="start"][collapsed]) .tab:not(.sub):not(:has(.ti)) .ini { display: inline-grid; place-items: center; flex: none; box-sizing: border-box; width: 1.1em; height: 1.1em;
+      :host([data-vertical][collapsed]) .tab:not(.sub):not(:has(.ti)) .ini { display: inline-grid; place-items: center; flex: none; box-sizing: border-box; width: 1.1em; height: 1.1em;
         border: calc(1.1em / 12) solid currentColor; border-radius: min(var(--sav-radius-sm), 4px); font-size: 1em; line-height: 1; }
       /* the letter is drawn like the outline icons: same size and stroke, the letter small and bold inside */
       .ini-l { font-size: .6em; font-weight: var(--sav-font-weight-bold); }
       /* sub tabs become small dots under their main tab; the open one is a bigger coloured dot */
-      :host([placement="start"][collapsed]) .tab.sub { margin-left: 0; padding: .28rem .8rem; }
-      :host([placement="start"][collapsed]) .tab.sub::after { display: none; }
-      :host([placement="start"][collapsed]) .tab.sub .ti { display: none; }
-      :host([placement="start"][collapsed]) .tab.sub .sd { display: block; width: 6px; height: 6px; margin-inline: calc(.55em - 3px); border-radius: 50%; background: var(--sav-color-border-strong);
+      :host([data-vertical][collapsed]) .tab.sub { margin-left: 0; padding: .28rem .8rem; }
+      :host([data-vertical][collapsed]) .tab.sub::after { display: none; }
+      :host([data-vertical][collapsed]) .tab.sub .ti { display: none; }
+      :host([data-vertical][collapsed]) .tab.sub .sd { display: block; width: 6px; height: 6px; margin-inline: calc(.55em - 3px); border-radius: 50%; background: var(--sav-color-border-strong);
         transition: transform .2s var(--sav-easing), background var(--sav-duration); }
-      :host([placement="start"][collapsed]) .tab.sub.group-on .sd { background: color-mix(in oklab, var(--sav-color-primary) 55%, var(--sav-color-border-strong)); }
-      :host([placement="start"][collapsed]) .tab.sub[aria-selected="true"] { --_tb: transparent; --_ts: none; --_tsh-img: none; }
-      :host([placement="start"][collapsed]) .tab.sub[aria-selected="true"] .sd { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); transform: scale(1.45); }
-      :host([placement="start"][collapsed]) .tab.sub:hover .sd { transform: scale(1.3); }
-      /* the main tab of the open sub tab stays marked while its sub tabs are dots */
-      :host([placement="start"][collapsed]) .tab.parent-on { --_tb: color-mix(in oklab, var(--sav-color-primary) 16%, transparent); }
+      :host([data-vertical][collapsed]) .tab.sub.group-on .sd { background: color-mix(in oklab, var(--sav-color-primary) 55%, var(--sav-color-border-strong)); }
+      :host([data-vertical][collapsed]) .tab.sub[aria-selected="true"] { --_tb: transparent; --_ts: none; --_tsh-img: none; }
+      :host([data-vertical][collapsed]) .tab.sub[aria-selected="true"] .sd { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); transform: scale(1.45); }
+      :host([data-vertical][collapsed]) .tab.sub:hover .sd { transform: scale(1.3); }
+      /* the main tab of the open sub tab is marked with a light background (also when folded, while its sub tabs are dots) */
+      :host([data-vertical]) .tab.parent-on { --_tb: color-mix(in oklab, var(--sav-color-primary) 16%, transparent); }
       /* the name of a collapsed tab shows in a tooltip on hover or keyboard focus (screen readers read the hidden label) */
-      :host([placement="start"][collapsed]) .tab:is(:hover, :focus-visible) { z-index: 3; }
-      :host([placement="start"][collapsed]) :is(.tab, .fold):is(:hover, :focus-visible) .tip,
-      :host([placement="start"][collapsible]:not([collapse-button="row"])) .fold:is(:hover, :focus-visible) .tip { display: block; position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+      :host([data-vertical][collapsed]) .tab:is(:hover, :focus-visible) { z-index: 3; }
+      :host([data-vertical][collapsed]) :is(.tab, .fold):is(:hover, :focus-visible) .tip,
+      :host([data-vertical][collapsible]:not([collapse-button="row"])) .fold:is(:hover, :focus-visible) .tip { display: block; position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
         padding: .35rem .6rem; border-radius: var(--sav-radius-sm); background: var(--sav-color-tooltip-bg); color: var(--sav-color-tooltip-text); box-shadow: var(--sav-tooltip-shadow, var(--sav-shadow));
         font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); line-height: 1.3; white-space: nowrap; pointer-events: none; animation: sav-tab-tip .15s ease-out; }
-      .tip::before { content: ""; position: absolute; left: -4px; top: calc(50% - 4px); width: 8px; height: 8px; background: inherit; transform: rotate(45deg); }
+      .tip::before { content: ""; position: absolute; left: -6px; top: calc(50% - 6px); width: 6px; height: 12px; background: inherit; clip-path: polygon(100% 0, 100% 100%, 0 50%); }
       @keyframes sav-tab-tip { from { opacity: 0; transform: translate(-4px, -50%); } }
-      @media (prefers-reduced-motion: reduce) { :host([placement="start"]) :is(.rail, .tl, .tab, .fold, .fold-t, .sd) { transition: none; } .tip { animation: none !important; } }
+      @media (prefers-reduced-motion: reduce) { :host([data-vertical]) :is(.rail, .tl, .tab, .fold, .fold-t, .sd) { transition: none; } .tip { animation: none !important; } }
       /* collapse-button="edge" (the default): a small round handle on the right border of the rail, level with the first tab, half outside it
          (a leaning square in Tilt, since it takes the pill radius of the style) */
-      :host([placement="start"][collapsible]:not([collapse-button="row"])) .fold { position: absolute; z-index: 4; top: calc(var(--sav-tab-vertical-rail-padding, 4px) * 0 + .55rem); right: -.85rem;
+      :host([data-vertical][collapsible]:not([collapse-button="row"])) .fold { position: absolute; z-index: 4; top: .55rem; right: -.85rem;
         width: 1.7rem; height: 1.7rem; margin: 0; padding: 0; gap: 0; justify-content: center; border-radius: var(--sav-radius-pill); color: var(--sav-color-text-muted); }
-      :host([placement="start"]:not([collapse-button="row"])) .fold::before { inset: 0; --_fb: var(--sav-color-surface); background: var(--_fb); background-image: var(--sav-sheen, none);
+      /* the first tab shares its row with the handle (which sticks out .85rem beyond the rail): its name shows past the handle, the others stay close */
+      :host([data-vertical][collapsible]:not([collapse-button="row"])) .tab:first-child .tip { left: calc(100% + 2rem); }
+      :host([data-vertical]:not([collapse-button="row"])) .fold::before { inset: 0; --_fb: var(--sav-color-surface); background: var(--_fb); background-image: var(--sav-sheen, none);
         box-shadow: 0 0 0 var(--sav-border-width) var(--sav-color-border-strong), var(--sav-shadow-sm); transform: rotate(calc(var(--sav-knob-tilt, 0deg))); }
-      :host([placement="start"]:not([collapse-button="row"])) .fold:hover { color: var(--sav-color-primary); }
-      :host([placement="start"]:not([collapse-button="row"])) .fold:hover::before { transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -.5)) scale(1.08); }
-      :host([placement="start"]:not([collapse-button="row"])) .fold::after, :host([placement="start"]:not([collapse-button="row"])) .fold-t { display: none; }
-      :host([placement="start"][collapsible]:not([collapse-button="row"])) .wrap { gap: 1.9rem; } /* room for the handle that sticks out */
-      :host([placement="start"]:not([collapse-button="row"])) .fold svg, :host([placement="start"]:not([collapse-button="row"])) .fold sav-icon { width: .95rem; height: .95rem; }
+      :host([data-vertical]:not([collapse-button="row"])) .fold:hover { color: var(--sav-color-primary); }
+      :host([data-vertical]:not([collapse-button="row"])) .fold:hover::before { transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -.5)) scale(1.08); }
+      :host([data-vertical]:not([collapse-button="row"])) .fold::after, :host([data-vertical]:not([collapse-button="row"])) .fold-t { display: none; }
+      :host([data-vertical][collapsible]:not([collapse-button="row"])) .wrap { gap: 1.9rem; } /* room for the handle that sticks out */
+      :host([data-vertical]:not([collapse-button="row"])) .fold svg, :host([data-vertical]:not([collapse-button="row"])) .fold sav-icon { width: .95rem; height: .95rem; }
       /* by default (Soft, Sharp) the tabs sit on a rail and the selected one is a raised card; Tilt and Brutal use a plain column with a divider */
-      :host([placement="start"]) .nav { flex-direction: column; gap: 2px; box-shadow: none; overflow: visible; }
-      :host([placement="start"]) .tab { border-radius: var(--sav-radius); padding: .5rem .8rem; }
-      :host([placement="start"]) .tab::before { inset: 1px 0; transform-origin: left; }
-      :host([placement="start"]) .tab:not([aria-selected="true"]):not(:disabled):hover { --_tb: var(--sav-tab-vertical-hover, color-mix(in oklab, var(--sav-color-surface) 55%, transparent)); }
+      :host([data-vertical]) .nav { flex-direction: column; gap: 2px; box-shadow: none; overflow: visible; }
+      :host([data-vertical]) .tab { border-radius: var(--sav-radius); padding: .5rem .8rem; }
+      :host([data-vertical]) .tab::before { inset: 1px 0; transform-origin: left; }
+      :host([data-vertical]) .tab:not([aria-selected="true"]):not(:disabled):hover { --_tb: var(--sav-tab-vertical-hover, color-mix(in oklab, var(--sav-color-surface) 55%, transparent)); }
       /* the selected tab follows the style: a raised card on the rail (Soft, Sharp), a filled block (Tilt),
          an inked block with a hard shadow (Brutal), a glass plate (Glass) — the --sav-tab-vertical-* tokens */
-      :host([placement="start"]) .tab[aria-selected="true"] { color: var(--sav-tab-vertical-active-fg, var(--sav-color-text));
+      :host([data-vertical]) .tab[aria-selected="true"] { color: var(--sav-tab-vertical-active-fg, var(--sav-color-text));
         --_tb: var(--sav-tab-vertical-active-bg, var(--sav-color-surface)); --_tsh-img: var(--sav-sheen, none);
         --_ts: var(--sav-tab-vertical-active-shadow, var(--sav-tab-vertical-active-line, 0 0 0 var(--sav-border-width) var(--sav-color-border), var(--sav-shadow-sm))); }
-      :host([placement="start"]) .ink { display: none; }
-      :host([placement="start"]) .panels { flex: 1; min-width: 0; }
-      :host([placement="start"]) ::slotted(sav-tab) { --sav-tab-padding: .4rem 0; }
+      :host([data-vertical]) .ink { display: none; }
+      :host([data-vertical]) .panels { flex: 1; min-width: 0; }
+      :host([data-vertical]) ::slotted(sav-tab) { --sav-tab-padding: .4rem 0; }
       /* two levels: a tab with level="sub" sits under the one before it, smaller and a little indented, with a thin guide line */
       .tab.sub { font-size: var(--sav-font-size-sm); font-weight: 500; }
-      :host([placement="start"]) .tab.sub { margin-left: var(--sav-tab-sub-indent, .9rem); padding: .38rem .75rem; }
-      :host([placement="start"]) .tab.sub::after { content: ""; position: absolute; left: calc(var(--sav-tab-sub-indent, .9rem) * -.5); top: -1px; bottom: -1px; width: 1px; background: var(--sav-color-border-strong); }
-      :host([placement="start"]) .tab.sub[aria-selected="true"]::after { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); width: 2px; }
+      :host([data-vertical]) .tab.sub { margin-left: var(--sav-tab-sub-indent, .9rem); padding: .38rem .75rem; }
+      :host([data-vertical]) .tab.sub::after { content: ""; position: absolute; left: calc(var(--sav-tab-sub-indent, .9rem) * -.5); top: -1px; bottom: -1px; width: 1px; background: var(--sav-color-border-strong); }
+      :host([data-vertical]) .tab.sub[aria-selected="true"]::after { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); width: 2px; }
       /* the main tab of the open sub tab is coloured (not selected), and its group's guide line is tinted, so you see whose sub it is */
       .tab.parent-on { color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); }
-      :host([placement="start"]) .tab.sub.group-on::after { background: color-mix(in oklab, oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h) 55%, var(--sav-color-border-strong)); }
+      :host([data-vertical]) .tab.sub.group-on::after { background: color-mix(in oklab, oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h) 55%, var(--sav-color-border-strong)); }
+      /* placement="end": the rail on the right, the content on the left; the fold handle and the tooltips sit on the outer (left) side */
+      :host([placement="end"]) .wrap { flex-direction: row-reverse; }
+      :host([placement="end"]) .rail { border-right: 0; border-left: var(--sav-tab-vertical-divider, 0 solid transparent); }
+      :host([placement="end"][collapsed]) :is(.tab, .fold):is(:hover, :focus-visible) .tip,
+      :host([placement="end"][collapsible]:not([collapse-button="row"])) .fold:is(:hover, :focus-visible) .tip { left: auto; right: calc(100% + 10px); }
+      :host([placement="end"]) .tip::before { left: auto; right: -6px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+      :host([placement="end"][collapsible]:not([collapse-button="row"])) .fold { right: auto; left: -.85rem; }
+      :host([placement="end"][collapsible]:not([collapse-button="row"])) .tab:first-child .tip { left: auto; right: calc(100% + 2rem); }
+      :host([placement="end"]) .tab::before { transform-origin: right; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: color-mix(in oklab, var(--sav-color-primary) 14%, var(--sav-color-bg)); }
+      :host([appearance="segmented"]) { --_eb: var(--sav-color-bg); }
+      :host([data-vertical]) { --_eb: var(--sav-tab-vertical-active-behind, var(--sav-color-bg)); }
+      :host([auto-text]) .tab[aria-selected="true"] { color: ${AUTO_TEXT}; }
     `;
     connectedCallback() {
+      this.syncVertical();
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = '<div class="wrap"><div class="rail" part="rail"><div class="nav" part="nav" role="tablist"></div><button type="button" class="fold" part="collapse-button"></button></div><div class="panels" part="panels"><slot></slot></div></div>';
       this.$('.fold').addEventListener('click', () => (this.collapsed ? this.expand() : this.collapse()));
@@ -2964,17 +3186,21 @@
       this._ro.observe(this);
       this.build();
     }
+    /** start and end are both vertical: the shared rules key on data-vertical, only the side differs */
+    get vertical() { const p = this.getAttribute('placement'); return p === 'start' || p === 'end'; }
+    syncVertical() { this.toggleAttribute('data-vertical', this.vertical); }
     changed(name) {
+      if (name === 'placement') this.syncVertical();
       if (name === 'icon-placement') this.build();
       else if (['collapsed', 'collapsible', 'placement', 'collapse-label', 'expand-label', 'collapse-button'].includes(name)) this.syncFold();
     }
     /** the fold button and, when collapsed, a tooltip with the name of each tab */
     syncFold() {
       const b = this.$('.fold'); if (!b) return;
-      const c = this.collapsed && this.getAttribute('placement') === 'start';
+      const c = this.collapsed && this.vertical, end = this.getAttribute('placement') === 'end';
       const text = c ? this.getAttribute('expand-label') || 'Expand' : this.getAttribute('collapse-label') || 'Collapse';
       const edge = this.getAttribute('collapse-button') !== 'row'; // the handle on the border is the default; "row" puts a row at the bottom
-      b.innerHTML = `${svgIcon(edge ? (c ? 'chevrons-right' : 'chevrons-left') : c ? 'panel-left-open' : 'panel-left-close')}<span class="fold-t">${esc(text)}</span><span class="tip" aria-hidden="true">${esc(text)}</span>`;
+      b.innerHTML = `${svgIcon(edge ? ((c !== end) ? 'chevrons-right' : 'chevrons-left') : `panel-${end ? 'right' : 'left'}-${c ? 'open' : 'close'}`)}<span class="fold-t">${esc(text)}</span><span class="tip" aria-hidden="true">${esc(text)}</span>`;
       b.setAttribute('aria-label', text);
       b.setAttribute('aria-expanded', String(!c));
     }
@@ -3042,7 +3268,7 @@
     onKey(e) {
       const btns = this.$$('.tab:not(:disabled)');
       const cur = btns.indexOf(this.shadowRoot.activeElement);
-      const vertical = this.getAttribute('placement') === 'start';
+      const vertical = this.vertical;
       const map = vertical ? { ArrowDown: 1, ArrowUp: -1 } : { ArrowRight: 1, ArrowLeft: -1 };
       let next = null;
       if (e.key in map) next = btns[(cur + map[e.key] + btns.length) % btns.length];
@@ -3067,7 +3293,7 @@
       :host([appearance="plain"]) .d { border: 0; border-bottom: var(--sav-border-width) solid var(--sav-color-border); border-radius: 0; background: none; }
       .sum { display: flex; align-items: center; gap: .75rem; width: 100%; margin: 0; padding: .9rem 1rem; border: 0; background: none; color: var(--sav-color-text);
              font: inherit; font-size: var(--sav-font-size-md); font-weight: var(--sav-font-weight-semibold); text-align: left; cursor: pointer; }
-      :host([appearance="plain"]) .sum { padding-inline: 0; }
+      :host([appearance="plain"]) .sum { padding-inline: var(--sav-details-plain-inline, 0); } /* Glass gives plain rows a little room on the sides */
       .sum:hover { background: color-mix(in oklab, var(--sav-color-surface-2) 60%, transparent); }
       :host([appearance="plain"]) .sum:hover { background: none; color: var(--sav-color-primary); }
       .sum:focus-visible { outline-offset: -3px; }
@@ -3079,7 +3305,7 @@
       :host([open]) .rg { grid-template-rows: 1fr; }
       .rg > div { overflow: hidden; }
       .c { padding: 0 1rem 1rem; color: var(--sav-color-text); line-height: 1.55; }
-      :host([appearance="plain"]) .c { padding-inline: 0; }
+      :host([appearance="plain"]) .c { padding-inline: var(--sav-details-plain-inline, 0); }
       .rg:not(.vis) { visibility: hidden; }
     `;
     connectedCallback() {
@@ -3164,6 +3390,9 @@
       :host([data-rail]) ::slotted([slot="prefix"]) { font-size: 1.15rem; }
       :host([data-rail][data-sub]) .i::after { content: ""; position: absolute; right: 4px; bottom: 4px; border: 3px solid transparent; border-right-color: currentColor; border-bottom-color: currentColor; opacity: .5; }
       @media (prefers-reduced-motion: reduce) { .arr { transition: none; } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${CUR_EB(12)}; }
+      :host(:is([auto-text], [data-auto-text])[current]) > .i { color: ${AUTO_TEXT}; }
     `;
     static get observedAttributes() { return ['open', 'data-rail', 'disabled', 'checked', 'type']; }
     connectedCallback() {
@@ -3250,7 +3479,8 @@
         if (!item || item.hasAttribute('disabled')) return;
         this.choose(item);
       });
-      if (!supportsPopover) document.addEventListener('pointerdown', (e) => { if (this.open && !e.composedPath().includes(this)) this.hide(); });
+      // browsers without popovers: a press outside closes it (removed again when the element leaves the page)
+      if (!supportsPopover) { this._outside = (e) => { if (this.open && !e.composedPath().includes(this)) this.hide(); }; document.addEventListener('pointerdown', this._outside); }
     }
     get items() { return [...this.querySelectorAll('sav-menu-item')].filter((i) => !i.hasAttribute('disabled') && !i.closest('[hidden]')); }
     get trigger() { return this.querySelector(':scope > [slot="trigger"]'); }
@@ -3312,6 +3542,7 @@
       }
       if (n) { e.preventDefault(); n.focus(); }
     }
+    disconnectedCallback() { if (this._outside) document.removeEventListener('pointerdown', this._outside); if (this.open) this.hide?.(); }
   }
   props(SavDropdown, { placement: String, disabled: Boolean, label: String });
   define('sav-dropdown', SavDropdown);
@@ -3442,13 +3673,18 @@
       :host([appearance="outline"]) { --_lb: transparent; --_lf: var(--_c-text); --_lbd: var(--_c-line); }
       :host([appearance="plain"]) { --_lb: transparent; --_lf: var(--_c-text); }
       .l { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .35em; padding: .3em .7em; border-radius: var(--sav-radius-sm);
-           color: var(--_lf); font-size: var(--sav-label-size, .72rem); font-weight: var(--sav-font-weight-bold); letter-spacing: .09em; text-transform: uppercase; line-height: 1.2; white-space: nowrap; }
+           color: var(--text-color, var(--_lf)); font-size: var(--sav-label-size, .72rem); font-weight: var(--sav-font-weight-bold); letter-spacing: .09em; text-transform: uppercase; line-height: 1.2; white-space: nowrap; }
       :host([appearance="plain"]) .l { padding-inline: 0; }
       :host([case="normal"]) .l { text-transform: none; letter-spacing: .01em; }
       .l::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_lb); background-image: var(--sav-sheen, none);
            border: var(--sav-border-width) solid var(--sav-ink-border, var(--_lbd)); box-shadow: var(--sav-badge-shadow, none); transform: rotate(calc(${TILT} * 1.6)); }
       :host([appearance="plain"]) .l::before { display: none; }
       ::slotted(sav-icon) { font-size: 1.1em; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${SOLID_EB}; }
+      :host([appearance="soft"]) { --_eb: ${SOFT_EB}; }
+      :host(:is([appearance="outline"], [appearance="plain"])) { --_eb: var(--sav-color-bg); }
+      :host([auto-text]) .l { color: ${AUTO_TEXT}; }
     `];
     connectedCallback() { if (!this.shadowRoot.firstChild) { this.shadowRoot.innerHTML = '<span class="l" part="base"><slot name="prefix"></slot><slot></slot></span>'; tiltWatch(this.$('.l')); } }
   }
@@ -3462,12 +3698,12 @@
     static styles = [VARIANTS, SIZES, `
       :host { display: inline-flex; vertical-align: middle; }
       button { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .4em; height: calc(var(--_h) * .82); padding: 0 .85em; margin: 0; border: 0;
-               border-radius: var(--sav-radius-pill); background: none; color: var(--sav-color-text); font: inherit; font-size: calc(var(--_fs) * .92); font-weight: var(--sav-font-weight-semibold); cursor: pointer;
+               border-radius: var(--sav-radius-pill); background: none; color: var(--text-color, var(--sav-color-text)); font: inherit; font-size: calc(var(--_fs) * .92); font-weight: var(--sav-font-weight-semibold); cursor: pointer;
                --_kb: var(--sav-color-surface); --_kbd: var(--sav-color-border-strong); }
       button::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_kb); background-image: var(--sav-sheen, none);
                border: var(--sav-border-width) solid var(--_kbd); box-shadow: var(--sav-copy-shadow, none); transform: rotate(${TILT}); transition: background var(--sav-duration), border-color var(--sav-duration), transform .2s var(--sav-easing); }
       button:hover { --_kb: var(--sav-color-surface-2); }
-      :host([selected]) button { color: var(--_c-text); --_kb: var(--_c-soft); --_kbd: var(--sav-ink-border, var(--_c)); }
+      :host([selected]) button { color: var(--text-color, var(--_c-text)); --_kb: var(--_c-soft); --_kbd: var(--sav-ink-border, var(--_c)); }
       :host([selected]) button::before { transform: rotate(calc(${TILT} * -1)); }
       :host([disabled]) button { opacity: .5; cursor: not-allowed; }
       .ck { display: none; width: 1em; height: 1em; }
@@ -3477,6 +3713,10 @@
       .x:hover { opacity: 1; background: var(--_c-soft); }
       .x svg, .ck svg { width: 1em; height: 1em; }
       :host(:not([removable])) .x { display: none; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: var(--sav-color-surface); }
+      :host([selected]) { --_eb: color-mix(in oklab, var(--_c) 13%, var(--sav-color-surface)); }
+      :host(:is([auto-text], [data-auto-text])) button { color: ${AUTO_TEXT}; }
     `];
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
@@ -3505,9 +3745,12 @@
       const id = nextId('chips');
       this.shadowRoot.innerHTML = `<span class="lbl" id="${id}"></span><div class="g" part="base" role="group" aria-labelledby="${id}"><slot></slot></div>`;
       this.$('.lbl').textContent = this.getAttribute('label') || '';
+      this.$('slot').addEventListener('slotchange', () => passAutoText(this, this.chips));
+      passAutoText(this, this.chips);
       const v = this.getAttribute('value');
       if (v !== null) this.value = v;
     }
+    changed(name) { if (name === 'auto-text') passAutoText(this, this.chips); }
     get chips() { return [...this.querySelectorAll('sav-chip')]; }
     /** Selected values: a list with multiple, otherwise one value (or ''). */
     /* the attributes are read, not the properties: when the group starts, its chips may not be set up yet */
@@ -3520,7 +3763,7 @@
       this.emit('change', { value: this.value });
     }
   }
-  props(SavChipGroup, { multiple: Boolean, required: Boolean, label: String });
+  props(SavChipGroup, { multiple: Boolean, required: Boolean, label: String, autoText: Boolean });
   define('sav-chip-group', SavChipGroup);
 
   /* ================================================================== sav-heading */
@@ -3913,7 +4156,7 @@
   /* ================================================================== sav-theme-choice */
 
   const THEMES = [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['auto', 'Auto', 'theme-auto']];
-  /** Light, dark or automatic (follows the system), each with its icon: a menu or three buttons. With apply it switches the page by itself. */
+  /** Light, dark or automatic (follows the system), each with its icon: a menu or three buttons; no-auto leaves only light and dark. With apply it switches the page by itself. */
   class SavThemeChoice extends SavElement {
     static styles = `
       :host { display: inline-block; vertical-align: middle; }
@@ -3923,25 +4166,31 @@
       .seg button[aria-checked="true"] { color: var(--sav-color-text); --_b: var(--sav-color-surface); --_bi: var(--sav-sheen, none); --_s: var(--sav-tab-segment-shadow, var(--sav-shadow-sm)); }
       :host([icons-only]) .seg .t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     `;
-    static get observedAttributes() { return ['value', 'appearance', 'icons-only', 'apply', 'size']; }
-    get value() { return this.getAttribute('value') || (this.hasAttribute('apply') ? (window.Sav?.getMode?.() || 'auto') : 'auto'); }
+    static get observedAttributes() { return ['value', 'appearance', 'icons-only', 'apply', 'size', 'no-auto']; }
+    /** The choices: light, dark and auto, or only light and dark with no-auto. */
+    get themes() { return this.hasAttribute('no-auto') ? THEMES.filter(([k]) => k !== 'auto') : THEMES; }
+    get value() {
+      const v = this.getAttribute('value') || (this.hasAttribute('apply') ? (window.Sav?.getMode?.() || 'auto') : 'auto');
+      // without auto, "auto" (or nothing set) shows what the system uses right now
+      return v === 'auto' && this.hasAttribute('no-auto') ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : v;
+    }
     set value(v) { this.setAttribute('value', v); }
     connectedCallback() { this.render(); }
     changed(name) { if (name === 'value' && this.shadowRoot.firstChild) { this.sync(); return; } this.render(); }
     render() {
       const v = this.value;
       if (this.getAttribute('appearance') === 'buttons') {
-        this.shadowRoot.innerHTML = `<div class="seg" role="radiogroup" part="base" aria-label="${esc(this.getAttribute('label') || 'Theme')}">${THEMES.map(([k, l, ic]) => `<button type="button" role="radio" data-v="${k}" aria-checked="${k === v}" tabindex="${k === v ? 0 : -1}" title="${l}"><sav-icon name="${ic}"></sav-icon><span class="t">${l}</span></button>`).join('')}</div>`;
+        this.shadowRoot.innerHTML = `<div class="seg" role="radiogroup" part="base" aria-label="${esc(this.getAttribute('label') || 'Theme')}">${this.themes.map(([k, l, ic]) => `<button type="button" role="radio" data-v="${k}" aria-checked="${k === v}" tabindex="${k === v ? 0 : -1}" title="${l}"><sav-icon name="${ic}"></sav-icon><span class="t">${l}</span></button>`).join('')}</div>`;
         this.$$('.seg button').forEach((b) => { tiltWatch(b); b.addEventListener('click', () => this.pick(b.dataset.v)); });
         this.$('.seg').addEventListener('keydown', (e) => {
           const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]; if (!d) return;
-          e.preventDefault(); const i = THEMES.findIndex(([k]) => k === this.value); const n = THEMES[(i + d + 3) % 3][0]; this.pick(n); this.$(`[data-v="${n}"]`).focus();
+          e.preventDefault(); const list = this.themes, i = list.findIndex(([k]) => k === this.value); const n = list[(i + d + list.length) % list.length][0]; this.pick(n); this.$(`[data-v="${n}"]`).focus();
         });
       } else {
-        const cur = THEMES.find(([k]) => k === v) || THEMES[2];
+        const cur = this.themes.find(([k]) => k === v) || this.themes[this.themes.length - 1];
         this.shadowRoot.innerHTML = `<sav-dropdown part="base" label="${esc(this.getAttribute('label') || 'Theme')}">
           <sav-button slot="trigger" size="${esc(this.getAttribute('size') || 'md')}" appearance="outline" variant="neutral" ${this.hasAttribute('icons-only') ? `label="Theme: ${cur[1]}"` : ''}><sav-icon slot="prefix" name="${cur[2]}"></sav-icon>${this.hasAttribute('icons-only') ? '' : cur[1]}<sav-icon slot="suffix" name="chevron-down"></sav-icon></sav-button>
-          ${THEMES.map(([k, l, ic]) => `<sav-menu-item type="checkbox" value="${k}" ${k === v ? 'checked' : ''}><sav-icon slot="prefix" name="${ic}"></sav-icon>${l}</sav-menu-item>`).join('')}</sav-dropdown>`;
+          ${this.themes.map(([k, l, ic]) => `<sav-menu-item type="checkbox" value="${k}" ${k === v ? 'checked' : ''}><sav-icon slot="prefix" name="${ic}"></sav-icon>${l}</sav-menu-item>`).join('')}</sav-dropdown>`;
         this.$('sav-dropdown').addEventListener('sav-select', (e) => this.pick(e.detail.value));
       }
     }
@@ -3957,12 +4206,31 @@
 
   /* ================================================================== sav-search */
 
-  /** A search field with suggestions as you type: from <option> children or the suggestions property (filled live on "sav-query"). */
+  /** A search field with suggestions as you type: from <option> children or the suggestions property (filled live on "sav-query").
+      multiple: each term becomes a chip inside the field (on the separators: comma, semicolon, Enter, Space by default), up to max-terms.
+      live: sav-search fires while typing (from min-chars); otherwise only on the search keys (Enter by default). */
   class SavSearch extends SavFormControl {
     static styles = [FIELD, SIZES, FLOAT, `
       .ic { width: 1.05em; height: 1.05em; color: var(--sav-color-text-muted); flex: none; }
       .x { display: none; }
       .has-value .x { display: inline-flex; }
+      /* the terms (multiple): chips and the text field wrap together */
+      .flow { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+      .flow .ctl { flex: 1 1 6ch; min-width: 6ch; }
+      :host([multiple]) .box { padding-block: .3rem; }
+      .terms { display: contents; }
+      .term { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .15rem; max-width: 100%; min-width: 0; padding: .1rem .15rem .1rem .5rem;
+              font-size: .85em; line-height: 1.35; font-weight: var(--sav-font-weight-semibold); color: var(--sav-color-text); }
+      .term::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-sm); background: var(--sav-color-surface-2);
+              border: var(--sav-border-width) solid var(--sav-color-border); transform: rotate(${TILT}); }
+      .tt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .rm { display: inline-flex; flex: none; padding: 2px; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
+      .rm:hover { color: var(--sav-color-text); background: color-mix(in oklab, var(--sav-color-text) 10%, transparent); }
+      .rm:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
+      .rm svg { width: .9em; height: .9em; }
+      .term.dup { animation: sav-dup .5s var(--sav-easing); }
+      @keyframes sav-dup { 30%, 70% { transform: translateX(-3px); } 50% { transform: translateX(3px); } }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       .pop { min-width: var(--_pw, 16rem); max-width: min(32rem, calc(100vw - 16px)); max-height: min(var(--popup-height, 22rem), calc(100vh - 2rem)); padding: 0; flex-direction: column;
              border-radius: var(--sav-radius); color: var(--sav-color-text); font-family: var(--sav-font); font-size: var(--sav-font-size-md); }
       .pop:popover-open, .pop.open { display: flex; animation: sav-pop .14s var(--sav-easing); }
@@ -3979,10 +4247,33 @@
       mark { background: color-mix(in oklab, var(--sav-color-warning) 32%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
       .empty { padding: .8rem; font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); }
       @keyframes sav-pop { from { opacity: 0; transform: translateY(-4px); } }
+      @media (prefers-reduced-motion: reduce) { .term.dup { animation: none; } }
     `];
-    static get observedAttributes() { return [...FC, 'label', 'help', 'placeholder', 'value']; }
-    get value() { return this.native?.value ?? ''; }
-    set value(v) { if (this.native) { this.native.value = v ?? ''; this.onValue(false); } }
+    static get observedAttributes() { return [...FC, 'label', 'help', 'placeholder', 'value', 'multiple', 'max-terms', 'separators', 'live', 'search-keys', 'min-chars', 'max-label']; }
+    get multiple() { return this.hasAttribute('multiple'); }
+    set multiple(v) { this.toggleAttribute('multiple', !!v); }
+    get live() { return this.hasAttribute('live'); }
+    set live(v) { this.toggleAttribute('live', !!v); }
+    /** what is typed in the field right now */
+    get text() { return this.native?.value ?? ''; }
+    /** the terms (multiple): a copy of the list */
+    get terms() { return [...(this._terms ||= [])]; }
+    set terms(list) { this._terms = []; for (const t of list || []) this.addTerm(t, { quiet: true }); this.renderTerms(); this.sync(); }
+    /** single: the text. multiple: the list of terms (set it with a list, or a text split at commas and semicolons) */
+    get value() { return this.multiple ? this.terms : this.text; }
+    set value(v) {
+      if (!this.native) { this._pending = v; return; }
+      if (this.multiple) this.terms = Array.isArray(v) ? v : String(v ?? '').split(/[,;\n]/);
+      else { this.native.value = Array.isArray(v) ? v.join(' ') : v ?? ''; this.onValue(false); }
+    }
+    get maxTerms() { const n = Number(this.getAttribute('max-terms')); return n > 0 ? n : Infinity; }
+    /** "enter", "space", "tab", "comma", "semicolon" or any single character, separated by spaces */
+    static keys(spec) {
+      const map = { enter: 'Enter', return: 'Enter', space: ' ', tab: 'Tab', comma: ',', semicolon: ';' };
+      return String(spec).trim().split(/\s+/).filter(Boolean).map((k) => map[k.toLowerCase()] || k);
+    }
+    get separators() { return SavSearch.keys(this.getAttribute('separators') ?? ', ; enter space'); }
+    get searchKeys() { return SavSearch.keys(this.getAttribute('search-keys') ?? 'enter'); }
     /** The suggestions: strings or { label, value, description, icon, group, href }. */
     get suggestions() { return this._sugs ?? [...this.querySelectorAll('option')].map((o) => ({ label: o.textContent.trim(), value: o.value || o.textContent.trim(), description: o.dataset.description || '', icon: o.dataset.icon || '', group: o.closest('optgroup')?.label || '' })); }
     set suggestions(list) { this._sugs = (list || []).map((x) => (typeof x === 'string' ? { label: x, value: x } : x)); if (this.native === this.shadowRoot.activeElement) this.renderList(); }
@@ -3992,56 +4283,147 @@
       this.shadowRoot.innerHTML = `<div class="w" part="form-control">
         <label class="lbl" part="label" for="${id}"><slot name="label"></slot><span class="lbl-text"></span></label>
         <div class="box" part="base">${svgIcon('search', 'ic')}
-          <input class="ctl" part="input" id="${id}" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-l" autocomplete="off" enterkeyhint="search">
+          <div class="flow"><span class="terms" part="terms" role="list"></span>
+          <input class="ctl" part="input" id="${id}" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-l" autocomplete="off" enterkeyhint="search"></div>
+          <slot name="suffix"></slot>
           <button type="button" class="ibtn x" part="clear-button" aria-label="Clear">${svgIcon('x')}</button>
         </div>
         <div class="help" part="help-text"><slot name="help"></slot><span class="help-text"></span></div>
+        <span class="sr" aria-live="polite"></span>
         <div class="pop float" part="popup" ${supportsPopover ? 'popover="manual"' : ''}><div class="list" id="${id}-l" role="listbox"></div></div>
       </div>`;
       const i = (this.native = this.$('input'));
       this.$('.pop').id = `${id}-p`;
       tiltWatch(this.$('.pop'));
-      i.addEventListener('input', () => { this.onValue(true); this.query(); });
+      i.addEventListener('input', () => { if (this.multiple) this.splitTyped(); this.onValue(true); this.query(); this.liveSearch(); });
+      i.addEventListener('paste', (e) => this.paste(e));
       i.addEventListener('focus', () => { if (i.value.length >= this.minChars) this.query(); });
       i.addEventListener('keydown', (e) => this.key(e));
       i.addEventListener('blur', () => setTimeout(() => { if (!this.shadowRoot.activeElement) this.close(); }, 120));
-      this.$('.x').addEventListener('click', () => { i.value = ''; this.onValue(true); this.close(); i.focus(); this.emit('sav-clear'); });
+      this.$('.x').addEventListener('click', () => {
+        const had = this.terms.length; i.value = ''; this._terms = []; this.renderTerms(); this.onValue(true); this.close(); i.focus();
+        this.emit('sav-clear'); if (had) this.emit('change', { value: this.value });
+        if (this.live) this.search();
+      });
+      this.$('.terms').addEventListener('click', (e) => { const b = e.target.closest('.rm'); if (b) this.removeTerm(Number(b.dataset.i), true); });
+      this.$('.box').addEventListener('mousedown', (e) => { if (e.target === this.$('.box') || e.target === this.$('.flow')) { e.preventDefault(); i.focus(); } });
       this.$('.list').addEventListener('mousedown', (e) => e.preventDefault());
       this.$('.list').addEventListener('click', (e) => { const o = e.target.closest('.opt'); if (o) this.choose(Number(o.dataset.i)); });
       this._reflow = () => { if (!this.isOpen) return; if (anchorGone(this.$('.box'))) { this.close(); return; } this.position(); };
+      const start = this._pending ?? this.getAttribute('value');
+      if (start !== null && start !== undefined) this.value = start;
+      this._pending = undefined;
       this.sync();
     }
     get minChars() { return Number(this.getAttribute('min-chars') ?? 1); }
     get isOpen() { return this.$('.pop')?.matches(supportsPopover ? ':popover-open' : '.open'); }
-    changed(name) { if (name === 'value') this.value = this.getAttribute('value'); else this.sync(); }
+    changed(name) {
+      if (name === 'value') this.value = this.getAttribute('value');
+      else if (name === 'multiple') { const was = this._terms || []; if (!this.multiple && was.length) { this.native.value = was.join(' '); this._terms = []; } this.renderTerms(); this.sync(); }
+      else this.sync();
+    }
     sync() {
       const i = this.native; if (!i) return;
-      i.placeholder = this.getAttribute('placeholder') || 'Search';
+      const full = this.multiple && this.terms.length >= this.maxTerms;
+      // with chips the hint would crowd them: it shows only while the field is empty, or says the limit is reached
+      i.placeholder = full ? this.getAttribute('max-label') || `Up to ${this.maxTerms} terms` : this.multiple && this.terms.length ? '' : this.getAttribute('placeholder') || 'Search';
+      i.readOnly = full;
       i.disabled = this.isDisabled; i.name = this.getAttribute('name') || '';
       this.syncLabels(this.$('.w'));
       if (!this.getAttribute('label')) i.setAttribute('aria-label', this.getAttribute('placeholder') || 'Search');
+      this.$$('.rm').forEach((b) => { b.disabled = this.isDisabled; });
       this.onValue(false);
     }
     onValue(fire) {
-      this.$('.w').classList.toggle('has-value', !!this.value);
-      this.internals.setFormValue(this.value);
-      if (fire) this.emit('input', { value: this.value });
+      const terms = this._terms || [];
+      this.$('.w').classList.toggle('has-value', !!this.text || (this.multiple && terms.length > 0));
+      if (this.multiple && terms.length) {
+        const name = this.getAttribute('name');
+        if (name) { const fd = new FormData(); terms.forEach((t) => fd.append(name, t)); this.internals.setFormValue(fd); }
+        else this.internals.setFormValue(terms.join(','));
+      } else this.internals.setFormValue(this.multiple ? '' : this.text);
+      if (fire) this.emit('input', { value: this.value, text: this.text });
+    }
+    /* ------------------------------------------------------------ terms (multiple) */
+    /** adds a term; false when it is empty, already there, over the limit, or the page cancelled sav-term-add */
+    addTerm(raw, { quiet = false } = {}) {
+      const t = String(raw ?? '').trim(); const list = (this._terms ||= []);
+      if (!t) return false;
+      const dup = list.findIndex((x) => x.toLowerCase() === t.toLowerCase());
+      if (dup >= 0) { if (!quiet) { const el = this.$$('.term')[dup]; el?.classList.remove('dup'); void el?.offsetWidth; el?.classList.add('dup'); this.say(`${t} is already there`); } return false; }
+      if (list.length >= this.maxTerms) { if (!quiet) this.say(this.getAttribute('max-label') || `Up to ${this.maxTerms} terms`); return false; }
+      if (!quiet && !this.emit('sav-term-add', { term: t }, true)) return false;
+      list.push(t);
+      if (!quiet) { this.renderTerms(); this.sync(); this.say(`${t} added`); this.emit('change', { value: this.value }); this.liveSearch(); }
+      return true;
+    }
+    removeTerm(n, focusInput) {
+      const list = this._terms || []; const t = list[n]; if (t === undefined || this.isDisabled) return;
+      if (!this.emit('sav-term-remove', { term: t }, true)) return;
+      list.splice(n, 1); this.renderTerms(); this.sync(); this.say(`${t} removed`);
+      if (focusInput) this.native.focus();
+      this.emit('change', { value: this.value }); this.liveSearch();
+    }
+    renderTerms() {
+      const box = this.$('.terms'); if (!box) return;
+      const list = this.multiple ? this._terms || [] : [];
+      box.innerHTML = list.map((t, n) => `<span class="term" part="term" role="listitem"><span class="tt" title="${esc(t)}">${esc(t)}</span><button type="button" class="rm" part="term-remove" data-i="${n}" aria-label="Remove ${esc(t)}">${svgIcon('x')}</button></span>`).join('');
+      box.querySelectorAll('.term').forEach((el) => tiltWatch(el));
+    }
+    /** what is typed holds a separator (typed on a phone keyboard, or pasted): the parts before it become terms */
+    splitTyped() {
+      const chars = this.separators.filter((k) => k.length === 1);
+      if (!chars.length) return;
+      const v = this.native.value; if (!chars.some((c) => v.includes(c))) return;
+      const parts = v.split(new RegExp(`[${chars.map((c) => c.replace(/[\]\\^-]/g, '\\$&')).join('')}]`));
+      const rest = parts.pop();
+      let left = '';
+      for (const p of parts) if (!this.addTerm(p) && p.trim() && this.terms.length >= this.maxTerms) left = p.trim();
+      this.native.value = left || rest.replace(/^\s+/, '');
+      this.close();
+    }
+    paste(e) {
+      if (!this.multiple) return;
+      const txt = e.clipboardData?.getData('text') ?? ''; if (!/[\n\r]/.test(txt)) return; // one line: the input event splits it
+      e.preventDefault();
+      const chars = this.separators.filter((k) => k.length === 1);
+      const parts = txt.split(new RegExp(`[\\n\\r${chars.map((c) => c.replace(/[\]\\^-]/g, '\\$&')).join('')}]`));
+      parts.forEach((p) => this.addTerm(p));
+      this.onValue(true);
+    }
+    say(msg) { const s = this.$('.sr'); if (s) { s.textContent = ''; setTimeout(() => { s.textContent = msg; }, 30); } }
+    /* ------------------------------------------------------------ searching */
+    /** fires sav-search now: query is the text typed, terms the chips (and the text typed, if any) */
+    search() {
+      clearTimeout(this._lt);
+      const q = this.text.trim();
+      const terms = this.multiple ? [...this.terms, ...(q ? [q] : [])] : q ? [q] : [];
+      this.emit('sav-search', { query: q, terms });
+    }
+    /** live: fires sav-search while typing, after min-chars (and when the field is emptied, so the page can show everything again) */
+    liveSearch() {
+      if (!this.live) return;
+      clearTimeout(this._lt);
+      const q = this.text.trim();
+      if (q && q.length < this.minChars) return;
+      this._lt = setTimeout(() => this.search(), Number(this.getAttribute('debounce') ?? 250));
     }
     /** Asks the page for suggestions (sav-query, debounced) and shows the list. */
     query() {
-      const q = this.value.trim();
+      const q = this.text.trim();
       clearTimeout(this._qt);
-      if (q.length < this.minChars) { this.close(); return; }
+      if (q.length < this.minChars || this.native.readOnly) { this.close(); return; }
       this._qt = setTimeout(() => { this.emit('sav-query', { query: q }); this.renderList(); }, Number(this.getAttribute('debounce') ?? 120));
     }
     /** The suggestions that match (filtered here unless no-filter: then the page filters, e.g. on a server). */
     matches() {
-      const q = this.value.trim().toLowerCase(); const all = this.suggestions;
+      const q = this.text.trim().toLowerCase(); let all = this.suggestions;
+      if (this.multiple) { const have = new Set(this.terms.map((t) => t.toLowerCase())); all = all.filter((s) => !have.has(String(s.value ?? s.label).toLowerCase()) && !have.has(s.label.toLowerCase())); }
       if (this.hasAttribute('no-filter') || !q) return all;
       return all.filter((s) => (s.label + ' ' + (s.description || '') + ' ' + (s.keywords || '')).toLowerCase().includes(q));
     }
     renderList() {
-      const list = this.$('.list'), q = this.value.trim();
+      const list = this.$('.list'), q = this.text.trim();
       const items = (this._items = this.matches().slice(0, Number(this.getAttribute('max')) || 8));
       const hl = (t) => { const s = esc(t); if (!q) return s; const k = s.toLowerCase().indexOf(esc(q).toLowerCase()); return k < 0 ? s : s.slice(0, k) + '<mark>' + s.slice(k, k + esc(q).length) + '</mark>' + s.slice(k + esc(q).length); };
       let html = '', group = null;
@@ -4065,24 +4447,40 @@
     }
     position() { const p = this.$('.pop'); p.style.setProperty('--_pw', this.$('.box').getBoundingClientRect().width + 'px'); place(p, this.$('.box'), 'bottom-start', 6); }
     key(e) {
+      if (e.isComposing) return;
       const opts = this.$$('.opt');
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault(); if (!this.isOpen) { this.renderList(); return; }
+        e.preventDefault(); if (!this.isOpen) { if (!this.native.readOnly) this.renderList(); return; }
         if (!opts.length) return;
         this._active = (this._active + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length;
         opts.forEach((o, n) => { o.classList.toggle('active', n === this._active); o.setAttribute('aria-selected', String(n === this._active)); });
         const a = opts[this._active]; this.native.setAttribute('aria-activedescendant', a.id); a.scrollIntoView({ block: 'nearest' });
-      } else if (e.key === 'Enter') {
-        if (this.isOpen && this._active >= 0) { e.preventDefault(); this.choose(this._active); }
-        else { this.close(); this.emit('sav-search', { query: this.value.trim() }); }
-      } else if (e.key === 'Escape') { if (this.isOpen) { e.preventDefault(); this.close(); } }
+        return;
+      }
+      if (e.key === 'Escape') { if (this.isOpen) { e.preventDefault(); this.close(); } return; }
+      if (e.key === 'Enter' && this.isOpen && this._active >= 0) { e.preventDefault(); this.choose(this._active); return; }
+      const sep = this.multiple && this.separators.includes(e.key), go = this.searchKeys.includes(e.key);
+      if (this.multiple && e.key === 'Backspace' && !this.native.value && this.terms.length) { e.preventDefault(); this.removeTerm(this.terms.length - 1); return; }
+      if (sep) {
+        const t = this.native.value.trim();
+        if (t) {
+          if (e.key !== 'Tab') e.preventDefault();
+          if (this.addTerm(t)) { this.native.value = ''; this.onValue(true); }
+          this.close();
+        } else if (e.key.length === 1) e.preventDefault(); // a separator in an empty field types nothing
+      }
+      if (go) {
+        if (e.key !== 'Enter' && e.key !== 'Tab') e.preventDefault();
+        this.close(); this.search();
+      }
     }
     choose(n) {
       const it = this._items?.[n]; if (!it) return;
       if (!this.emit('sav-pick', { value: it.value ?? it.label, label: it.label, item: it }, true)) return;
+      if (this.multiple && !it.href) { if (this.addTerm(it.label)) { this.native.value = ''; this.onValue(true); } this.close(); this.native.focus(); return; }
       this.native.value = it.label; this.onValue(true); this.close();
       this.emit('change', { value: this.value });
-      if (it.href) location.href = it.href;
+      if (it.href) location.href = it.href; else this.liveSearch();
     }
     focus() { this.native?.focus(); }
   }
@@ -4243,7 +4641,8 @@
       .s { position: relative; height: 100%; border-radius: var(--sav-radius-lg); overflow: hidden; background: var(--sav-color-surface); border: var(--sav-border-width) solid var(--sav-color-border); }
       img { display: block; width: 100%; aspect-ratio: var(--ratio, 16 / 9); object-fit: cover; }
       .t { padding: 1rem 1.1rem 1.2rem; display: grid; gap: .3rem; }
-      .t:not(:has(*:not(:empty))) {}
+      /* a picture without heading, text or content has no text area (no empty band under the picture) */
+      :host([data-no-text]) .t { display: none; }
       .h { font-weight: var(--sav-font-weight-bold); font-size: 1.1rem; }
       .h:empty, .p:empty { display: none; }
       .p { color: var(--sav-color-text-muted); line-height: 1.5; }
@@ -4252,13 +4651,20 @@
       :host(:not([src])) img { display: none; }
     `;
     static get observedAttributes() { return ['src', 'alt', 'heading', 'text', 'ratio']; }
-    connectedCallback() { if (!this.shadowRoot.firstChild) this.shadowRoot.innerHTML = '<div class="s" part="base"><img part="image" loading="lazy" draggable="false"><div class="t" part="text"><span class="h"></span><span class="p"></span><slot></slot></div></div>'; this.sync(); }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = '<div class="s" part="base"><img part="image" loading="lazy" draggable="false"><div class="t" part="text"><span class="h"></span><span class="p"></span><slot></slot></div></div>';
+        this.$('slot').addEventListener('slotchange', () => this.sync());
+      }
+      this.sync();
+    }
     changed() { this.sync(); }
     sync() {
       const img = this.$('img'); if (!img) return;
       const src = this.getAttribute('src'); src ? (img.src = src) : img.removeAttribute('src'); img.alt = this.getAttribute('alt') ?? '';
       this.$('.h').textContent = this.getAttribute('heading') || ''; this.$('.p').textContent = this.getAttribute('text') || '';
       const r = this.getAttribute('ratio'); r ? this.style.setProperty('--ratio', r.replace(':', ' / ')) : this.style.removeProperty('--ratio');
+      this.toggleAttribute('data-no-text', !this.getAttribute('heading') && !this.getAttribute('text') && !this.hasSlot());
     }
   }
   define('sav-slide', SavSlide);
@@ -4303,6 +4709,8 @@
       :host([native-controls]) .bar { display: none; }
       figcaption { font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); }
       figcaption:empty { display: none; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host([auto-text]) .play { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
     `;
     static get observedAttributes() { return ['src', 'poster', 'ratio', 'caption', 'label']; }
     connectedCallback() {
@@ -4343,7 +4751,8 @@
       $('.cc').addEventListener('click', () => { const t = v.textTracks[0]; if (!t) return; t.mode = t.mode === 'showing' ? 'hidden' : 'showing'; $('.cc').setAttribute('aria-pressed', String(t.mode === 'showing')); });
       $('.pip').addEventListener('click', () => (document.pictureInPictureElement ? document.exitPictureInPicture() : v.requestPictureInPicture?.()).catch?.(() => {}));
       $('.fs').addEventListener('click', () => (document.fullscreenElement ? document.exitFullscreen() : fr.requestFullscreen?.())?.catch?.(() => {}));
-      document.addEventListener('fullscreenchange', () => { const on = document.fullscreenElement === fr; $('.fs').innerHTML = svgIcon(on ? 'minimize' : 'maximize'); $('.fs').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); });
+      this._fs = () => { const on = document.fullscreenElement === fr; $('.fs').innerHTML = svgIcon(on ? 'minimize' : 'maximize'); $('.fs').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); };
+      document.addEventListener('fullscreenchange', this._fs);
       const paint = () => {
         const playing = !v.paused && !v.ended;
         $('.pp').innerHTML = svgIcon(playing ? 'pause' : 'play'); $('.pp').setAttribute('aria-label', playing ? 'Pause' : 'Play');
@@ -4394,6 +4803,7 @@
       this.$('.play').setAttribute('aria-label', 'Play ' + (this.getAttribute('label') || 'video'));
     }
     play() { return this.video?.play(); } pause() { this.video?.pause(); }
+    disconnectedCallback() { if (this._fs) document.removeEventListener('fullscreenchange', this._fs); }
   }
   define('sav-video', SavVideo);
 
@@ -4422,6 +4832,8 @@
       .mu { display: inline-flex; padding: .35rem; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
       .mu:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
       .mu svg { width: 1.1rem; height: 1.1rem; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host([auto-text]) .pp { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
     `;
     static get observedAttributes() { return ['src', 'title', 'artist', 'cover']; }
     connectedCallback() {
@@ -4476,7 +4888,7 @@
       :host([collapsed]) .tog { justify-content: center; } :host([collapsed]) .tog svg { transform: scaleX(-1); } :host([collapsed]) .tog span { display: none; }
       :host(:not([collapsible])) .tog { display: none; }
     `;
-    static get observedAttributes() { return ['collapsed', 'orientation', 'label']; }
+    static get observedAttributes() { return ['collapsed', 'orientation', 'label', 'auto-text']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = `<div class="m" part="base" role="${this.slot === 'submenu' ? 'menu' : this.getAttribute('orientation') === 'horizontal' ? 'menubar' : 'menu'}"><slot></slot><button type="button" class="tog" part="collapse-button" aria-label="Fold the menu">${svgIcon('chevrons-left')}<span>Fold</span></button></div>`;
@@ -4511,6 +4923,7 @@
     sync() {
       const bar = this.horizontal, rail = this.hasAttribute('collapsed') && !bar;
       const own = [...this.querySelectorAll(':scope > sav-menu-item')];
+      passAutoText(this.root, own);
       own.forEach((i) => { i.toggleAttribute('data-bar', bar); i.toggleAttribute('data-rail', rail); i.setAttribute('role', i.getAttribute('type') === 'checkbox' ? 'menuitemcheckbox' : 'menuitem'); });
       own.forEach((i) => { const sub = i.querySelector(':scope > sav-menu[slot="submenu"]'); if (!sub) return;
         sub.setAttribute('data-nested', ''); const fly = bar || rail || this.hasAttribute('data-flyout'); sub.toggleAttribute('data-flyout', fly); sub.sync?.(); i.sync?.(); });
@@ -4601,7 +5014,8 @@
       and the search folds into a button that opens the field across the whole header, with an X to close it. */
   class SavHeader extends SavElement {
     static styles = `
-      :host { display: block; position: relative; z-index: 50; --height: 3.75rem; --padding: 1rem; --search-width: 18rem; }
+      /* min-width: 0 lets it shrink in a flex or grid row: too narrow, it folds its links instead of overflowing */
+      :host { display: block; position: relative; z-index: 50; min-width: 0; --height: 3.75rem; --padding: 1rem; --search-width: 18rem; }
       :host([sticky]) { position: sticky; top: 0; }
       :host([appearance="floating"]) { padding: .6rem; }
       .bar { position: relative; isolation: isolate; display: flex; align-items: center; gap: .75rem; min-height: var(--height); padding: 0 var(--padding); }
@@ -4647,6 +5061,10 @@
       :host([appearance="floating"][data-searching]) .search { border-radius: var(--sav-radius-lg); }
       .close { display: none; } :host([data-searching]) .close { display: grid; margin-right: -.4rem; }
       @media (prefers-reduced-motion: reduce) { ::slotted(a) { transition: none; } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${CUR_EB(12)}; }
+      /* !important: a link colour set by the page (a { color }) would win over ::slotted; --text-color still sets it */
+      :host([auto-text]) ::slotted(a[aria-current="page"]) { color: ${AUTO_TEXT} !important; }
     `;
     static get observedAttributes() { return ['breakpoint', 'search-collapse', 'label']; }
     connectedCallback() {
@@ -5194,7 +5612,7 @@
     tableHtml() { return `<caption>${esc(this.getAttribute('label') || 'Activity')}</caption>` + this.days().filter((d) => d.value).map((d) => `<tr><th>${d.key}</th><td>${d.value}</td></tr>`).join(''); }
     render() {
       const ds = this.days(), weeks = Math.ceil(ds.length / 7), lv = Number(this.getAttribute('levels')) || 5;
-      const loc = this.getAttribute('locale') || document.documentElement.lang || undefined;
+      const loc = safeLocale(this.getAttribute('locale')) || safeLocale(document.documentElement.lang);
       const left = 28, top = 18, cell = Math.max(8, Math.min(16, Math.floor((this.W - left) / weeks) - 3)), gap = 3, step = cell + gap;
       const W = left + weeks * step, H = top + 7 * step + 4;
       let g = '<g class="axis">';
@@ -5227,11 +5645,11 @@
     values() { const out = {}; for (const [k, v] of Object.entries(this.data || {})) { const K = k.toUpperCase(); const c = K.length === 3 ? ISO_COUNTRIES.find((x) => x.a3 === K)?.a2 : K; if (c) out[c] = Number(v); } return out; }
     legendItems() { return []; }
     summary() { const v = Object.entries(this.values()).sort((a, b) => b[1] - a[1]); return v.length ? `${v.length} countries, highest ${displayName(this.getAttribute('locale'), 'region', v[0][0])} ${nfmt(v[0][1])}` : 'World map'; }
-    tableHtml() { const loc = this.getAttribute('locale'); return `<caption>${esc(this.getAttribute('label') || 'Map data')}</caption>` + Object.entries(this.values()).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><th>${esc(displayName(loc, 'region', c))}</th><td>${v}</td></tr>`).join(''); }
+    tableHtml() { const loc = safeLocale(this.getAttribute('locale')); return `<caption>${esc(this.getAttribute('label') || 'Map data')}</caption>` + Object.entries(this.values()).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><th>${esc(displayName(loc, 'region', c))}</th><td>${v}</td></tr>`).join(''); }
     render() {
       const w = this._world; if (!w) return '<svg viewBox="0 0 1000 520"></svg>';
       const vals = this.values(), hi = new Set((this.getAttribute('highlight') || '').toUpperCase().split(/[\s,]+/).filter(Boolean));
-      const max = Number(this.getAttribute('max')) || Math.max(1, ...Object.values(vals)), lv = Number(this.getAttribute('levels')) || 5, loc = this.getAttribute('locale');
+      const max = Number(this.getAttribute('max')) || Math.max(1, ...Object.values(vals)), lv = Number(this.getAttribute('levels')) || 5, loc = safeLocale(this.getAttribute('locale'));
       const shade = (v) => { const k = Math.min(lv, Math.max(1, Math.ceil((v / max) * lv))); return `color-mix(in oklab, var(--sav-chart-1) ${Math.round(18 + (82 * k) / lv)}%, var(--sav-color-surface-2))`; };
       let g = '';
       for (const c of w.countries) {
@@ -5278,6 +5696,9 @@
       :host([data-collapsed]) { display: none; }
       .more { display: none; }
       :host([data-ellipsis]) .more { display: inline-flex; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${CUR_EB(12)}; }
+      :host(:is([auto-text], [data-auto-text])[data-last]) .i { color: ${AUTO_TEXT}; }
     `;
     connectedCallback() { this.render(); }
     changed() { this.render(); }
@@ -5306,7 +5727,7 @@
       .sep[hidden] { display: none; }
       .sep svg { width: .95em; height: .95em; }
     `;
-    static get observedAttributes() { return ['max-items', 'separator']; }
+    static get observedAttributes() { return ['max-items', 'separator', 'auto-text']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = `<nav part="base" aria-label="${esc(this.getAttribute('label') || 'Breadcrumb')}"><slot name="first"></slot><button type="button" class="more" part="more" aria-label="Show the whole path" hidden>…</button><span class="sep" aria-hidden="true" hidden>${svgIcon('chevron-right')}</span><slot></slot></nav>`;
@@ -5320,6 +5741,7 @@
     sync() {
       const items = [...this.querySelectorAll(':scope > sav-breadcrumb-item')];
       items.forEach((it, i) => it.toggleAttribute('data-last', i === items.length - 1));
+      passAutoText(this, items);
       const max = Number(this.getAttribute('max-items')) || 0, cut = max > 1 && items.length > max && !this._expanded;
       items.forEach((it, i) => it.toggleAttribute('data-collapsed', cut && i > 0 && i < items.length - (max - 1)));
       const more = this.$('.more'); if (!more) return;
@@ -5660,6 +6082,814 @@
     }
   }
   define('sav-code-block', SavCodeBlock);
+
+  /* ================================================================== sav-pagination */
+
+  /** Page numbers for long lists: first, last, the pages around the current one and "…" in between; previous and next.
+      With href="?page={page}" every page is a link; otherwise buttons that fire sav-page. simple shows only ‹ "3 of 12" ›. */
+  class SavPagination extends SavElement {
+    static styles = [SIZES, `
+      :host { display: block; }
+      nav { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+      :host([align="center"]) nav { justify-content: center; } :host([align="end"]) nav { justify-content: flex-end; }
+      .p { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; min-width: var(--_h); height: var(--_h); padding: 0 .55rem;
+           border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text); font: inherit; font-size: var(--_fs); font-weight: var(--sav-font-weight-semibold);
+           font-variant-numeric: tabular-nums; text-decoration: none; cursor: pointer; transition: color var(--sav-duration); }
+      .p::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_b, transparent); background-image: var(--_bi, none); box-shadow: var(--_s, none);
+           transform: rotate(${TILT}); transition: background var(--sav-duration), transform .2s var(--sav-easing); }
+      .p:hover:not([aria-current]):not(:disabled):not([aria-disabled="true"]) { --_b: var(--sav-color-surface-2); }
+      .p:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; }
+      /* the current page: the same highlight as the breadcrumb, by style (tint, blue tile, underline, inked block, glass) */
+      .p[aria-current] { cursor: default; color: var(--sav-breadcrumb-current-fg, color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)));
+           --_b: var(--sav-breadcrumb-current-bg, color-mix(in oklab, var(--sav-color-primary) 14%, transparent)); --_bi: var(--sav-sheen, none); --_s: var(--sav-breadcrumb-current-shadow, none); }
+      .p:disabled, .p[aria-disabled="true"] { opacity: .4; cursor: not-allowed; pointer-events: none; }
+      .p svg { width: 1.05em; height: 1.05em; flex: none; }
+      .gap { display: inline-flex; align-items: flex-end; justify-content: center; min-width: 1.6rem; height: var(--_h); color: var(--sav-color-text-muted); letter-spacing: .1em; user-select: none; }
+      .of { padding: 0 .6rem; color: var(--sav-color-text-muted); font-size: var(--_fs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .t { display: none; } :host([labels]) .t { display: inline; }
+      @media (prefers-reduced-motion: reduce) { .p::before { transition: none; } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${CUR_EB(14)}; }
+      :host([auto-text]) .p[aria-current] { color: ${AUTO_TEXT}; }
+    `];
+    static get observedAttributes() { return ['page', 'pages', 'total', 'page-size', 'siblings', 'href', 'appearance', 'label', 'labels']; }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = `<nav part="base"></nav>`;
+        this.$('nav').addEventListener('click', (e) => {
+          const b = e.target.closest('[data-p]'); if (!b || b.disabled || b.hasAttribute('aria-current')) return;
+          const n = Number(b.dataset.p);
+          if (!this.emit('sav-page', { page: n, previous: this.page }, true)) { e.preventDefault(); return; }
+          if (b.localName === 'button') { this.page = n; this.emit('change', { page: n }); }
+        });
+      }
+      this.render();
+    }
+    changed() { this.render(); }
+    get pages() { const p = Number(this.getAttribute('pages')); if (p > 0) return Math.floor(p); const t = Number(this.getAttribute('total')) || 0, s = Number(this.getAttribute('page-size')) || 10; return Math.max(1, Math.ceil(t / s)); }
+    get page() { return Math.min(this.pages, Math.max(1, Math.floor(Number(this.getAttribute('page')) || 1))); }
+    set page(v) { this.setAttribute('page', String(v)); }
+    /** the numbers to show: 1 … 4 5 6 … 20 (siblings on each side of the current page, always the first and the last) */
+    items() {
+      const n = this.pages, cur = this.page, sib = Math.max(0, Number(this.getAttribute('siblings') ?? 1));
+      const want = new Set([1, n]); for (let i = cur - sib; i <= cur + sib; i++) if (i >= 1 && i <= n) want.add(i);
+      // a single hidden page is shown instead of "…"
+      const list = [...want].sort((a, b) => a - b), out = [];
+      list.forEach((p, i) => { if (i && p - list[i - 1] === 2) out.push(p - 1); else if (i && p - list[i - 1] > 2) out.push('…'); out.push(p); });
+      return out;
+    }
+    render() {
+      const nav = this.$('nav'); if (!nav) return;
+      const n = this.pages, cur = this.page, tpl = this.getAttribute('href');
+      nav.setAttribute('aria-label', this.getAttribute('label') || 'Pages');
+      const one = (p, inner, extra = '') => {
+        const off = p < 1 || p > n;
+        if (tpl && !off) return `<a class="p" part="page" href="${esc(tpl.replace(/\{page\}/g, p))}" data-p="${p}" ${extra}>${inner}</a>`;
+        return `<button type="button" class="p" part="page" data-p="${p}" ${off ? 'disabled' : ''} ${extra}>${inner}</button>`;
+      };
+      const prev = one(cur - 1, `${svgIcon('chevron-left')}<span class="t">Previous</span>`, `part="page previous" aria-label="Previous page"`);
+      const next = one(cur + 1, `<span class="t">Next</span>${svgIcon('chevron-right')}`, `part="page next" aria-label="Next page"`);
+      const mid = this.getAttribute('appearance') === 'simple'
+        ? `<span class="of" part="summary" aria-live="polite">${cur} of ${n}</span>`
+        : this.items().map((p) => (p === '…' ? '<span class="gap" aria-hidden="true">…</span>' : one(p, String(p), `aria-label="Page ${p}" ${p === cur ? 'aria-current="page"' : ''}`))).join('');
+      nav.innerHTML = prev + mid + next;
+      this.$$('.p').forEach((b) => tiltWatch(b));
+    }
+  }
+  props(SavPagination, { size: String });
+  define('sav-pagination', SavPagination);
+
+  /* ================================================================== sav-steps */
+
+  /** The steps of a task (sign-up, checkout): done ones with a tick, the current one marked, the next ones waiting.
+      current="2" (from 1) says where you are; clickable lets people go back to a step already done (sav-step). */
+  class SavSteps extends SavElement {
+    static styles = `
+      :host { display: block; }
+      ol { display: flex; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+      :host([orientation="vertical"]) ol { flex-direction: column; }
+    `;
+    static get observedAttributes() { return ['current', 'orientation', 'clickable', 'label', 'auto-text']; }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = '<ol part="base"><slot></slot></ol>';
+        this.$('slot').addEventListener('slotchange', () => this.sync());
+        this.addEventListener('click', (e) => {
+          const st = e.target.closest('sav-step'); if (!st || !this.hasAttribute('clickable') || st.getAttribute('data-state') !== 'done') return;
+          const i = this.steps.indexOf(st);
+          if (this.emit('sav-step', { index: i + 1, step: st }, true)) { this.current = i + 1; this.emit('change', { current: i + 1 }); }
+        });
+      }
+      this.sync();
+    }
+    changed() { this.sync(); }
+    get steps() { return [...this.querySelectorAll(':scope > sav-step')]; }
+    get current() { return Math.max(1, Number(this.getAttribute('current')) || 1); }
+    set current(v) { this.setAttribute('current', String(v)); }
+    sync() {
+      const all = this.steps, cur = this.current, vert = this.getAttribute('orientation') === 'vertical';
+      this.$('ol')?.setAttribute('aria-label', this.getAttribute('label') || 'Steps');
+      passAutoText(this, all);
+      all.forEach((s, i) => {
+        s.setAttribute('data-state', i + 1 < cur ? 'done' : i + 1 === cur ? 'current' : 'upcoming');
+        s.setAttribute('data-n', String(i + 1));
+        s.toggleAttribute('data-last', i === all.length - 1);
+        s.toggleAttribute('data-vertical', vert);
+        s.toggleAttribute('data-clickable', this.hasAttribute('clickable') && i + 1 < cur);
+        s.render?.();
+      });
+    }
+    next() { if (this.current < this.steps.length + 1) { this.current = this.current + 1; this.emit('change', { current: this.current }); } }
+    previous() { if (this.current > 1) { this.current = this.current - 1; this.emit('change', { current: this.current }); } }
+  }
+  define('sav-steps', SavSteps);
+
+  class SavStep extends SavElement {
+    static styles = `
+      :host { flex: 1 1 0; min-width: 0; display: block; position: relative; }
+      :host([data-vertical]) { flex: none; }
+      .s { position: relative; display: flex; flex-direction: column; align-items: center; gap: .45rem; padding: 0 .35rem; text-align: center; border: 0; background: none; font: inherit; color: inherit; width: 100%; }
+      :host([data-vertical]) .s { flex-direction: row; align-items: flex-start; text-align: start; gap: .8rem; padding: 0 0 1.4rem; }
+      :host([data-vertical][data-last]) .s { padding-bottom: 0; }
+      button.s { cursor: pointer; } button.s:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 3px; border-radius: var(--sav-radius-sm); }
+      /* the marker: number, tick or icon; its shape and lean are those of the style's knobs */
+      .m { position: relative; isolation: isolate; z-index: 1; display: grid; place-items: center; flex: none; width: 2rem; height: 2rem; color: var(--sav-color-text-muted);
+           font-weight: var(--sav-font-weight-bold); font-size: .85rem; font-variant-numeric: tabular-nums; }
+      .m::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-surface);
+           box-shadow: inset 0 0 0 2px var(--sav-color-border-strong); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: background var(--sav-duration), box-shadow var(--sav-duration); }
+      .m svg { width: 1rem; height: 1rem; }
+      :host([data-state="current"]) .m { color: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); }
+      :host([data-state="current"]) .m::before { box-shadow: inset 0 0 0 2px oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h), 0 0 0 4px color-mix(in oklab, var(--sav-color-primary) 18%, transparent); }
+      :host([data-state="done"]) .m { color: var(--sav-color-on-primary); }
+      :host([data-state="done"]) .m::before { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); box-shadow: none; }
+      :host([status="error"]) .m { color: var(--sav-color-on-danger); } :host([status="error"]) .m::before { background: var(--sav-color-danger); box-shadow: none; }
+      /* the line to the next step: coloured once this step is done */
+      .ln { position: absolute; top: calc(1rem - 1px); left: calc(50% + 1.35rem); right: calc(-50% + 1.35rem); height: 2px; border-radius: 2px; background: var(--sav-color-border-strong); }
+      :host([data-vertical]) .ln { top: 2.35rem; bottom: .35rem; left: calc(1rem - 1px); right: auto; width: 2px; height: auto; }
+      :host([data-last]) .ln { display: none; }
+      :host([data-state="done"]) .ln { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); }
+      .tx { display: grid; gap: .1rem; min-width: 0; }
+      :host([data-vertical]) .tx { padding-top: .3rem; }
+      .l { font-weight: var(--sav-font-weight-semibold); font-size: var(--sav-font-size-sm); color: var(--sav-color-text); }
+      :host([data-state="upcoming"]) .l { color: var(--sav-color-text-muted); }
+      .d { font-size: .8rem; color: var(--sav-color-text-muted); }
+      .d:empty { display: none; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      @media (max-width: 560px) { :host(:not([data-vertical])) .d { display: none; } :host(:not([data-vertical])) .l { font-size: .75rem; } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: var(--sav-color-bg); }
+      :host([data-state="done"]) { --_eb: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); }
+      :host([status="error"]) { --_eb: var(--sav-color-danger); }
+      :host(:is([auto-text], [data-auto-text]):is([data-state="done"], [data-state="current"], [status="error"])) .m { color: ${AUTO_TEXT}; }
+    `;
+    static get observedAttributes() { return ['label', 'description', 'icon', 'status']; }
+    connectedCallback() { this.setAttribute('role', 'listitem'); this.render(); }
+    changed() { this.render(); }
+    render() {
+      const st = this.getAttribute('data-state') || 'upcoming', n = this.getAttribute('data-n') || '', icon = this.getAttribute('icon'), err = this.getAttribute('status') === 'error';
+      const mark = err ? svgIcon('x') : st === 'done' ? svgIcon('check') : icon ? svgIcon(icon) : esc(n);
+      const tag = this.hasAttribute('data-clickable') ? 'button' : 'div';
+      const state = err ? 'error' : st === 'done' ? 'done' : st === 'current' ? 'current step' : 'not done yet';
+      this.shadowRoot.innerHTML = `<${tag} class="s" part="base" ${tag === 'button' ? 'type="button"' : ''} ${st === 'current' ? 'aria-current="step"' : ''}><span class="m" part="marker" aria-hidden="true">${mark}</span>`
+        + `<span class="tx"><span class="l" part="label">${esc(this.getAttribute('label') || '')}<slot></slot></span><span class="d" part="description">${esc(this.getAttribute('description') || '')}</span><span class="sr">, ${state}</span></span></${tag}><span class="ln" part="line" aria-hidden="true"></span>`;
+    }
+  }
+  define('sav-step', SavStep);
+
+  /* ================================================================== sav-stat */
+
+  /** A number that matters (a KPI): its name, the value, how it changed (green when it goes the good way) and a small trend line. */
+  class SavStat extends SavElement {
+    static styles = `
+      :host { display: block; min-width: 0; }
+      .c { position: relative; isolation: isolate; display: grid; gap: .35rem; padding: 1rem 1.1rem; }
+      :host(:not([appearance="plain"])) .c::before { content: ""; position: absolute; inset: 0; z-index: -1; border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius-lg);
+           background: var(--sav-color-surface); background-image: var(--sav-sheen, none); box-shadow: var(--sav-card-shadow, var(--sav-shadow-sm)); transform: rotate(${PANEL_TILT}); }
+      :host([appearance="plain"]) .c { padding: 0; }
+      .top { display: flex; align-items: center; gap: .5rem; color: var(--sav-color-text-muted); font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); }
+      .ic { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; margin-left: auto; position: relative; isolation: isolate; color: var(--sav-color-primary); }
+      .ic::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-sm); background: color-mix(in oklab, var(--sav-color-primary) 14%, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); }
+      .ic svg, .ic sav-icon { width: 1.05rem; height: 1.05rem; }
+      .ic:empty { display: none; }
+      .v { font-size: var(--sav-stat-size, 1.9rem); font-weight: var(--sav-font-weight-bold); line-height: 1.1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--sav-color-text); white-space: nowrap; }
+      .u { font-size: .55em; font-weight: var(--sav-font-weight-semibold); color: var(--sav-color-text-muted); margin-inline-start: .15em; }
+      .u:empty { display: none; }
+      /* the number never breaks; in a narrow card the trend line goes under it instead of squeezing it */
+      .row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .5rem .75rem; min-width: 0; }
+      .ch { display: inline-flex; align-items: center; gap: .2rem; padding: .1rem .4rem; border-radius: var(--sav-radius-sm); font-size: .8rem; font-weight: var(--sav-font-weight-bold); font-variant-numeric: tabular-nums;
+            color: var(--_tc); background: color-mix(in oklab, var(--_tc) 12%, transparent); }
+      .ch svg { width: .9em; height: .9em; }
+      .ch:empty { display: none; }
+      .good { --_tc: color-mix(in oklab, var(--sav-color-success) var(--sav-tint, 62%), var(--sav-color-text)); }
+      .bad { --_tc: color-mix(in oklab, var(--sav-color-danger) var(--sav-tint, 62%), var(--sav-color-text)); }
+      .flat { --_tc: var(--sav-color-text-muted); }
+      .cap { font-size: .8rem; color: var(--sav-color-text-muted); }
+      .cap:empty { display: none; }
+      .meta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+      svg.sp { flex: none; width: var(--spark-width, 6rem); height: 2.2rem; overflow: visible; }
+      .sp .ar { fill: color-mix(in oklab, var(--_sc) 16%, transparent); } .sp .ln { fill: none; stroke: var(--_sc); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+      .sp .dt { fill: var(--_sc); }
+    `;
+    static get observedAttributes() { return ['label', 'value', 'unit', 'prefix', 'change', 'trend', 'invert', 'caption', 'icon', 'data', 'appearance']; }
+    connectedCallback() { this.render(); }
+    changed() { this.render(); }
+    render() {
+      const A = (n) => this.getAttribute(n) ?? '';
+      const ch = A('change').trim();
+      const num = parseFloat(ch.replace(/[\u2212\u2013]/g, '-').replace(/[^\d.+-]/g, '')); // the typographic minus (−) counts as minus
+      const trend = A('trend') || (isNaN(num) || num === 0 ? 'flat' : num > 0 ? 'up' : 'down');
+      const good = trend === 'flat' ? 'flat' : (trend === 'up') !== this.hasAttribute('invert') ? 'good' : 'bad';
+      const arrow = trend === 'up' ? svgIcon('trending-up') : trend === 'down' ? svgIcon('trending-down') : '';
+      const vals = A('data').split(/[\s,]+/).map(Number).filter((n) => !isNaN(n));
+      let spark = '';
+      if (vals.length > 1) {
+        const lo = Math.min(...vals), hi = Math.max(...vals), w = 100, h = 32, k = hi - lo || 1;
+        const pts = vals.map((v, i) => [(i / (vals.length - 1)) * w, h - 2 - ((v - lo) / k) * (h - 4)]);
+        const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+        const col = good === 'bad' ? 'var(--sav-color-danger)' : good === 'good' ? 'var(--sav-color-success)' : 'var(--sav-color-primary)';
+        const [lx, ly] = pts[pts.length - 1];
+        spark = `<svg class="sp" part="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="--_sc:${col}" aria-hidden="true"><path class="ar" d="${d} L${w} ${h} L0 ${h} Z"/><path class="ln" d="${d}"/><circle class="dt" cx="${lx}" cy="${ly}" r="2.4" vector-effect="non-scaling-stroke"/></svg>`;
+      }
+      const icon = A('icon');
+      const said = `${A('label')}: ${A('prefix')}${A('value')}${A('unit') ? ' ' + A('unit') : ''}${ch ? `, ${good === 'good' ? 'better' : good === 'bad' ? 'worse' : 'changed'} by ${ch}` : ''}`;
+      this.shadowRoot.innerHTML = `<div class="c" part="base" role="group" aria-label="${esc(said)}">
+        <div class="top"><span part="label">${esc(A('label'))}</span><span class="ic" part="icon">${icon ? svgIcon(icon) : ''}</span></div>
+        <div class="row"><div><div class="v" part="value">${esc(A('prefix'))}${esc(A('value'))}<span class="u">${esc(A('unit'))}</span></div>
+        <div class="meta"><span class="ch ${good}" part="change">${ch ? arrow + esc(ch) : ''}</span><span class="cap" part="caption">${esc(A('caption'))}</span></div></div>${spark}</div><slot></slot></div>`;
+      tiltWatch(this.$('.c'));
+    }
+  }
+  define('sav-stat', SavStat);
+
+  /* ================================================================== sav-empty-state */
+
+  /** What to show when there is nothing yet (no results, an empty inbox): a drawing, a heading, a line of text and what to do. */
+  class SavEmptyState extends SavElement {
+    static styles = `
+      :host { display: block; }
+      .e { position: relative; isolation: isolate; display: grid; justify-items: center; gap: .55rem; padding: 2.2rem 1.25rem; text-align: center; }
+      :host([appearance="card"]) .e::before { content: ""; position: absolute; inset: 0; z-index: -1; border: var(--sav-border-width) dashed var(--sav-color-border-strong); border-radius: var(--sav-radius-lg);
+           background: var(--sav-color-surface); transform: rotate(${PANEL_TILT}); }
+      /* the drawing: the icon on a leaning tinted tile with a second one behind it, the way the style leans */
+      .art { position: relative; display: grid; place-items: center; width: var(--art, 4.5rem); height: var(--art, 4.5rem); margin-bottom: .45rem; color: var(--sav-color-primary); }
+      .art::before, .art::after { content: ""; position: absolute; inset: 0; border-radius: var(--sav-radius-lg); }
+      .art::before { background: color-mix(in oklab, var(--sav-color-primary) 14%, var(--sav-color-surface)); transform: rotate(calc(var(--sav-knob-tilt, 0deg) - 6deg)); }
+      .art::after { inset: 14%; z-index: -1; background: color-mix(in oklab, var(--sav-color-primary) 30%, transparent); transform: rotate(calc(var(--sav-knob-tilt, 0deg) + 14deg)) translate(18%, -10%); opacity: .5; }
+      /* the icon (or your own picture) sits on top of the two tiles */
+      .art svg, .art ::slotted(*) { position: relative; z-index: 1; width: 45%; height: 45%; }
+      .art ::slotted(img) { width: 70%; height: 70%; object-fit: contain; }
+      :host([size="sm"]) { --art: 3.2rem; } :host([size="sm"]) .e { padding: 1.3rem 1rem; gap: .4rem; }
+      :host([size="lg"]) { --art: 6rem; } :host([size="lg"]) .e { padding: 3.2rem 1.5rem; }
+      .h { margin: 0; font-size: 1.15rem; font-weight: var(--sav-font-weight-bold); color: var(--sav-color-text); }
+      :host([size="sm"]) .h { font-size: 1rem; } :host([size="lg"]) .h { font-size: 1.4rem; }
+      .t { margin: 0; max-width: 34rem; color: var(--sav-color-text-muted); line-height: 1.55; }
+      .h:empty, .t:empty { display: none; }
+      .a { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin-top: .6rem; }
+      .a[hidden] { display: none; }
+    `;
+    static get observedAttributes() { return ['icon', 'heading', 'text']; }
+    connectedCallback() { this.render(); }
+    changed() { this.render(); }
+    render() {
+      this.shadowRoot.innerHTML = `<div class="e" part="base"><div class="art" part="image" aria-hidden="true"><slot name="image">${svgIcon(this.getAttribute('icon') || 'inbox')}</slot></div>
+        <p class="h" part="heading" role="heading" aria-level="${esc(this.getAttribute('level') || '3')}">${esc(this.getAttribute('heading') || '')}</p><p class="t" part="text">${esc(this.getAttribute('text') || '')}</p><slot name="text"></slot><div class="a" part="actions"><slot></slot></div></div>`;
+      // no actions: no empty row under the text
+      const sl = this.$('.a slot'), fill = () => (this.$('.a').hidden = !sl.assignedNodes().some((n) => n.nodeType === 1 || n.textContent.trim()));
+      sl.addEventListener('slotchange', fill); fill();
+      tiltWatch(this.$('.e'));
+    }
+  }
+  define('sav-empty-state', SavEmptyState);
+
+  /* ================================================================== sav-popover */
+
+  /** A panel next to a button with anything inside (text, a form, a list): click the trigger to open, Esc or a click outside closes it.
+      The trigger is the element in slot="trigger"; the panel follows the style (leaning in Tilt, glass in Glass). */
+  class SavPopover extends SavElement {
+    static styles = [FLOAT, `
+      :host { display: inline-block; vertical-align: middle; --width: 20rem; }
+      .pop { width: max-content; max-width: min(var(--width), calc(100vw - 16px)); padding: 1rem 1.05rem; border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius);
+             background: var(--sav-color-surface); color: var(--sav-color-text); font-family: var(--sav-font); font-size: var(--sav-font-size-md); line-height: 1.5; text-align: start; }
+      ${panelLayer('.pop')}
+      .pop:popover-open, .pop.open { animation: sav-pop .15s var(--sav-easing); }
+      .head { display: flex; align-items: flex-start; gap: .5rem; margin-bottom: .4rem; }
+      .h { flex: 1; font-weight: var(--sav-font-weight-bold); }
+      .head:has(.h:empty):not(:has(.x:not([hidden]))) { display: none; }
+      .x { display: inline-flex; margin: -.35rem -.45rem 0 auto; padding: .3rem; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
+      .x:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
+      .x svg { width: 1rem; height: 1rem; }
+      .x[hidden] { display: none; }
+      @keyframes sav-pop { from { opacity: 0; transform: translateY(4px) scale(.98); } }
+      @media (prefers-reduced-motion: reduce) { .pop:popover-open, .pop.open { animation: none; } }
+      @media (max-width: 640px) {
+        :host([sheet-on-mobile]) .pop { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding-bottom: calc(1.2rem + env(safe-area-inset-bottom)); }
+        :host([sheet-on-mobile]) .pop::before { transform: none; } :host([sheet-on-mobile]) .pop::after { display: none; }
+      }
+    `];
+    static get observedAttributes() { return ['heading', 'no-close', 'label']; }
+    connectedCallback() {
+      if (this.shadowRoot.firstChild) return;
+      const id = nextId('pop');
+      this.shadowRoot.innerHTML = `<slot name="trigger"></slot><div class="pop float" part="body" id="${id}" role="dialog" ${supportsPopover ? 'popover="auto"' : ''}>`
+        + `<div class="head"><div class="h" part="heading"></div><button class="x" type="button" part="close-button" aria-label="Close">${svgIcon('x')}</button></div><slot></slot></div>`;
+      this._id = id;
+      const trig = this.$('slot[name="trigger"]');
+      trig.addEventListener('click', () => (Date.now() - (this._closedAt || 0) < 150 ? 0 : this.open ? this.hide() : this.show()));
+      trig.addEventListener('slotchange', () => this.sync());
+      this.$('.x').addEventListener('click', () => this.hide());
+      this.$('.pop').addEventListener('toggle', (e) => { if (e.newState === 'closed') this.afterHide(); });
+      this.$('.pop').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); this.hide(); } });
+      if (!supportsPopover) { this._outside = (e) => { if (this.open && !e.composedPath().includes(this)) this.hide(); }; document.addEventListener('pointerdown', this._outside); }
+      this.sync();
+    }
+    disconnectedCallback() { if (this._outside) document.removeEventListener('pointerdown', this._outside); if (this.open) this.hide(); }
+    changed() { this.sync(); }
+    get trigger() { return this.querySelector(':scope > [slot="trigger"]'); }
+    sync() {
+      const pop = this.$('.pop'); if (!pop) return;
+      this.$('.h').textContent = this.getAttribute('heading') || '';
+      this.$('.x').hidden = this.hasAttribute('no-close');
+      pop.setAttribute('aria-label', this.getAttribute('heading') || this.getAttribute('label') || 'Details');
+      const t = this.trigger; if (t) { t.setAttribute('aria-haspopup', 'dialog'); t.setAttribute('aria-expanded', String(this.open)); }
+    }
+    get open() { return this.hasAttribute('open'); }
+    show() {
+      const pop = this.$('.pop'), t = this.trigger; if (!t || this.open) return;
+      tiltWatch(pop); showPop(pop);
+      this.setAttribute('open', ''); t.setAttribute('aria-expanded', 'true');
+      const sheet = () => this.hasAttribute('sheet-on-mobile') && MOBILE.matches;
+      if (!sheet()) place(pop, t, this.getAttribute('placement') || 'bottom-start', 8);
+      this._reflow ||= () => { if (!this.open || sheet()) return; if (anchorGone(this.trigger)) { this.hide(); return; } place(pop, this.trigger, this.getAttribute('placement') || 'bottom-start', 8); };
+      addEventListener('scroll', this._reflow, true); addEventListener('resize', this._reflow);
+      // the focus moves into the panel (its first field or button), and comes back to the trigger when it closes
+      setTimeout(() => { if (!this.open) return; const F = 'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"]), sav-input, sav-select, sav-textarea, sav-button, sav-checkbox, sav-switch, sav-copy-button, sav-search';
+        const f = [...this.querySelectorAll(`:scope > :not([slot]) :is(${F}), :scope > :is(${F}):not([slot])`)].find((x) => !x.disabled && x.getClientRects().length); (f || this.$('.x:not([hidden])'))?.focus(); }, 30);
+      this.emit('sav-show');
+    }
+    /** the focus is in the panel (checked directly: :focus-within does not match while the window is in the background) */
+    get hasFocus() { return !!this.shadowRoot.activeElement || (this.contains(document.activeElement) && !this.trigger?.contains(document.activeElement)); }
+    hide() { this._hadFocus = this.hasFocus; hidePop(this.$('.pop')); if (!supportsPopover) this.afterHide(); }
+    afterHide() {
+      if (!this.open) return;
+      this._closedAt = Date.now();
+      this.removeAttribute('open'); this.trigger?.setAttribute('aria-expanded', 'false');
+      removeEventListener('scroll', this._reflow, true); removeEventListener('resize', this._reflow);
+      // the focus was in the panel (or got lost): back to the trigger
+      if (this._hadFocus || this.hasFocus || document.activeElement === document.body) this.trigger?.focus?.();
+      this._hadFocus = false;
+      this.emit('sav-hide');
+    }
+  }
+  props(SavPopover, { placement: String, sheetOnMobile: Boolean });
+  define('sav-popover', SavPopover);
+
+  /* ================================================================== sav-timeline */
+
+  /** Things that happened, in order: a dot (or icon) on a line, the time, a heading and any content. */
+  class SavTimeline extends SavElement {
+    static styles = `:host { display: block; } ol { margin: 0; padding: 0; list-style: none; }`;
+    static get observedAttributes() { return ['label', 'auto-text']; }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) { this.shadowRoot.innerHTML = '<ol part="base"><slot></slot></ol>'; this.$('slot').addEventListener('slotchange', () => this.sync()); }
+      this.sync();
+    }
+    changed() { this.sync(); }
+    sync() {
+      this.$('ol')?.setAttribute('aria-label', this.getAttribute('label') || 'Timeline');
+      const items = [...this.querySelectorAll(':scope > sav-timeline-item')];
+      items.forEach((it, i) => it.toggleAttribute('data-last', i === items.length - 1));
+      passAutoText(this, items);
+    }
+  }
+  define('sav-timeline', SavTimeline);
+
+  class SavTimelineItem extends SavElement {
+    static styles = [VARIANTS, `
+      :host { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); column-gap: .85rem; position: relative; --_c: var(--sav-color-border-strong); }
+      :host([variant]) { --_c: var(--sav-color-primary); }
+      :host([variant="neutral"]) { --_c: var(--sav-color-neutral); } :host([variant="success"]) { --_c: var(--sav-color-success); }
+      :host([variant="warning"]) { --_c: var(--sav-color-warning); } :host([variant="danger"]) { --_c: var(--sav-color-danger); }
+      .rail { position: relative; display: flex; justify-content: center; }
+      .rail::after { content: ""; position: absolute; top: 1.75rem; bottom: -.25rem; left: calc(50% - 1px); width: 2px; border-radius: 2px; background: var(--sav-color-border); }
+      :host([data-last]) .rail::after { display: none; }
+      /* the dot (or icon) takes the style's knob shape and lean */
+      .dot { position: relative; isolation: isolate; display: grid; place-items: center; width: 1.6rem; height: 1.6rem; margin-top: .05rem; color: var(--sav-color-on-primary); }
+      .dot::before { content: ""; position: absolute; inset: .45rem; z-index: -1; border-radius: var(--sav-knob-radius, 50%); background: var(--_c); box-shadow: 0 0 0 4px color-mix(in oklab, var(--_c) 18%, transparent);
+                     transform: rotate(var(--sav-knob-tilt, 0deg)); }
+      :host([icon]) .dot::before { inset: 0; box-shadow: none; }
+      :host([icon]:not([variant])) .dot { color: var(--sav-color-text); } :host([icon]:not([variant])) .dot::before { background: var(--sav-color-surface-2); box-shadow: inset 0 0 0 1px var(--sav-color-border); }
+      :host([variant="warning"]) .dot { color: var(--sav-color-on-warning); }
+      .dot svg, .dot sav-icon { width: .85rem; height: .85rem; }
+      .body { min-width: 0; padding-bottom: 1.4rem; }
+      :host([data-last]) .body { padding-bottom: 0; }
+      .time { display: block; font-size: .78rem; font-weight: var(--sav-font-weight-semibold); color: var(--sav-color-text-muted); font-variant-numeric: tabular-nums; }
+      .h { display: block; margin-top: .1rem; font-weight: var(--sav-font-weight-semibold); color: var(--sav-color-text); }
+      .time:empty, .h:empty { display: none; }
+      .c { margin-top: .25rem; color: var(--sav-color-text-muted); line-height: 1.55; }
+      .c[hidden] { display: none; }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: var(--_c); }
+      :host([icon]:not([variant])) { --_eb: var(--sav-color-bg); }
+      :host(:is([auto-text], [data-auto-text])[icon]) .dot { color: ${AUTO_TEXT}; }
+    `];
+    static get observedAttributes() { return ['time', 'heading', 'icon', 'variant', 'datetime']; }
+    connectedCallback() { this.setAttribute('role', 'listitem'); this.render(); }
+    changed() { this.render(); }
+    render() {
+      const icon = this.getAttribute('icon'), dt = this.getAttribute('datetime');
+      this.shadowRoot.innerHTML = `<div class="rail" aria-hidden="true"><span class="dot" part="dot">${icon ? svgIcon(icon) : ''}</span></div><div class="body" part="base">`
+        + `<time class="time" part="time" ${dt ? `datetime="${esc(dt)}"` : ''}>${esc(this.getAttribute('time') || '')}</time><span class="h" part="heading">${esc(this.getAttribute('heading') || '')}</span><div class="c" part="content"><slot></slot></div></div>`;
+      const sl = this.$('.c slot'), fill = () => (this.$('.c').hidden = !sl.assignedNodes().some((n) => n.nodeType === 1 || n.textContent.trim()));
+      sl.addEventListener('slotchange', fill); fill();
+    }
+  }
+  define('sav-timeline-item', SavTimelineItem);
+
+  /* ================================================================== sav-tree */
+
+  /** Nested items that open and close (folders, sections): arrows move, → opens, ← closes or goes to the parent, Enter chooses.
+      Items are sav-tree-item, each with its own sav-tree-item inside. */
+  class SavTree extends SavElement {
+    static styles = `:host { display: block; } .t { display: grid; gap: 1px; padding: .25rem; outline: none; }`;
+    static get observedAttributes() { return ['label', 'selectable', 'auto-text']; }
+    connectedCallback() {
+      if (this.shadowRoot.firstChild) return;
+      this.shadowRoot.innerHTML = '<div class="t" part="base" role="tree"><slot></slot></div>';
+      this.$('.t').setAttribute('aria-label', this.getAttribute('label') || 'Tree');
+      this.$('slot').addEventListener('slotchange', () => this.sync());
+      this.addEventListener('keydown', (e) => this.key(e));
+      this.addEventListener('click', (e) => {
+        const row = e.composedPath().find((n) => n.classList?.contains('row')); if (!row) return;
+        const it = row.getRootNode().host; if (!it || it.closest('sav-tree') !== this || it.hasAttribute('disabled')) return;
+        if (e.composedPath().some((n) => n.classList?.contains('tw'))) { this.toggle(it); this.focusItem(it); return; }
+        this.choose(it);
+      });
+      this.sync();
+    }
+    changed(name, v) { if (name === 'label') this.$('.t')?.setAttribute('aria-label', v || 'Tree'); if (name === 'auto-text') this.sync(); }
+    get items() { return [...this.querySelectorAll('sav-tree-item')]; }
+    /** the items you can see right now (their parents are open) */
+    get visible() { return this.items.filter((it) => { for (let p = it.parentElement; p && p !== this; p = p.parentElement) if (p.localName === 'sav-tree-item' && !p.hasAttribute('expanded')) return false; return true; }); }
+    sync() {
+      const all = this.items;
+      passAutoText(this, all);
+      all.forEach((it) => { let lv = 1; for (let p = it.parentElement; p && p !== this; p = p.parentElement) if (p.localName === 'sav-tree-item') lv++; it.setAttribute('aria-level', String(lv)); it.style.setProperty('--level', lv - 1); it.render?.(); });
+      // one item takes the Tab key: the selected one, or the first
+      const vis = this.visible, sel = all.find((it) => it.hasAttribute('selected') && vis.includes(it)) || vis[0];
+      all.forEach((it) => (it.tabIndex = it === sel ? 0 : -1));
+    }
+    focusItem(it) { if (!it) return; this.items.forEach((x) => (x.tabIndex = x === it ? 0 : -1)); it.focus(); }
+    toggle(it, open = !it.hasAttribute('expanded')) {
+      if (!it.hasChildren) return;
+      it.toggleAttribute('expanded', open);
+      this.emit('sav-toggle', { item: it, expanded: open, value: it.value });
+    }
+    choose(it) {
+      if (it.hasChildren && !this.hasAttribute('selectable')) { this.toggle(it); this.focusItem(it); return; }
+      this.items.forEach((x) => x.toggleAttribute('selected', x === it));
+      this.focusItem(it);
+      this.emit('sav-select', { item: it, value: it.value });
+    }
+    key(e) {
+      const it = e.target.closest?.('sav-tree-item'); if (!it || it.closest('sav-tree') !== this) return;
+      const vis = this.visible, i = vis.indexOf(it), parent = it.parentElement?.closest('sav-tree-item');
+      const go = (n) => { e.preventDefault(); this.focusItem(n); };
+      switch (e.key) {
+        case 'ArrowDown': go(vis[Math.min(vis.length - 1, i + 1)]); break;
+        case 'ArrowUp': go(vis[Math.max(0, i - 1)]); break;
+        case 'Home': go(vis[0]); break;
+        case 'End': go(vis[vis.length - 1]); break;
+        case 'ArrowRight': e.preventDefault(); if (it.hasChildren) { if (!it.hasAttribute('expanded')) this.toggle(it, true); else this.focusItem(it.querySelector(':scope > sav-tree-item')); } break;
+        case 'ArrowLeft': e.preventDefault(); if (it.hasChildren && it.hasAttribute('expanded')) this.toggle(it, false); else if (parent && parent.closest('sav-tree') === this) this.focusItem(parent); break;
+        case 'Enter': case ' ': e.preventDefault(); this.choose(it); break;
+      }
+    }
+  }
+  define('sav-tree', SavTree);
+
+  class SavTreeItem extends SavElement {
+    static styles = `
+      :host { display: block; outline: none; }
+      .row { position: relative; isolation: isolate; display: flex; align-items: center; gap: .45rem; min-height: 2rem; padding: .2rem .55rem .2rem calc(.35rem + var(--level, 0) * 1.15rem);
+             border-radius: var(--sav-radius-sm); color: var(--sav-color-text); cursor: pointer; user-select: none; font-size: var(--sav-font-size-md); }
+      .row::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_b, transparent); box-shadow: var(--_s, none); transform: rotate(${TILT}); }
+      .row:hover { --_b: var(--sav-color-surface-2); }
+      :host(:focus-visible) > .row { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: -2px; }
+      /* the chosen item: the same highlight as the current page of the breadcrumb */
+      :host([selected]) > .row { color: var(--sav-breadcrumb-current-fg, color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)));
+             --_b: var(--sav-breadcrumb-current-bg, color-mix(in oklab, var(--sav-color-primary) 14%, transparent)); --_s: var(--sav-breadcrumb-current-shadow, none); font-weight: var(--sav-font-weight-semibold); }
+      :host([disabled]) > .row { opacity: .45; cursor: not-allowed; }
+      .tw { display: grid; place-items: center; flex: none; width: 1.3rem; height: 1.3rem; margin: 0; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
+      .tw svg { width: .95rem; height: .95rem; transition: transform .18s var(--sav-easing); }
+      :host([expanded]) > .row .tw svg { transform: rotate(90deg); }
+      .tw.leaf { visibility: hidden; }
+      .ic { display: inline-flex; flex: none; color: var(--sav-color-text-muted); } .ic:empty { display: none; }
+      :host([selected]) > .row .ic { color: inherit; }
+      .ic svg, .ic sav-icon { width: 1.05rem; height: 1.05rem; }
+      .lb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .kids { display: none; }
+      :host([expanded]) > .kids { display: block; }
+      @media (prefers-reduced-motion: reduce) { .tw svg { transition: none; } }
+      /* auto-text: black or white, whichever is readable on what is behind the text */
+      :host { --_eb: ${CUR_EB(14)}; }
+      :host(:is([auto-text], [data-auto-text])[selected]) > .row { color: ${AUTO_TEXT}; }
+    `;
+    static get observedAttributes() { return ['label', 'icon', 'icon-open', 'expanded', 'selected', 'disabled']; }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = '<div class="row" part="item"><span class="tw" part="toggle" aria-hidden="true"></span><span class="ic" part="icon"></span><span class="lb" part="label"></span></div><div class="kids" role="group" part="children"><slot></slot></div>';
+        this.$('slot').addEventListener('slotchange', () => this.render());
+      }
+      this.setAttribute('role', 'treeitem');
+      if (!this.hasAttribute('tabindex')) this.tabIndex = -1;
+      this.render();
+    }
+    changed() { this.render(); }
+    get hasChildren() { return !!this.querySelector(':scope > sav-tree-item'); }
+    get value() { return this.getAttribute('value') ?? this.getAttribute('label') ?? ''; }
+    render() {
+      if (!this.shadowRoot.firstChild) return;
+      const kids = this.hasChildren, open = this.hasAttribute('expanded');
+      const tw = this.$('.tw'); tw.classList.toggle('leaf', !kids); tw.innerHTML = kids ? svgIcon('chevron-right') : '';
+      const ic = (open && this.getAttribute('icon-open')) || this.getAttribute('icon');
+      this.$('.ic').innerHTML = ic ? svgIcon(ic) : '';
+      this.$('.lb').textContent = this.getAttribute('label') || '';
+      kids ? this.setAttribute('aria-expanded', String(open)) : this.removeAttribute('aria-expanded');
+      this.setAttribute('aria-selected', String(this.hasAttribute('selected')));
+      this.hasAttribute('disabled') ? this.setAttribute('aria-disabled', 'true') : this.removeAttribute('aria-disabled');
+    }
+  }
+  define('sav-tree-item', SavTreeItem);
+
+  /* ================================================================== sav-command */
+
+  /** A command palette: a search box over the page with everything you can do or open; type, move with the arrows, Enter.
+      Commands are <option> children (value, data-icon, data-shortcut, data-description, data-href, in <optgroup>s) or the commands property.
+      hotkey="mod+k" opens it from anywhere (⌘K on a Mac, Ctrl+K elsewhere). */
+  const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  class SavCommand extends SavElement {
+    static styles = `
+      :host { display: contents; }
+      dialog { width: min(38rem, calc(100vw - 24px)); max-height: min(30rem, calc(100dvh - 4rem)); margin: 12vh auto auto; padding: 0; border: 0; background: transparent; color: var(--sav-color-text); overflow: visible; }
+      dialog::backdrop { background: var(--sav-color-overlay, rgb(0 0 0 / .35)); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+      dialog[open] { animation: sav-cmd .16s var(--sav-easing); }
+      .pnl { position: relative; isolation: isolate; display: flex; flex-direction: column; max-height: inherit; border-radius: var(--sav-radius-lg); font-family: var(--sav-font); }
+      .pnl::before { content: ""; position: absolute; inset: 0; z-index: -1; border: var(--sav-border-width) solid var(--sav-color-border); border-radius: inherit; background: var(--sav-color-surface);
+                     background-image: var(--sav-sheen, none); box-shadow: var(--sav-panel-shadow, var(--sav-shadow-lg)); -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); transform: rotate(${PANEL_TILT}); }
+      .q { display: flex; align-items: center; gap: .65rem; padding: .85rem 1rem; border-bottom: var(--sav-border-width) solid var(--sav-color-border); }
+      .q svg { width: 1.15rem; height: 1.15rem; color: var(--sav-color-text-muted); flex: none; }
+      input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--sav-color-text); font: inherit; font-size: 1.05rem; }
+      input::placeholder { color: var(--sav-color-text-muted); }
+      .esc { flex: none; padding: .15rem .4rem; border: 1px solid var(--sav-color-border-strong); border-radius: 4px; color: var(--sav-color-text-muted); font: 600 .7rem var(--sav-font-mono, monospace); cursor: pointer; background: none; }
+      .list { flex: 1; min-height: 0; overflow: auto; padding: .4rem; overscroll-behavior: contain; }
+      .grp { padding: .55rem .6rem .25rem; font-size: .7rem; font-weight: var(--sav-font-weight-bold); letter-spacing: .07em; text-transform: uppercase; color: var(--sav-color-text-muted); }
+      .it { position: relative; isolation: isolate; display: flex; align-items: center; gap: .7rem; padding: .55rem .6rem; border-radius: var(--sav-radius-sm); cursor: pointer; color: var(--sav-color-text); text-decoration: none; }
+      .it::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_b, transparent); transform: rotate(${TILT}); }
+      .it[aria-selected="true"] { --_b: color-mix(in oklab, var(--sav-color-primary) 14%, transparent); }
+      .it .i { display: inline-flex; flex: none; color: var(--sav-color-text-muted); } .it[aria-selected="true"] .i { color: var(--sav-color-primary); }
+      .it .i svg, .it .i sav-icon { width: 1.1rem; height: 1.1rem; }
+      .it .t { flex: 1; min-width: 0; display: grid; } .it b { font-weight: var(--sav-font-weight-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .it small { color: var(--sav-color-text-muted); font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .it small:empty { display: none; }
+      .it mark { background: none; color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: color-mix(in oklab, var(--sav-color-primary) 70%, transparent); text-underline-offset: 2px; }
+      .kb { display: inline-flex; gap: .2rem; flex: none; }
+      .kb span { min-width: 1.35rem; padding: .05rem .35rem; border: 1px solid var(--sav-color-border-strong); border-bottom-width: 2px; border-radius: 4px; color: var(--sav-color-text-muted); font: 600 .7rem var(--sav-font-mono, monospace); text-align: center; }
+      .none { padding: 1.4rem 1rem; text-align: center; color: var(--sav-color-text-muted); }
+      .foot { display: flex; gap: 1rem; padding: .5rem .9rem; border-top: var(--sav-border-width) solid var(--sav-color-border); color: var(--sav-color-text-muted); font-size: .75rem; }
+      .foot b { font-family: var(--sav-font-mono, monospace); font-weight: 600; }
+      @keyframes sav-cmd { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+      @media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
+      @media (max-width: 560px) { dialog { margin-top: 1rem; } .foot { display: none; } }
+    `;
+    static get observedAttributes() { return ['placeholder', 'hotkey', 'empty-label', 'label']; }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        const id = nextId('cmd');
+        this.shadowRoot.innerHTML = `<dialog part="dialog" aria-label="Commands"><div class="pnl" part="base"><div class="q">${svgIcon('search')}<input part="input" role="combobox" aria-expanded="true" aria-controls="${id}" aria-autocomplete="list" autocomplete="off" spellcheck="false"><button class="esc" type="button" part="close-button" aria-label="Close">Esc</button></div>`
+          + `<div class="list" part="list" id="${id}" role="listbox"></div><div class="foot" aria-hidden="true"><span><b>↑↓</b> move</span><span><b>↵</b> open</span><span><b>Esc</b> close</span></div></div></dialog>`;
+        const dlg = this.$('dialog'), inp = this.$('input');
+        inp.addEventListener('input', () => { this._a = 0; this.paint(); });
+        inp.addEventListener('keydown', (e) => {
+          const n = this._shown?.length || 0;
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (n) { this._a = (this._a + (e.key === 'ArrowDown' ? 1 : -1) + n) % n; this.mark(); } }
+          else if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); this.run(this._shown?.[this._a]); }
+        });
+        this.$('.list').addEventListener('click', (e) => { const it = e.target.closest('.it'); if (it) { e.preventDefault(); this.run(this._shown[Number(it.dataset.i)]); } });
+        this.$('.list').addEventListener('pointermove', (e) => { const it = e.target.closest('.it'); if (it && Number(it.dataset.i) !== this._a) { this._a = Number(it.dataset.i); this.mark(false); } });
+        this.$('.esc').addEventListener('click', () => this.hide());
+        dlg.addEventListener('click', (e) => { if (e.target === dlg) this.hide(); }); // a click on the backdrop
+        dlg.addEventListener('close', () => { if (this.hasAttribute('open')) { this.removeAttribute('open'); this._back?.focus?.(); this.emit('sav-hide'); } });
+      }
+      this._key ||= (e) => {
+        const hk = (this.getAttribute('hotkey') || '').toLowerCase(); if (!hk || e.defaultPrevented) return; // two palettes with the same shortcut: only one answers
+        const [mod, k] = hk.includes('+') ? hk.split('+') : ['', hk];
+        const modOk = !mod || (mod === 'mod' ? (IS_MAC ? e.metaKey : e.ctrlKey) : mod === 'ctrl' ? e.ctrlKey : mod === 'meta' ? e.metaKey : mod === 'alt' ? e.altKey : mod === 'shift' ? e.shiftKey : false);
+        if (modOk && e.key.toLowerCase() === k && !e.repeat) { e.preventDefault(); this.open ? this.hide() : this.show(); }
+      };
+      document.addEventListener('keydown', this._key);
+      this.sync();
+    }
+    disconnectedCallback() { document.removeEventListener('keydown', this._key); }
+    changed() { this.sync(); }
+    sync() { const inp = this.$('input'); if (!inp) return; inp.placeholder = this.getAttribute('placeholder') || 'Type a command or search…'; inp.setAttribute('aria-label', this.getAttribute('label') || 'Search commands'); this.$('dialog').setAttribute('aria-label', this.getAttribute('label') || 'Commands'); }
+    /** the commands: from <option> children (in <optgroup>s for groups) or set with this property */
+    get commands() {
+      return this._cmds ?? [...this.querySelectorAll('option')].map((o) => ({ label: o.textContent.trim(), value: o.value || o.textContent.trim(), icon: o.dataset.icon || '', shortcut: o.dataset.shortcut || '',
+        description: o.dataset.description || '', href: o.dataset.href || '', keywords: o.dataset.keywords || '', group: o.parentElement?.localName === 'optgroup' ? o.parentElement.label : '', disabled: o.disabled }));
+    }
+    set commands(list) { this._cmds = (list || []).map((x) => (typeof x === 'string' ? { label: x, value: x } : x)); if (this.open) this.paint(); }
+    get open() { return this.hasAttribute('open'); }
+    show() {
+      if (this.open) return;
+      this._back = document.activeElement;
+      this.setAttribute('open', '');
+      const inp = this.$('input'); inp.value = ''; this._a = 0; this.paint();
+      this.$('dialog').showModal(); tiltWatch(this.$('.pnl')); inp.focus();
+      this.emit('sav-show');
+    }
+    hide() { this.$('dialog')?.open && this.$('dialog').close(); }
+    paint() {
+      const q = this.$('input').value.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+      const all = this.commands.filter((c) => !c.disabled);
+      const hit = (c) => { const hay = `${c.label} ${c.description || ''} ${c.keywords || ''} ${c.group || ''}`.toLowerCase(); return words.every((w) => hay.includes(w)); };
+      const shown = (this._shown = words.length ? all.filter(hit).sort((a, b) => (b.label.toLowerCase().startsWith(q) - a.label.toLowerCase().startsWith(q))) : all);
+      this._a = Math.min(this._a || 0, Math.max(0, shown.length - 1));
+      const keys = (s) => s ? `<span class="kb">${s.split('+').map((k) => `<span>${esc(keyName(k))}</span>`).join('')}</span>` : '';
+      const hl = (t) => { let h = esc(t); for (const w of words) h = h.replace(new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig'), '<mark>$1</mark>'); return h; };
+      let html = '', group = null;
+      shown.forEach((c, i) => {
+        if ((c.group || '') !== group) { group = c.group || ''; if (group) html += `<div class="grp" role="presentation">${esc(group)}</div>`; }
+        html += `<div class="it" role="option" id="${this.$('.list').id}-${i}" data-i="${i}" aria-selected="${i === this._a}"><span class="i">${c.icon ? svgIcon(c.icon) : ''}</span><span class="t"><b>${hl(c.label)}</b><small>${esc(c.description || '')}</small></span>${keys(c.shortcut)}</div>`;
+      });
+      this.$('.list').innerHTML = html || `<div class="none">${esc(this.getAttribute('empty-label') || 'Nothing found')}</div>`;
+      this.mark(false);
+    }
+    mark(scroll = true) {
+      this.$$('.it').forEach((el) => el.setAttribute('aria-selected', String(Number(el.dataset.i) === this._a)));
+      const on = this.$(`.it[data-i="${this._a}"]`);
+      this.$('input').setAttribute('aria-activedescendant', on ? on.id : '');
+      if (scroll) on?.scrollIntoView({ block: 'nearest' });
+    }
+    run(c) {
+      if (!c) return;
+      if (!this.emit('sav-select', { value: c.value, item: c }, true)) return;
+      this.hide();
+      if (c.href) location.href = c.href;
+    }
+  }
+  /** how a key is written: ⌘ ⇧ ⌥ on a Mac, Ctrl Shift Alt elsewhere; "mod" is ⌘ on a Mac and Ctrl elsewhere */
+  const keyName = (k) => {
+    const t = k.trim().toLowerCase();
+    const mac = { mod: '⌘', meta: '⌘', cmd: '⌘', ctrl: '⌃', shift: '⇧', alt: '⌥', option: '⌥' }, pc = { mod: 'Ctrl', meta: 'Win', cmd: 'Ctrl', ctrl: 'Ctrl', shift: 'Shift', alt: 'Alt', option: 'Alt' };
+    const any = { enter: '↵', return: '↵', esc: 'Esc', escape: 'Esc', tab: 'Tab', space: 'Space', up: '↑', down: '↓', left: '←', right: '→', backspace: '⌫', delete: 'Del' };
+    return (IS_MAC ? mac : pc)[t] || any[t] || (t.length === 1 ? t.toUpperCase() : k.trim());
+  };
+  const keySpoken = (k) => ({ mod: IS_MAC ? 'Command' : 'Control', meta: IS_MAC ? 'Command' : 'Windows', cmd: 'Command', ctrl: 'Control', shift: 'Shift', alt: IS_MAC ? 'Option' : 'Alt', option: 'Option', enter: 'Enter', esc: 'Escape' }[k.trim().toLowerCase()] || keyName(k));
+  define('sav-command', SavCommand);
+
+  /* ================================================================== sav-kbd */
+
+  /** Keys to press, as keycaps: <sav-kbd>mod+K</sav-kbd> shows ⌘ K on a Mac and Ctrl K elsewhere. */
+  class SavKbd extends SavElement {
+    static styles = `
+      :host { display: inline-flex; vertical-align: baseline; }
+      .k { display: inline-flex; align-items: center; gap: .2em; }
+      .c { position: relative; isolation: isolate; display: inline-grid; place-items: center; min-width: 1.75em; padding: .15em .45em .22em; color: var(--sav-color-text); font: 600 .85em/1.2 var(--sav-font-mono, ui-monospace, monospace); }
+      .c::before { content: ""; position: absolute; inset: 0; z-index: -1; border: 1px solid var(--sav-color-border-strong); border-bottom-width: 2px; border-radius: min(var(--sav-radius-sm), 5px);
+                   background: var(--sav-color-surface); box-shadow: var(--sav-kbd-shadow, 0 1px 0 var(--sav-color-border)); transform: rotate(var(--sav-knob-tilt, 0deg)); }
+      .p { color: var(--sav-color-text-muted); font-size: .75em; }
+      :host([size="sm"]) .c { font-size: .75em; } :host([size="lg"]) .c { font-size: 1em; }
+    `;
+    static get observedAttributes() { return ['keys']; }
+    connectedCallback() { if (!this._mo) { this._mo = new MutationObserver(() => this.render()); this._mo.observe(this, { childList: true, characterData: true, subtree: true }); } this.render(); }
+    disconnectedCallback() { this._mo?.disconnect(); this._mo = null; }
+    changed() { this.render(); }
+    render() {
+      const raw = (this.getAttribute('keys') || this.textContent || '').trim();
+      // "mod+K" is one shortcut; "mod+K, mod+P" or "G then I" are several
+      const combos = raw.split(/\s*(?:,|\bthen\b)\s*/i).filter(Boolean);
+      const cap = (k) => `<kbd class="c" part="key">${esc(keyName(k))}</kbd>`;
+      this.shadowRoot.innerHTML = `<span class="k" part="base" role="img" aria-label="${esc(combos.map((c) => c.split('+').map(keySpoken).join(' + ')).join(', then '))}">`
+        + combos.map((c) => c.split('+').filter(Boolean).map(cap).join('')).join('<span class="p">then</span>') + '</span>';
+    }
+  }
+  props(SavKbd, { size: String });
+  define('sav-kbd', SavKbd);
+
+  /* ================================================================== sav-relative-time */
+
+  /** A moment written the way people say it — "3 minutes ago", "in 2 days" — kept up to date; the full date shows on hover.
+      datetime is a date ("2026-11-19T10:30"), or a number of milliseconds; format="date" or "datetime" writes the date instead. */
+  const RT_ALL = new Set();
+  let rtTimer = null;
+  const rtTick = () => { RT_ALL.forEach((el) => el.render()); };
+  class SavRelativeTime extends SavElement {
+    static styles = `:host { display: inline; } time { font-variant-numeric: tabular-nums; }`;
+    static get observedAttributes() { return ['datetime', 'locale', 'format', 'numeric']; }
+    connectedCallback() { RT_ALL.add(this); rtTimer ||= setInterval(rtTick, 30000); this.render(); }
+    disconnectedCallback() { RT_ALL.delete(this); if (!RT_ALL.size) { clearInterval(rtTimer); rtTimer = null; } }
+    changed() { this.render(); }
+    get date() { const v = this.getAttribute('datetime'); if (!v) return new Date(); const d = /^-?\d+$/.test(v) ? new Date(Number(v)) : new Date(v); return isNaN(d) ? null : d; }
+    render() {
+      const d = this.date, loc = userLocale(this);
+      if (!d) { this.shadowRoot.innerHTML = `<time part="base">${esc(this.getAttribute('datetime') || '')}</time>`; return; }
+      const fmt = this.getAttribute('format') || 'relative';
+      const full = new Intl.DateTimeFormat(loc, { dateStyle: 'long', timeStyle: 'short' }).format(d);
+      let text;
+      if (fmt === 'date') text = new Intl.DateTimeFormat(loc, { dateStyle: 'medium' }).format(d);
+      else if (fmt === 'datetime') text = full;
+      else {
+        const s = (d.getTime() - Date.now()) / 1000, a = Math.abs(s);
+        const [n, u] = a < 45 ? [s, 'second'] : a < 2700 ? [s / 60, 'minute'] : a < 79200 ? [s / 3600, 'hour'] : a < 25 * 86400 ? [s / 86400, 'day'] : a < 320 * 86400 ? [s / (30.44 * 86400), 'month'] : [s / (365.25 * 86400), 'year'];
+        const rtf = new Intl.RelativeTimeFormat(loc, { numeric: this.getAttribute('numeric') || 'auto' });
+        text = u === 'second' && a < 10 ? rtf.format(0, 'second') : rtf.format(Math.round(n), u);
+      }
+      this.shadowRoot.innerHTML = `<time part="base" datetime="${d.toISOString()}" title="${esc(full)}">${esc(text)}</time>`;
+    }
+  }
+  define('sav-relative-time', SavRelativeTime);
+
+  /* ================================================================== sav-infinite-scroll */
+
+  /** Loads more as you reach the end of a list: when the end comes near it fires sav-load; the page adds the items and calls
+      done() (or done(false) when there is nothing more, or fail() on an error). In between it shows a spinner; at the end a line;
+      on an error a "Try again" button. mode="button" shows a "Load more" button instead of loading by itself.
+      It watches the window, or itself when it has a height and scrolls (style="max-height: 24rem; overflow: auto"). */
+  class SavInfiniteScroll extends SavElement {
+    static styles = `
+      :host { display: block; }
+      .end { display: flex; align-items: center; justify-content: center; gap: .6rem; min-height: 3rem; padding: .75rem; color: var(--sav-color-text-muted); font-size: var(--sav-font-size-sm); }
+      .end sav-spinner { font-size: 1.4rem; }
+      .line { display: flex; align-items: center; gap: .75rem; width: 100%; max-width: 26rem; }
+      .line::before, .line::after { content: ""; flex: 1; height: 1px; background: var(--sav-color-border); }
+      [hidden] { display: none !important; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    `;
+    static get observedAttributes() { return ['threshold', 'mode', 'end-label', 'more-label', 'loading-label', 'error-label']; }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = `<div part="base"><slot></slot></div><div class="end" part="footer">
+            <span class="ld" part="loading" hidden><sav-spinner aria-hidden="true"></sav-spinner><span class="ldt"></span></span>
+            <sav-button class="more" part="more-button" appearance="outline" variant="neutral" hidden></sav-button>
+            <span class="err" part="error" hidden><span class="errt"></span> <sav-button class="retry" size="sm" appearance="soft">Try again</sav-button></span>
+            <span class="line" part="end" hidden><span class="endt"></span></span>
+          </div><span class="sentinel" aria-hidden="true" style="display:block;height:1px"></span><span class="sr" aria-live="polite"></span>`;
+        this.$('.more').addEventListener('click', () => this.load());
+        this.$('.retry').addEventListener('click', () => this.load());
+      }
+      this.page ??= 0;
+      this.setAttribute('role', 'feed');
+      this.sync();
+      this.watch();
+    }
+    disconnectedCallback() { this._io?.disconnect(); this._io = null; }
+    changed(name) { this.sync(); if (name === 'threshold' || name === 'mode') this.watch(); }
+    /** the end is watched in the window, or in the element itself when it scrolls */
+    watch() {
+      this._io?.disconnect();
+      if (this.getAttribute('mode') === 'button' || typeof IntersectionObserver === 'undefined') { this.sync(); return; }
+      const cs = getComputedStyle(this), own = /(auto|scroll)/.test(cs.overflowY);
+      const m = Number(this.getAttribute('threshold') ?? 300);
+      this._io = new IntersectionObserver((en) => { if (en.some((x) => x.isIntersecting)) this.load(); }, { root: own ? this : null, rootMargin: `0px 0px ${m}px 0px` });
+      this._io.observe(this.$('.sentinel'));
+    }
+    sync() {
+      if (!this.shadowRoot.firstChild) return;
+      const st = this._state || 'idle', button = this.getAttribute('mode') === 'button';
+      this.$('.ldt').textContent = this.getAttribute('loading-label') || 'Loading…';
+      this.$('.more').textContent = this.getAttribute('more-label') || 'Load more';
+      this.$('.errt').textContent = this.getAttribute('error-label') || 'It did not load.';
+      this.$('.endt').textContent = this.getAttribute('end-label') || 'That’s all';
+      this.$('.ld').hidden = st !== 'loading';
+      this.$('.more').hidden = !(button && st === 'idle');
+      this.$('.err').hidden = st !== 'error';
+      this.$('.line').hidden = st !== 'end';
+      this.toggleAttribute('aria-busy', st === 'loading');
+      this.setAttribute('data-state', st);
+    }
+    /** asks the page for the next items (sav-load, with the page number); nothing happens while loading or at the end */
+    load() {
+      if (this._state === 'loading' || this._state === 'end') return;
+      this._state = 'loading'; this.sync();
+      this._before = this.querySelectorAll(':scope > *').length;
+      const ok = this.emit('sav-load', { page: this.page + 1 }, true);
+      if (!ok) { this._state = 'idle'; this.sync(); }
+    }
+    /** the page added the items: more = false when there is nothing else to load */
+    done(more = true) {
+      this.page++;
+      const added = this.querySelectorAll(':scope > *').length - (this._before || 0);
+      this.$('.sr').textContent = added > 0 ? `${added} more loaded` : '';
+      this._state = more ? 'idle' : 'end'; this.sync();
+      // still room on screen (short pages): ask again
+      if (more && this._io) requestAnimationFrame(() => { this._io?.disconnect(); this.watch(); });
+    }
+    /** loading failed: shows the message and "Try again" */
+    fail() { this._state = 'error'; this.sync(); }
+    /** starts again from page 0 (after a new search, for example) */
+    reset() { this.page = 0; this._state = 'idle'; this.sync(); this.watch(); }
+    get loading() { return this._state === 'loading'; }
+  }
+  define('sav-infinite-scroll', SavInfiniteScroll);
 
   /* ================================================================== theme helper */
 
