@@ -121,6 +121,13 @@ The first public version.
 - Component builder: a zoom for the preview (`sav-zoom`, 25–150 %) and "Fit", the zoom that shows the whole width of the device.
 - Portal: every component page has a “Browser support” section: the oldest version of each browser that runs it, then what differs
   between browsers and systems (eyedropper, picture in picture, iOS volume, pop-ups, shortcuts…).
+- Builder and playground: every attribute a component takes is there (the ones the table named without a type, or did not name, are added
+  with the right control), and the reference tables list them all. Fields with known values suggest them: countries and continents for the
+  map (searchable, by name), languages for locale and include/exclude, countries for the country choice, keys for separators, common values
+  for autocomplete, accept and hotkey.
+- Map: `region` frames one continent (Europe, Africa, Asia, North America, South America, Oceania, Antarctica) and dims the rest of the world.
+  `by="continent"` makes each continent one area (one colour, one name in the page language, one value; `sav-continent` on a click), and
+  `highlight` also takes continents (`highlight="europe"` lights all its countries).
 - Video and audio: when they end, the video shows an end screen (the last frame dimmed, the big button again with “Replay”) and the audio's
   play button turns into Replay (with `loop` they start again by themselves instead). `replay-label` names the button. The back and
   forward buttons are rewind and fast forward with “10” beside them, so they are not mistaken for Replay (round arrow) or Loop (repeat). A Loop button in the controls

@@ -52,7 +52,7 @@ window.SAVC_DOCS = [
       ['type · name · value', 'button · submit · reset', 'Behaviour inside a form.'],
       ['icon · icon-end', 'icon name', 'An icon before or after the text. Without text the button becomes a square icon button.'],
       ['label', 'string', 'Accessible name, required for icon-only buttons.'],
-    ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.'], ['--text-color', 'CSS', 'The colour of the text, whatever the background (unset: the colour that fits the background).']],
+    ['auto-text', 'boolean', 'Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.'], ['--text-color', 'CSS', 'The colour of the text, whatever the background (unset: the colour that fits the background).'], ['aria-expanded · aria-pressed · aria-controls · aria-haspopup · aria-describedby · aria-current', 'string', 'Set on sav-button, they reach the real button inside (menus, toggles).']],
     slots: [['(default)', 'Label'], ['prefix', 'Before the label, e.g. an icon'], ['suffix', 'After the label']],
     parts: ['base', 'label', 'spinner'],
   },
@@ -284,14 +284,14 @@ window.SAVC_DOCS = [
 </sav-input>
 <sav-input label="Disabled" disabled value="Not editable"></sav-input>` },
     ],
-    attrs: [['label · help · placeholder · value', 'string', ''], ['type', 'text · email · password · number · search · tel · url · date · …', ''], ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['pill · clearable · password-toggle', 'boolean', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['min · max · step · minlength · maxlength · pattern · autocomplete · inputmode', '', 'Passed to the native input.']],
+    attrs: [['label · help · placeholder · value', 'string', ''], ['type', 'text · email · password · number · search · tel · url · date · …', ''], ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['pill · clearable · password-toggle', 'boolean', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['min · max · step · minlength · maxlength · pattern · autocomplete · inputmode', '', 'Passed to the native input.'], ['autofocus', 'boolean', 'Takes the focus when the page opens.'], ['spellcheck', 'true · false', 'Whether the browser checks the spelling.'], ['enterkeyhint', 'enter · done · go · next · previous · search · send', 'The label of the Enter key on phones.'], ['list', 'string', 'The id of a <datalist> with suggestions.']],
     slots: [['label', 'Rich label'], ['prefix · suffix', 'Icons or text inside the field'], ['help', 'Rich help text']],
     events: [['input · change', 'Native-like events on the element.'], ['sav-clear', 'When the clear button is used.']],
     methods: [['focus() · blur() · select()', ''], ['checkValidity() · reportValidity() · setCustomValidity(msg)', '']],
     parts: ['form-control', 'label', 'base', 'input', 'help-text'],
   },
   {
-    id: 'number-input', name: 'Number input', play: { tag: 'sav-number-input', attrs: { label: 'Guests', value: '2', min: '1', max: '12' }, skip: ['decrease-label', 'increase-label'] }, tag: 'sav-number-input', group: 'Forms', icon: 'diff',
+    id: 'number-input', name: 'Number input', play: { tag: 'sav-number-input', attrs: { label: 'Guests', value: '2', min: '1', max: '12' } }, tag: 'sav-number-input', group: 'Forms', icon: 'diff',
     desc: 'A number field with a − button on the left and a + on the right. The buttons switch off at the minimum and maximum; hold one to keep counting. It takes part in native forms and validation.',
     demos: [
       { title: 'Basic', html: `<sav-number-input label="Guests" value="2" min="1" max="12" help="From 1 to 12 people."></sav-number-input>
@@ -314,7 +314,7 @@ window.SAVC_DOCS = [
     ],
     attrs: [['label · help · placeholder', 'string', ''], ['value · min · max · step', 'number', 'Arrows step by step, PageUp and PageDown by ten steps.'], ['unit', 'string', 'Text after the number, inside the field (kg, %, EUR…).'],
       ['buttons', 'sides · end · none', 'Where the − and + buttons go. Default sides.'], ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['variant', 'primary · …', 'Colour of the buttons.'],
-      ['pill · readonly · disabled · required', 'boolean', ''], ['name', 'string', 'Form field name.'], ['decrease-label · increase-label', 'string', 'Names of the buttons for screen readers. Default "Decrease" and "Increase".']],
+      ['pill · readonly · disabled · required', 'boolean', ''], ['name', 'string', 'Form field name.'], ['decrease-label · increase-label', 'string', 'Names of the buttons for screen readers. Default "Decrease" and "Increase".'], ['autofocus', 'boolean', 'Takes the focus when the page opens.'], ['autocomplete', 'string', 'What the browser may fill in.'], ['inputmode', 'numeric · decimal', 'The keyboard phones show (numeric by default for whole steps).']],
     slots: [['label', 'Rich label'], ['prefix · suffix', 'Icons or text inside the field, next to the number'], ['help', 'Rich help text']],
     events: [['input', 'While the number changes (typing or buttons): detail.value.'], ['change', 'When a change is done: detail.value (a number, or null when empty).']],
     methods: [['stepUp(n) · stepDown(n)', 'Change the number by n steps.'], ['focus() · blur() · select()', ''], ['checkValidity() · reportValidity() · setCustomValidity(msg)', '']],
@@ -372,7 +372,7 @@ window.SAVC_DOCS = [
     desc: 'Multi-line text, with an optional counter and automatic height.',
     demos: [{ title: 'Basic', html: `<sav-textarea label="Message" placeholder="Write something…" maxlength="200" counter></sav-textarea>
 <sav-textarea label="Grows with the text" resize="auto" rows="2" help="resize=&quot;auto&quot;"></sav-textarea>` }],
-    attrs: [['label · help · placeholder · value', 'string', ''], ['rows', 'number', 'Default 4.'], ['resize', 'vertical · none · auto', ''], ['counter', 'boolean', 'Shows the character count.'], ['name · required · disabled · readonly · minlength · maxlength', '', '']],
+    attrs: [['label · help · placeholder · value', 'string', ''], ['rows', 'number', 'Default 4.'], ['resize', 'vertical · none · auto', ''], ['counter', 'boolean', 'Shows the character count.'], ['name · required · disabled · readonly · minlength · maxlength', '', ''], ['autofocus', 'boolean', 'Takes the focus when the page opens.'], ['spellcheck', 'true · false', 'Whether the browser checks the spelling.'], ['autocomplete', 'string', 'What the browser may fill in.'], ['wrap', 'soft · hard · off', 'How the text is sent: soft keeps the lines as typed, hard adds the breaks shown.']],
     events: [['input', 'At every key: event.target.value.'], ['change', 'When the text changed and the field loses the focus.']],
   },
   {
@@ -409,7 +409,7 @@ window.SAVC_DOCS = [
     attrs: [['label · help · placeholder · value', 'string', 'With multiple, value is a comma-separated list.'], ['multiple', 'boolean', 'Choose more than one: the choices show as chips.'], ['searchable', 'boolean', 'A search field at the top of the list.'],
       ['clearable', 'boolean', 'A button that empties the field.'], ['sheet-on-mobile', 'boolean', 'On screens up to 640px the list rises from the bottom.'], ['native-on-mobile · native', 'boolean', 'Use the operating system picker on phones, or always.'],
       ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['pill', 'boolean', ''], ['select-all', 'boolean', 'With multiple: a row on top of the list picks every option, or clears them all (also Ctrl/⌘ + A in the list). select-all-label and clear-all-label name it.'], ['max-chips', 'number', 'Chips shown before “+N”, default 3.'], ['name · required · disabled · readonly', '', 'Form behaviour.'],
-      ['data-description', 'string', 'On an option: a second line under its label.'], ['auto-text', 'boolean', 'With multiple: the tick of the chosen options is black or white, whichever is readable on the box (WCAG AA, at least 4.5:1), also with your own colours.']],
+      ['data-description', 'string', 'On an option: a second line under its label.'], ['auto-text', 'boolean', 'With multiple: the tick of the chosen options is black or white, whichever is readable on the box (WCAG AA, at least 4.5:1), also with your own colours.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the list opens, when there is room (default bottom-start).']],
     events: [['input · change', 'When the value changes.'], ['sav-show · sav-hide', 'The list opens or closes.']],
     methods: [['value', 'A string, or an array with multiple.'], ['show() · hide() · focus()', '']],
   },
@@ -426,7 +426,7 @@ window.SAVC_DOCS = [
     ],
     attrs: [['mode', 'date · month · year', 'What to pick. Values: 2026-11-16, 2026-11, 2026.'], ['value · min · max', 'ISO date', 'Same format as the mode.'], ['label · help · placeholder', 'string', ''],
       ['locale', 'string', 'Language of names and the first day of the week; default the page language.'], ['first-day', 'number', '0 = Sunday, 1 = Monday…'], ['format', 'short · medium · long · full', 'How the chosen date is written.'],
-      ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['auto-text', 'boolean', 'The chosen day and today are black or white, whichever is readable on what is behind them (WCAG AA, at least 4.5:1), also with your own colours.']],
+      ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['auto-text', 'boolean', 'The chosen day and today are black or white, whichever is readable on what is behind them (WCAG AA, at least 4.5:1), also with your own colours.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the calendar opens, when there is room.']],
     events: [['input · change', 'When a date is chosen.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
   },
   {
@@ -439,7 +439,7 @@ window.SAVC_DOCS = [
 <sav-time-picker label="Office hours" min="08:00" max="18:00" native-on-mobile help="From 8 to 18."></sav-time-picker>` },
     ],
     attrs: [['value · min · max', 'HH:MM', '24-hour time.'], ['step', 'number', 'Minutes between choices, default 5.'], ['hour-cycle', '12 · 24', 'Default from the language.'], ['locale', 'string', ''],
-      ['label · help · placeholder', 'string', ''], ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['auto-text', 'boolean', 'The chosen time is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
+      ['label · help · placeholder', 'string', ''], ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['auto-text', 'boolean', 'The chosen time is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the list opens, when there is room.']],
     events: [['input', 'At every change in the columns.'], ['change', 'When the popup closes with a new time.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
   },
   {
@@ -523,7 +523,7 @@ window.SAVC_DOCS = [
     ],
     attrs: [['min-length', 'number', 'Default 8.'], ['min-uppercase · min-lowercase · min-digits', 'number', 'Default 1 each; 0 removes the rule.'], ['min-symbols', 'number', 'Default 0.'],
       ['min-strength', '0 · 1 · 2 · 3 · 4', 'The form refuses passwords below this score (0 = never).'], ['rules', 'boolean', 'Shows the checklist.'], ['no-meter', 'boolean', 'Hides the meter.'],
-      ['labels', 'list', 'Words for the five scores, comma-separated (default "Too weak,Weak,Fair,Good,Strong").'], ['label · help · placeholder · name · required · autocomplete', '', 'Like an input.']],
+      ['labels', 'list', 'Words for the five scores, comma-separated (default "Too weak,Weak,Fair,Good,Strong").'], ['label · help · placeholder · name · required · autocomplete', '', 'Like an input.'], ['size', 'sm · md · lg', ''], ['disabled', 'boolean', '']],
     events: [['input', 'detail.value, detail.score (0–4)'], ['change', 'When the user leaves the field.']],
     parts: ['input', 'meter', 'strength', 'rules'],
   },
@@ -566,7 +566,7 @@ window.SAVC_DOCS = [
       ['live', 'boolean', 'sav-search fires while you type (after min-chars and debounce) and when the field is emptied; off: only on the search keys.'],
       ['search-keys', 'list', 'Keys that fire sav-search, separated by spaces (default enter). With multiple, Enter also adds the term first.'],
       ['min-chars', 'number', 'Characters before suggesting, and before the live search (default 1).'], ['debounce', 'ms', 'Wait after typing before asking for suggestions (default 120) or, with live, before searching (default 250).'],
-      ['max', 'number', 'Suggestions shown (default 8).'], ['no-autoselect', 'boolean', 'The first suggestion is not highlighted: Enter then searches the text as typed until an arrow picks one. By default the first one is ready and Enter takes it (Escape closes the list to search the text).'], ['no-filter', 'boolean', 'Do not filter here: the page sends already-filtered suggestions.'], ['empty-label', 'string', 'Text when nothing matches.']],
+      ['max', 'number', 'Suggestions shown (default 8).'], ['no-autoselect', 'boolean', 'The first suggestion is not highlighted: Enter then searches the text as typed until an arrow picks one. By default the first one is ready and Enter takes it (Escape closes the list to search the text).'], ['no-filter', 'boolean', 'Do not filter here: the page sends already-filtered suggestions.'], ['empty-label', 'string', 'Text when nothing matches.'], ['disabled · required', 'boolean', 'Like any field.']],
     events: [['sav-query', 'While typing (debounced): set .suggestions here. detail.query'], ['sav-pick', 'A suggestion was chosen, cancelable. detail.value, detail.label, detail.item'], ['sav-search', 'Search now: on the search keys (Enter), when a term is removed or the field is emptied, and with live while typing. detail.query (the text), detail.terms (the chips and the text)'], ['sav-term-add · sav-term-remove', 'multiple: a term is about to be added or removed, cancelable. detail.term'], ['input · change · sav-clear', 'change with multiple: detail.value is the list of terms.']],
     methods: [['suggestions', 'Property: strings or { label, value, description, icon, group, href }.'], ['terms', 'Property (multiple): the list of terms; set it to replace them.'], ['text', 'Property: what is typed right now.'], ['search()', 'Fires sav-search now.']],
   },
@@ -583,7 +583,7 @@ window.SAVC_DOCS = [
     ],
     attrs: [['value', 'list', 'The chips, separated by commas (in JS a list).'], ['kind', 'text · color · number', 'What a chip may be: any text (the default), a colour code (shown with its swatch, #ABC becomes #aabbcc) or a number. A wrong value shakes the field and is not added.'],
       ['separators', 'list', 'Keys that turn the text into a chip, separated by spaces: enter, comma, semicolon, space, tab or any character (default ", ; enter").'], ['max-terms', 'number', 'Most chips (default no limit).'],
-      ['label · help · placeholder · name · required · disabled', '', 'Like any field; the form gets one entry per chip.'], ['size', 'sm · md · lg', '']],
+      ['label · help · placeholder · name · required · disabled', '', 'Like any field; the form gets one entry per chip.'], ['size', 'sm · md · lg', ''], ['min-chars', 'number', 'Characters before the suggestions show (default 1).'], ['max-label', 'string', 'What the field says when it is full (default "Up to N terms").']],
     events: [['change', 'A chip was added or removed: detail.value (the list).'], ['sav-term-add · sav-term-remove', 'Before a chip is added or removed, cancelable. detail.term'], ['input', 'While typing: detail.text.']],
     methods: [['value · terms', 'Property: the list of chips; set it to replace them.']],
   },
@@ -597,7 +597,7 @@ window.SAVC_DOCS = [
 <sav-language-choice label="Only some" include="it-IT,en-GB,en-US,fr-FR,de-DE,es-ES" no-flag value="it-IT" style="max-width: 16rem"></sav-language-choice>` },
     ],
     attrs: [['value', 'tag · list', 'BCP 47 tags (it-IT, en-GB…); a comma-separated list with multiple.'], ['multiple', 'boolean', ''], ['native-names', 'boolean', 'Each language in itself (Italiano, Deutsch…).'], ['locale', 'string', 'Language of the names (default: the page).'],
-      ['code', 'iso3 · tag', 'What the code on the right shows (default ISO 639-3).'], ['no-flag · no-code', 'boolean', 'Hide the flag or the code.'], ['include · exclude', 'list', 'Only these tags, or all but these.'], ['label · placeholder · required · name · sheet-on-mobile · native-on-mobile', '', 'Like the select.']],
+      ['code', 'iso3 · tag', 'What the code on the right shows (default ISO 639-3).'], ['no-flag · no-code', 'boolean', 'Hide the flag or the code.'], ['include · exclude', 'list', 'Only these tags, or all but these.'], ['label · placeholder · required · name · sheet-on-mobile · native-on-mobile', '', 'Like the select.'], ['help', 'string', 'A line of help under it.'], ['disabled · readonly', 'boolean', ''], ['clearable · searchable', 'boolean', 'A × to empty it; a search in the list (on by default).'], ['max-chips · select-all', 'number · boolean', 'With multiple: chips shown before +N; a row that picks every language.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the list opens.']],
     events: [['change · input', 'Like the select.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
   },
   {
@@ -609,7 +609,7 @@ window.SAVC_DOCS = [
 <sav-country-choice label="Shipping to" multiple value="IT,FR,DE" code="alpha2" style="max-width: 24rem"></sav-country-choice>` },
     ],
     attrs: [['value', 'alpha-2 · list', 'IT, FR…; a comma-separated list with multiple.'], ['multiple', 'boolean', ''], ['code', 'alpha3 · alpha2 · numeric', 'Code on the right (default alpha-3).'], ['locale', 'string', 'Language of the names.'],
-      ['no-flag · no-code', 'boolean', ''], ['include · exclude', 'list', 'Only these countries (alpha-2), or all but these.'], ['label · placeholder · required · name · sheet-on-mobile · native-on-mobile', '', 'Like the select.']],
+      ['no-flag · no-code', 'boolean', ''], ['include · exclude', 'list', 'Only these countries (alpha-2), or all but these.'], ['label · placeholder · required · name · sheet-on-mobile · native-on-mobile', '', 'Like the select.'], ['help', 'string', 'A line of help under it.'], ['disabled · readonly', 'boolean', ''], ['clearable · searchable', 'boolean', 'A × to empty it; a search in the list (on by default).'], ['max-chips · select-all', 'number · boolean', 'With multiple: chips shown before +N; a row that picks every country.'], ['native-names', 'boolean', 'Each country in its own language.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the list opens.']],
     events: [['change · input', 'Like the select.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
   },
   {
@@ -624,7 +624,7 @@ window.SAVC_DOCS = [
 <sav-theme-choice appearance="buttons" no-auto value="dark"></sav-theme-choice>
 <sav-theme-choice appearance="buttons" icons-only no-auto></sav-theme-choice>` },
     ],
-    attrs: [['value', 'light · dark · auto', 'With no-auto, “auto” (or no value) shows the mode the system uses right now.'], ['no-auto', 'boolean', 'Only Light and Dark: the Auto choice is not offered.'], ['appearance', 'menu · buttons', 'Default menu.'], ['icons-only', 'boolean', 'Only the icons (the names stay for screen readers).'], ['apply', 'boolean', 'Calls Sav.setMode() on change.'], ['label', 'string', 'Name for screen readers (default "Theme").']],
+    attrs: [['value', 'light · dark · auto', 'With no-auto, “auto” (or no value) shows the mode the system uses right now.'], ['no-auto', 'boolean', 'Only Light and Dark: the Auto choice is not offered.'], ['appearance', 'menu · buttons', 'Default menu.'], ['icons-only', 'boolean', 'Only the icons (the names stay for screen readers).'], ['apply', 'boolean', 'Calls Sav.setMode() on change.'], ['label', 'string', 'Name for screen readers (default "Theme").'], ['size', 'sm · md · lg', '']],
     events: [['change', 'detail.value']],
   },
   {
@@ -633,7 +633,7 @@ window.SAVC_DOCS = [
     desc: 'An area that accepts things dragged from outside the page: files (upload), or text, links and HTML from other pages and apps — also pasted with Cmd/Ctrl+V. Accepted types, maximum size, one or many, a list of what was dropped. It belongs to forms.',
     demos: [ { title: 'Images up to 2 MB', html: `<sav-dropzone name="photos" accept="image/*,.pdf" max-size="2000000" multiple help="PNG, JPG or PDF, up to 2 MB each" style="max-width: 26rem"></sav-dropzone>` },
       { title: 'Text and links from other pages', html: `<sav-dropzone kind="data" multiple help="Drag a link or some selected text from another tab, or paste it here" style="max-width: 26rem"></sav-dropzone>` } ],
-    attrs: [['kind', 'files · data · any', 'What it accepts: files (default), dragged or pasted text and links, or both.'], ['accept', 'list', 'Files: image/*, .pdf, application/zip…'], ['multiple', 'boolean', ''], ['max-size', 'bytes', 'Refuses larger files.'], ['label · help · name · required', '', '']],
+    attrs: [['kind', 'files · data · any', 'What it accepts: files (default), dragged or pasted text and links, or both.'], ['accept', 'list', 'Files: image/*, .pdf, application/zip…'], ['multiple', 'boolean', ''], ['max-size', 'bytes', 'Refuses larger files.'], ['label · help · name · required', '', ''], ['disabled', 'boolean', 'It takes no files.']],
     events: [['change', 'detail.files, detail.items'], ['sav-drop', 'Text or a link was dropped, cancelable. detail.kind, detail.text, detail.url, detail.html']], methods: [['files', 'Property: the chosen File objects.'], ['dropped', 'Property: the dropped text and links.']],
   },
   {
@@ -641,11 +641,11 @@ window.SAVC_DOCS = [
     desc: 'A slider for numbers within a range.',
     demos: [{ title: 'Basic', html: `<sav-range label="Volume" value="40" show-value unit="%"></sav-range>
 <sav-range label="Rating" min="1" max="5" value="3" labels="Bad, Poor, Okay, Good, Great" variant="success"></sav-range>` }],
-    attrs: [['label · help', 'string', ''], ['value · min · max · step', 'number', ''], ['show-value', 'boolean', ''], ['unit', 'string', 'Appended to the shown value.'], ['labels', 'comma list', 'Labels under the track.'], ['variant', 'primary · …', '']],
+    attrs: [['label · help', 'string', ''], ['value · min · max · step', 'number', ''], ['show-value', 'boolean', ''], ['unit', 'string', 'Appended to the shown value.'], ['labels', 'comma list', 'Labels under the track.'], ['variant', 'primary · …', ''], ['name · disabled · required', '', 'Like any form field.']],
     events: [['input', 'While the thumb moves: event.target.value.'], ['change', 'When the thumb is let go: event.target.value.']],
   },
   {
-    id: 'range-dual', name: 'Double range', play: { tag: 'sav-range-dual', attrs: { label: 'Price', start: '20', end: '80', 'show-value': true, prefix: '€ ' }, skip: ['name-start', 'name-end', 'start-label', 'end-label'] }, tag: 'sav-range-dual', group: 'Forms', icon: 'ruler-dimension-line',
+    id: 'range-dual', name: 'Double range', play: { tag: 'sav-range-dual', attrs: { label: 'Price', start: '20', end: '80', 'show-value': true, prefix: '€ ' } }, tag: 'sav-range-dual', group: 'Forms', icon: 'ruler-dimension-line',
     desc: 'A slider with two handles for a span: a start and an end, such as a price band, an age group or a period between two dates. Each handle works with the keyboard like a normal slider.',
     demos: [
       { title: 'Basic', html: `<sav-range-dual label="Price" min="0" max="500" step="10" start="80" end="320" prefix="€ " show-value></sav-range-dual>
@@ -680,7 +680,7 @@ window.SAVC_DOCS = [
     demos: [{ title: 'Basic', html: `<sav-rating label="Your rating" value="3"></sav-rating>
 <sav-rating value="4" readonly style="--size: 1.1rem"></sav-rating>
 <sav-rating value="2" max="5" icon="heart" style="--color: var(--sav-color-danger); --size: 2rem"></sav-rating>` }],
-    attrs: [['value · max', 'number', 'Default max 5.'], ['icon', 'icon name', 'Default star.'], ['readonly · disabled', 'boolean', ''], ['label · help · name', 'string', ''], ['--size · --color · --empty', 'CSS', '']],
+    attrs: [['value · max', 'number', 'Default max 5.'], ['icon', 'icon name', 'Default star.'], ['readonly · disabled', 'boolean', ''], ['label · help · name', 'string', ''], ['--size · --color · --empty', 'CSS', ''], ['required', 'boolean', 'A score must be given before the form is sent.']],
     events: [['change', 'detail.value']],
   },
 
@@ -708,7 +708,7 @@ window.SAVC_DOCS = [
     slots: [['media', 'Image on top'], ['header', 'Title'], ['(default)', 'Body'], ['footer', 'Actions']],
   },
   {
-    id: 'avatar', name: 'Avatar', play: { tag: 'sav-avatar', attrs: { label: 'Ada Lovelace' }, skip: ['image', 'initials'] }, tag: 'sav-avatar', group: 'Layout', icon: 'circle-user',
+    id: 'avatar', name: 'Avatar', play: { tag: 'sav-avatar', attrs: { label: 'Ada Lovelace' } }, tag: 'sav-avatar', group: 'Layout', icon: 'circle-user',
     desc: 'A picture, initials or an icon for a person.',
     demos: [{ title: 'Basic', html: `<sav-avatar label="Ada Lovelace"></sav-avatar>
 <sav-avatar label="Grace Hopper" variant="primary"></sav-avatar>
@@ -1546,7 +1546,7 @@ window.SAVC_DOCS = [
 </script>` },
     ],
     attrs: [['mode', 'auto · button', 'auto loads by itself near the end (default); button waits for “Load more”.'], ['threshold', 'number', 'How many pixels before the end it starts loading (default 300).'],
-      ['loading-label · more-label · end-label · error-label', 'string', 'The texts: “Loading…”, “Load more”, “That’s all”, “It did not load.”']],
+      ['loading-label · more-label · end-label · error-label', 'string', 'The texts: “Loading…”, “Load more”, “That’s all”, “It did not load.”'], ['retry-label', 'string', 'The text of the Try again button (default "Try again").']],
     events: [['sav-load', 'Time to load more: detail.page (1, 2, 3…). Add the items, then call done() or fail().']],
     methods: [['done(more = true)', 'The items are in; false when there is nothing more.'], ['fail()', 'Loading failed: shows “Try again”.'], ['reset()', 'Starts again from page 0 (a new search).'], ['load()', 'Loads the next page now.'], ['page · loading', 'Pages loaded so far; true while loading.']],
     parts: ['base', 'footer', 'loading', 'more-button', 'error', 'end'],
@@ -1569,7 +1569,7 @@ window.SAVC_DOCS = [
       { title: 'Pie and donut', html: `<sav-chart-pie label="Traffic sources" show-values style="width: 16rem" data='{"labels":["Search","Social","Direct","Email"],"values":[48,22,18,12]}'></sav-chart-pie>
 <sav-chart-pie label="Storage" type="donut" center="72%" gap="2" style="width: 16rem" data='{"labels":["Photos","Videos","Free"],"values":[40,32,28]}'></sav-chart-pie>` },
     ],
-    attrs: [['data', 'JSON', '{ labels: [...], values: [...] }'], ['type', 'pie · donut', ''], ['thickness', 'px', 'Width of the donut ring.'], ['gap', 'degrees', 'Space between slices (default 1.2).'], ['show-values', 'boolean', 'Percentages on the slices.'], ['center', 'string', 'Text in the middle of the donut.'], ['height', 'px', 'Size (default 260).']],
+    attrs: [['data', 'JSON', '{ labels: [...], values: [...] }'], ['type', 'pie · donut', ''], ['thickness', 'px', 'Width of the donut ring.'], ['gap', 'degrees', 'Space between slices (default 1.2).'], ['show-values', 'boolean', 'Percentages on the slices.'], ['center', 'string', 'Text in the middle of the donut.'], ['height', 'px', 'Size (default 260).'], ['label', 'string', 'The name of the chart (screen readers, and the table under it).']],
   },
   {
     id: 'chart-radar', name: 'Radar chart', tag: 'sav-chart-radar', group: 'Charts', icon: 'radar',
@@ -1577,7 +1577,7 @@ window.SAVC_DOCS = [
     demos: [
       { title: 'Two profiles', html: `<sav-chart-radar label="Skills" max="10" style="width: 22rem" data='{"labels":["Speed","Design","Code","Tests","Docs","Support"],"series":[{"name":"Team A","values":[8,6,9,5,7,6]},{"name":"Team B","values":[5,9,6,8,6,9]}]}'></sav-chart-radar>` },
     ],
-    attrs: [['data', 'JSON', '{ labels: [axes], series: [{ name, values }] }'], ['max', 'number', ''], ['levels', 'number', 'Rings of the web (default 4).'], ['no-fill', 'boolean', 'Lines only.'], ['height', 'px', 'Size (default 320).']],
+    attrs: [['data', 'JSON', '{ labels: [axes], series: [{ name, values }] }'], ['max', 'number', ''], ['levels', 'number', 'Rings of the web (default 4).'], ['no-fill', 'boolean', 'Lines only.'], ['height', 'px', 'Size (default 320).'], ['label', 'string', 'The name of the chart (screen readers, and the table under it).']],
   },
   {
     id: 'chart-line', name: 'Area and line chart', tag: 'sav-chart-line', group: 'Charts', icon: 'chart-area',
@@ -1586,7 +1586,7 @@ window.SAVC_DOCS = [
       { title: 'Area, smooth', html: `<sav-chart-line label="Visitors" smooth style="width: 100%" data='{"labels":["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],"series":[{"name":"This week","values":[120,180,150,210,260,190,240]},{"name":"Last week","values":[100,140,160,150,200,170,180]}]}'></sav-chart-line>` },
       { title: 'Lines with points', html: `<sav-chart-line label="Temperature" type="line" points style="width: 100%" data='{"labels":["Jan","Feb","Mar","Apr","May","Jun"],"series":[{"name":"Rome","values":[8,9,12,15,19,24]},{"name":"Oslo","values":[-4,-3,1,5,11,15]}]}'></sav-chart-line>` },
     ],
-    attrs: [['data', 'JSON', '{ labels: [...], series: [{ name, values }] }'], ['type', 'area · line', 'Default area.'], ['smooth', 'boolean', 'Curves instead of straight segments.'], ['points', 'boolean', 'A dot on every value.'], ['stacked', 'boolean', 'Areas on top of each other.'], ['max · height', '', '']],
+    attrs: [['data', 'JSON', '{ labels: [...], series: [{ name, values }] }'], ['type', 'area · line', 'Default area.'], ['smooth', 'boolean', 'Curves instead of straight segments.'], ['points', 'boolean', 'A dot on every value.'], ['stacked', 'boolean', 'Areas on top of each other.'], ['max · height', '', ''], ['label', 'string', 'The name of the chart (screen readers, and the table under it).'], ['min', 'number', 'The lowest value of the axis (default 0).']],
   },
   {
     id: 'chart-activity', name: 'Activity chart', tag: 'sav-chart-activity', group: 'Charts', icon: 'calendar-days',
@@ -1600,16 +1600,20 @@ window.SAVC_DOCS = [
   document.getElementById('act-demo').data = days;
 </script>` },
     ],
-    attrs: [['data', 'JSON', "{ '2026-11-16': 40, … } or [{ date, value }] — values 0–100."], ['start · end', 'YYYY-MM-DD', 'Period (default: the last 12 months).'], ['levels', 'number', 'Colour steps (default 5).'], ['week-start', '0 · 1', 'Sunday or Monday (default 1).'], ['locale', 'string', 'Month and day names.']],
+    attrs: [['data', 'JSON', "{ '2026-11-16': 40, … } or [{ date, value }] — values 0–100."], ['start · end', 'YYYY-MM-DD', 'Period (default: the last 12 months).'], ['levels', 'number', 'Colour steps (default 5).'], ['week-start', '0 · 1', 'Sunday or Monday (default 1).'], ['locale', 'string', 'Month and day names.'], ['label', 'string', 'The name of the chart (screen readers, and the table under it).']],
   },
   {
     id: 'chart-map', name: 'Map chart', tag: 'sav-chart-map', group: 'Charts', icon: 'map',
     desc: 'The world coloured by value (a choropleth), or with some countries highlighted; it can zoom on one or more countries. Countries are named in the page language; a click tells which one.',
     demos: [
+      { title: 'By continent', html: `<sav-chart-map region="europe" label="Visitors in Europe" data='{"IT":420,"FR":310,"DE":280,"ES":190,"GB":240,"PL":90,"SE":60,"PT":75}' style="width: 100%"></sav-chart-map>
+<sav-chart-map by="continent" label="Sales by continent" data='{"europe":320,"north-america":280,"asia":210,"south-america":90,"africa":40,"oceania":60}' style="width: 100%; margin-top: 1rem"></sav-chart-map>
+<sav-chart-map by="continent" highlight="europe" label="Where we ship" style="width: 100%; margin-top: 1rem"></sav-chart-map>
+<sav-chart-map region="south-america" highlight="BR AR CL" label="Offices" style="width: 100%; margin-top: 1rem"></sav-chart-map>` },
       { title: 'Values by country', html: `<sav-chart-map label="Visitors by country" style="width: 100%" data='{"US":420,"BR":180,"IT":160,"DE":150,"FR":120,"GB":110,"IN":240,"JP":90,"AU":60,"CA":80,"ZA":30,"MX":70,"ES":65}'></sav-chart-map>` },
       { title: 'Zoom and highlight', html: `<sav-chart-map label="Where we ship" focus="IT,FR,DE,ES,PT,AT,CH" highlight="IT,FR,DE,ES,PT,AT,CH" style="width: 100%; max-width: 30rem"></sav-chart-map>` },
     ],
-    attrs: [['data', 'JSON', '{ "IT": 40, "FRA": 12 } — alpha-2 or alpha-3 keys.'], ['highlight', 'list', 'Countries filled with the main colour (without values).'], ['focus', 'list', 'Zoom on these countries.'], ['levels', 'number', 'Colour steps (default 5).'],
+    attrs: [['by', 'country · continent', 'continent: data and highlight name continents ({"europe": 40, "north-america": 25}) and each continent is one area, with one colour, one name and one value (default country).'], ['region', 'world · europe · africa · asia · north-america · south-america · oceania · antarctica', 'The continent to show: the map frames it and dims the rest of the world (default world).'], ['data', 'JSON', '{ "IT": 40, "FRA": 12 } — alpha-2 or alpha-3 keys.'], ['highlight', 'list', 'Countries filled with the main colour (without values).'], ['focus', 'list', 'Zoom on these countries.'], ['levels', 'number', 'Colour steps (default 5).'],
       ['antarctica', 'boolean', 'Show Antarctica (hidden by default).'], ['locale', 'string', 'Language of the country names.'], ['max · height · label', '', '']],
     events: [['sav-country', 'A country was clicked. detail.code, detail.value']],
   },

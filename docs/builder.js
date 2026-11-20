@@ -291,8 +291,9 @@
     // data (JSON): a box with several lines; the component changes only once the text reads well
     if (k.kind === 'json') return `<sav-textarea size="sm" rows="5" class="mono" data-a="${k.name}" data-json value="${esc(isOn(v) ? v : '')}">${lbl(name, (k.desc ? k.desc + ' ' : '') + 'Written as JSON: the preview follows once brackets, quotes and commas are right.')}</sav-textarea>`;
     // icons: a search among the whole icon set, each suggestion with its drawing and name; the chosen one shows next to the label
+    const rich = D().richField(k, 'data-a', isOn(v) ? v : '', lbl(name, k.desc)); if (rich) return rich;
     if (k.kind === 'multi') return `<sav-select size="sm" multiple select-all data-a="${k.name}" ${D().multiAttrs(k)} value="${esc(D().multiValue(k, isOn(v) ? v : ''))}" placeholder="None" sheet-on-mobile>${lbl(name, k.desc)}${k.options.map((o) => `<option value="${o}">${esc(k.optionLabels?.[o] || T(o))}</option>`).join('')}</sav-select>`;
-    if (k.kind === 'chips') return `<sav-chip-input size="sm" data-a="${k.name}"${k.chips ? ` kind="${k.chips}"` : ''} value="${esc(isOn(v) ? v : '')}">${lbl(name, k.desc)}</sav-chip-input>`;
+    if (k.kind === 'chips') return `<sav-chip-input size="sm" data-a="${k.name}"${k.chips ? ` kind="${k.chips}"` : ''} value="${esc(isOn(v) ? v : '')}">${lbl(name, k.desc)}${(k.suggestions || []).map((o) => `<option>${esc(o)}</option>`).join('')}</sav-chip-input>`;
     if (k.kind === 'icon') return `<sav-search size="sm" data-a="${k.name}" data-icons no-filter max="12" value="${esc(isOn(v) ? v : '')}" placeholder="Search icons: star, heart, bell…">`
       + `<span slot="label" class="knob-l">${esc(name)}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${isOn(v) ? '' : 'hidden'}></sav-icon></span></sav-search>`;
     return `<sav-input size="sm" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}">${lbl(name, k.desc)}</sav-input>`;

@@ -508,6 +508,83 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     if (def.length && list.length === def.length && def.every((d) => list.includes(d))) return '';
     return list.join(' ');
   }
+
+  /* ---------- every attribute in the builder and the playground: the ones the table does not type get a type from their name */
+  const KNOB_SKIP = {
+    tabs: ['placement'], // the older name of orientation / side
+    'chip-input': ['multiple', 'live', 'search-keys'], // a chip field: always several, it does not search
+    select: ['min', 'max', 'locale'], 'language-choice': ['min', 'max'], 'country-choice': ['min', 'max'],
+    button: ['download'],
+  };
+  const KNOB_BOOL = /^(disabled|required|readonly|autofocus|clearable|searchable|multiple|select-all|native-names|mask|live|pill|open|loop|muted|autoplay|stacked|smooth|points|antarctica|compact|alpha|counter|zoom|eager|rules|exclusive|sortable|striped|hover|selectable|clickable|collapsible|collapsed|closable|persistent|sticky|vertical|no-[a-z-]+|[a-z-]+-only)$/;
+  const KNOB_NUM = /^(min|max|step|minlength|maxlength|height|gap|thickness|length|max-chips|max-terms|min-chars|levels|rows|debounce|delay|threshold|duration|max-items|max-size|per-view|page|pages|total|page-size|siblings|current|columns|first-day|week-start)$/;
+  const POS4 = ['top', 'bottom', 'left', 'right'], POS_PANEL = ['bottom-start', 'bottom-end', 'top-start', 'top-end'];
+  const KNOB_ENUM = {
+    placement: (id) => (/^(tooltip|info-tip|popover)$/.test(id) ? POS4 : POS_PANEL),
+    wrap: () => ['soft', 'hard', 'off'], spellcheck: () => ['true', 'false'], size: () => ['sm', 'md', 'lg'],
+    inputmode: () => ['text', 'numeric', 'decimal', 'tel', 'email', 'url', 'search', 'none'],
+    enterkeyhint: () => ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'],
+    language: (id) => (id === 'code' ? ['html', 'css', 'js', 'json', 'php', 'py', 'sh', 'sql'] : null),
+  };
+  const KNOB_DESC = {
+    name: 'The name the form sends the value with.', disabled: 'It cannot be used, and it looks so.', required: 'It must be filled before the form is sent.',
+    readonly: 'It shows the value but it cannot be changed.', autofocus: 'Takes the focus when the page opens.', placeholder: 'The hint shown while it is empty.',
+    label: 'The name shown above it (and read by screen readers).', help: 'A line of help under it.', spellcheck: 'Whether the browser checks the spelling.',
+    autocomplete: 'What the browser may fill in (email, name, one-time-code…).', inputmode: 'The keyboard phones show.', enterkeyhint: 'The label of the Enter key on phones.',
+    placement: 'Where its panel opens, when there is room.', min: 'The lowest value.', max: 'The highest value.', step: 'How much it moves at a time.',
+    minlength: 'The fewest characters.', maxlength: 'The most characters.', pattern: 'A regular expression the value must match.', list: 'The id of a <datalist> with suggestions.',
+    wrap: 'How the text is sent: soft keeps the lines as typed, hard adds the breaks shown.', height: 'The height in pixels.', image: 'The address of the picture.',
+    initials: 'The letters shown when there is no picture.', open: 'Open now.', size: 'The size.', gap: 'The space between the bars (0 to 1).', thickness: 'The width of the ring (0 to 1).',
+    'start-label': 'The name of the first handle (screen readers).', 'end-label': 'The name of the second handle (screen readers).', 'name-start': 'The form name of the first value.',
+    'name-end': 'The form name of the second value.', start: 'The first day shown.', end: 'The last day shown.', 'decrease-label': 'The name of the − button.', 'increase-label': 'The name of the + button.',
+    'retry-label': 'The text of the Try again button.', highlight: 'Lines to mark, as 3 or 5-8.', language: 'The language of the code, for the colours.',
+  };
+  function inferKnob(a, d) {
+    const k = { name: a, desc0: KNOB_DESC[a] || '' };
+    const en = KNOB_ENUM[a]?.(d.id);
+    if (en) return { ...k, type: 'enum', options: en, values: en.join(' · ') };
+    if (KNOB_BOOL.test(a)) return { ...k, type: 'bool', values: 'boolean' };
+    const dates = /^(date-picker|time-picker|chart-activity)$/.test(d.id);
+    if (KNOB_NUM.test(a) && !(dates && /^(min|max)$/.test(a))) return { ...k, type: 'text', kind: 'number', values: 'number' };
+    return { ...k, type: 'text', values: 'string' };
+  }
+  /* ---------- fields with suggestions instead of free text */
+  const SUGGEST = {
+    autocomplete: ['on', 'off', 'name', 'given-name', 'family-name', 'email', 'username', 'current-password', 'new-password', 'one-time-code', 'tel', 'organization', 'street-address', 'postal-code', 'country', 'bday', 'url'],
+    hotkey: ['mod+k', 'mod+p', 'mod+shift+p', 'mod+/', '/'],
+    accept: ['image/*', 'video/*', 'audio/*', '.pdf', '.csv', '.json', '.txt', '.zip', '.doc,.docx', '.xls,.xlsx'],
+  };
+  const KEYS = ['enter', 'space', 'tab', 'comma', 'semicolon'];
+  function richKind(k, d) {
+    if (d.id === 'chart-map' && /^(highlight|focus)$/.test(k.name)) { k.kind = 'places'; return; }
+    if (k.name === 'locale') { k.kind = 'locale'; return; }
+    if (/^(include|exclude)$/.test(k.name) && d.id === 'language-choice') { k.kind = 'languages'; return; }
+    if (/^(include|exclude)$/.test(k.name) && d.id === 'country-choice') { k.kind = 'countries'; return; }
+    if (/^(separators|search-keys)$/.test(k.name)) { k.type = 'text'; k.kind = 'multi'; k.options = KEYS; k.optionLabels = { enter: 'Enter', space: 'Space', tab: 'Tab', comma: 'Comma (,)', semicolon: 'Semicolon (;)' }; return; }
+    if (SUGGEST[k.name] && k.type === 'text' && !k.kind) {
+      if (k.name === 'accept') { k.kind = 'chips'; k.suggestions = SUGGEST.accept; } else { k.kind = 'suggest'; k.suggestions = SUGGEST[k.name]; }
+    }
+  }
+  /** the field of a knob with its own kind of control (shared by the builder and the playground); '' when it is a plain one */
+  function richField(k, attr, v, label) {
+    const val = String(v ?? '');
+    const lang = document.documentElement.lang || navigator.language || 'en';
+    if (k.kind === 'places') {
+      const DN = (() => { try { return new Intl.DisplayNames([lang, 'en'], { type: 'region' }); } catch { return null; } })();
+      const conts = ['europe', 'africa', 'asia', 'north-america', 'south-america', 'oceania', 'antarctica'];
+      const contName = { europe: 'Europe', africa: 'Africa', asia: 'Asia', 'north-america': 'North America', 'south-america': 'South America', oceania: 'Oceania', antarctica: 'Antarctica' };
+      const countries = (Sav.countries || []).map((c) => [c.a2, DN?.of(c.a2) || c.a2]).sort((a, b) => a[1].localeCompare(b[1]));
+      const chosen = val.split(/[\s,]+/).filter(Boolean).map((x) => (conts.includes(x.toLowerCase()) ? x.toLowerCase() : x.toUpperCase()));
+      return `<sav-select size="sm" multiple searchable clearable ${attr}="${k.name}" value="${esc(chosen.join(','))}" placeholder="None" sheet-on-mobile>${label}`
+        + `<optgroup label="Continents">${conts.map((c) => `<option value="${c}">${contName[c]}</option>`).join('')}</optgroup>`
+        + `<optgroup label="Countries">${countries.map(([c, n]) => `<option value="${c}">${esc(n)}</option>`).join('')}</optgroup></sav-select>`;
+    }
+    if (k.kind === 'locale') return `<sav-language-choice size="sm" clearable no-flag ${attr}="${k.name}" value="${esc(val)}" placeholder="The page language">${label}</sav-language-choice>`;
+    if (k.kind === 'languages') return `<sav-language-choice size="sm" multiple clearable ${attr}="${k.name}" value="${esc(val)}" placeholder="None">${label}</sav-language-choice>`;
+    if (k.kind === 'countries') return `<sav-country-choice size="sm" multiple clearable ${attr}="${k.name}" value="${esc(val)}" placeholder="None">${label}</sav-country-choice>`;
+    if (k.kind === 'suggest') return `<sav-search size="sm" ${attr}="${k.name}" value="${esc(val)}" placeholder="Default">${label}${k.suggestions.map((o) => `<option>${esc(o)}</option>`).join('')}</sav-search>`;
+    return '';
+  }
   function knobsFor(d, keep = []) {
     const skip = new Set(['href', 'target', 'download', 'type', 'name', 'value', 'id', 'from', 'for', ...(d.play?.skip || [])].filter((n) => !keep.includes(n)));
     const main = d.play?.tag || (String(d.tag).match(/sav-[a-z-]+/) || [''])[0];
@@ -518,7 +595,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       const about = plain(desc || '');
       const owner = about.match(/^(sav-[a-z-]+):/);
       if (/^On (sav-|an? |each )/i.test(about) || (owner && owner[1] !== main)) continue;
-      const list = names.split(' · ').map((n) => n.trim()).filter((n) => /^[a-z][a-z-]*$/.test(n) && !skip.has(n) && !knobs.some((k) => k.name === n));
+      const list = names.split(' · ').map((n) => n.trim()).filter((n) => /^[a-z][a-z-]*$/.test(n) && !/^aria-/.test(n) && !(KNOB_SKIP[d.id] || []).includes(n) && !skip.has(n) && !knobs.some((k) => k.name === n));
       if (!list.length) continue;
       const opts = values.split(' · ').map((v) => v.trim());
       if (values === 'boolean') list.forEach((n) => knobs.push({ name: n, type: 'bool' }));
@@ -529,9 +606,15 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       else if (/^(ms|bytes)$/.test(values)) list.forEach((n) => knobs.push({ name: n, type: 'text', kind: 'number', unit: values }));
       else if (/string|number|ms|url|icon name|length|date|tag|alpha|list|\d:\d/.test(values)) list.forEach((n) => knobs.push({ name: n, type: 'text' }));
     }
+    // every attribute the component takes, also the ones the table names without a type (or not at all)
+    const C = main && customElements.get(main), NOT = new Set(KNOB_SKIP[d.id] || []);
+    for (const a of (C?.observedAttributes || [])) {
+      if (/^(animation|animation-duration|aria-.+|data-.+|style|class|shape)$/.test(a) || skip.has(a) || NOT.has(a) || knobs.some((k) => k.name === a)) continue;
+      knobs.push(inferKnob(a, d));
+    }
     for (const k of knobs) {
       const row = (d.attrs || []).find((r) => r[0].split(' · ').map((x) => x.trim()).includes(k.name));
-      k.desc = row ? plain(row[2]) || plain(row[1]) : ''; k.values = row ? row[1] : '';
+      k.desc = (row ? plain(row[2]) || plain(row[1]) : '') || k.desc0 || ''; k.values = row ? row[1] || k.values || '' : k.values || '';
       k.label = knobLabel(k.name);
       k.advanced = ADVANCED.has(k.name);
       if (k.type === 'text' && !k.kind) {
@@ -546,11 +629,12 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       }
       if (k.unit) k.label += ` (${k.unit})`;
       // the choice that applies when nothing is set: shown by its name instead of "Default"
+      richKind(k, d);
       if (k.type === 'enum') k.def = defaultOf(k.options, k.desc);
       // several choices from a fixed set (the controls of the players): a select with multiple
       if (k.type === 'text' && k.name === 'controls' && /^(video|audio)$/.test(d.id)) { k.kind = 'multi'; k.options = d.id === 'video' ? ['play', 'skip', 'seek', 'time', 'mute', 'volume', 'speed', 'loop', 'captions', 'pip', 'fullscreen'] : ['play', 'skip', 'seek', 'time', 'mute', 'volume', 'speed', 'loop']; k.optionLabels = { play: 'Play / pause', skip: 'Back / forward 10 s', seek: 'Progress bar', time: 'Time', mute: 'Mute', volume: 'Volume', speed: 'Speed', loop: 'Loop (play again at the end)', captions: 'Captions', pip: 'Picture in picture', fullscreen: 'Full screen' }; if (k.name === 'controls') { k.defaults = d.id === 'video' ? ['play', 'seek', 'time', 'mute', 'volume', 'fullscreen'] : ['play', 'seek', 'time', 'mute', 'volume']; k.emptyIs = 'none'; } }
       // a list of values separated by commas: a chip field (colours with their swatch, numbers)
-      if (k.type === 'text' && k.name !== 'value' && /separated by commas|comma-separated/i.test(k.desc || '')) { k.kind = 'chips'; k.chips = k.name === 'swatches' ? 'color' : /numbers/i.test(k.desc) ? 'number' : ''; }
+      if (k.type === 'text' && !/^(value|label|help|placeholder)$/.test(k.name) && /separated by commas|comma-separated/i.test(k.desc || '')) { k.kind = 'chips'; k.chips = k.name === 'swatches' ? 'color' : /numbers/i.test(k.desc) ? 'number' : ''; }
       // options for vertical tabs only show once the tabs are vertical
     }
     const own = knobs.find((k) => k.name === 'shape'); // the avatar has its own shapes: merge them
@@ -661,8 +745,9 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       if (k.type === 'bool') return `<sav-switch size="sm" data-k="${k.name}" ${v ? 'checked' : ''}>${esc(L)}${tip(k.desc)}</sav-switch>`;
       if (k.type === 'enum') return `<sav-select size="sm" data-k="${k.name}" value="${esc(v || '')}" sheet-on-mobile aria-label="${esc(L)}" placeholder="${k.def ? titleCase(k.def) : 'Default'}">${lbl(L, k.desc)}<option value="">${k.def ? titleCase(k.def) : 'Default'}</option>${k.options.filter((o) => o !== k.def).map((o) => `<option value="${o}">${titleCase(o)}</option>`).join('')}</sav-select>`;
       // icons: a search among the whole icon set (drawing, name, words); the chosen icon shows next to the label
+      const rich = richField(k, 'data-k', v, lbl(L, k.desc)); if (rich) return rich;
       if (k.kind === 'multi') return `<sav-select size="sm" multiple select-all data-k="${k.name}" ${multiAttrs(k)} value="${esc(multiValue(k, v))}" placeholder="None" sheet-on-mobile>${lbl(L, k.desc)}${k.options.map((o) => `<option value="${o}">${esc(k.optionLabels?.[o] || titleCase(o))}</option>`).join('')}</sav-select>`;
-      if (k.kind === 'chips') return `<sav-chip-input size="sm" data-k="${k.name}"${k.chips ? ` kind="${k.chips}"` : ''} value="${esc(v || '')}">${lbl(L, k.desc)}</sav-chip-input>`;
+      if (k.kind === 'chips') return `<sav-chip-input size="sm" data-k="${k.name}"${k.chips ? ` kind="${k.chips}"` : ''} value="${esc(v || '')}">${lbl(L, k.desc)}${(k.suggestions || []).map((o) => `<option>${esc(o)}</option>`).join('')}</sav-chip-input>`;
       if (k.kind === 'icon') return `<sav-search size="sm" data-k="${k.name}" data-icons no-filter max="12" value="${esc(v || '')}" placeholder="Search icons: star, heart, bell…">`
         + `<span slot="label" class="knob-l">${esc(L)}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${v ? '' : 'hidden'}></sav-icon></span></sav-search>`;
       if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-k="${k.name}"${k.min !== undefined ? ` min="${k.min}"` : ''}${k.max !== undefined ? ` max="${k.max}"` : ''} value="${esc(v || '')}" placeholder="Default">${lbl(L, k.desc)}</sav-number-input>`;
@@ -731,7 +816,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   window.SavDocs = {
     clampKnob,
     docs: DOCS, icon: ICON, esc, codeBlock, footer: () => footer(), route: () => route(),
-    playMarkup, knobsFor, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
+    playMarkup, knobsFor, richField, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
     themeConfig: () => ({ style: store.get('savc-style', 'tilt'), mode: store.get('savc-mode', 'auto'), tokens: themeTokens(), settings: { ...theme } }),
     applyThemeConfig(cfg) {
       theme = { ...(cfg.settings || {}) };

@@ -6271,32 +6271,105 @@
   define('sav-chart-activity', SavChartActivity);
 
   /** A world map coloured by value (choropleth), or with some countries highlighted; it can zoom on one or more countries. Data: { IT: 40, FR: 12 } (alpha-2 or alpha-3). */
+  /** the countries of each continent (alpha-2); Russia belongs to Europe and to Asia, Cyprus to Europe, the Caribbean and Central America to North America */
+  const CONTINENTS = {
+    africa: 'DZ AO BJ BW BF BI CM CV CF TD KM CG CD CI DJ EG GQ ER ET GA GM GH GN GW KE LS LR LY MG MW ML MR MU YT MA MZ NA NE NG RE RW SH ST SN SC SL SO ZA SS SD SZ TZ TG TN UG EH ZM ZW',
+    europe: 'AX AL AD AT BY BE BA BG HR CY CZ DK EE FO FI FR DE GI GR GG HU IS IE IM IT JE XK LV LI LT LU MT MD MC ME NL MK NO PL PT RO RU SM RS SK SI ES SJ SE CH UA GB VA',
+    asia: 'AF AM AZ BH BD BT BN KH CN GE HK IN ID IR IQ IL JP JO KZ KW KG LA LB MO MY MV MN MM NP KP OM PK PS PH QA RU SA SG KR LK SY TW TJ TH TL TR TM AE UZ VN YE',
+    'north-america': 'AI AG AW BS BB BZ BM BQ VG CA KY CR CU CW DM DO SV GL GD GP GT HT HN JM MQ MX MS NI PA PR BL KN LC MF PM VC SX TT TC US VI',
+    'south-america': 'AR BO BV BR CL CO EC FK GF GY PY PE GS SR UY VE',
+    oceania: 'AS AU CK FJ PF GU KI MH FM NR NC NZ NU NF MP PW PG PN WS SB TK TO TV UM VU WF',
+    antarctica: 'AQ TF HM',
+  };
+  const NO_ID = { Somaliland: 'africa', 'N. Cyprus': 'europe' }; // shapes of the map without a country code
+  /** UN M49 codes, so the browser names each continent in the page language (Europe, Europa, Europe…) */
+  const CONTINENT_M49 = { europe: '150', africa: '002', asia: '142', 'north-america': '003', 'south-america': '005', oceania: '009', antarctica: '010' };
+  /** names of the continents (browsers rarely name the UN codes): en, it, fr, de, es, pt; other languages get English */
+  const CONTINENT_NAMES = {
+    en: { europe: 'Europe', africa: 'Africa', asia: 'Asia', 'north-america': 'North America', 'south-america': 'South America', oceania: 'Oceania', antarctica: 'Antarctica' },
+    it: { europe: 'Europa', africa: 'Africa', asia: 'Asia', 'north-america': 'America del Nord', 'south-america': 'America del Sud', oceania: 'Oceania', antarctica: 'Antartide' },
+    fr: { europe: 'Europe', africa: 'Afrique', asia: 'Asie', 'north-america': 'Amérique du Nord', 'south-america': 'Amérique du Sud', oceania: 'Océanie', antarctica: 'Antarctique' },
+    de: { europe: 'Europa', africa: 'Afrika', asia: 'Asien', 'north-america': 'Nordamerika', 'south-america': 'Südamerika', oceania: 'Ozeanien', antarctica: 'Antarktis' },
+    es: { europe: 'Europa', africa: 'África', asia: 'Asia', 'north-america': 'América del Norte', 'south-america': 'América del Sur', oceania: 'Oceanía', antarctica: 'Antártida' },
+    pt: { europe: 'Europa', africa: 'África', asia: 'Ásia', 'north-america': 'América do Norte', 'south-america': 'América do Sul', oceania: 'Oceania', antarctica: 'Antártida' },
+  };
+  /** "Europe", "north america", "North-America" → the key of CONTINENTS */
+  const contKey = (k) => { const x = String(k).trim().toLowerCase().replace(/[\s_]+/g, '-'); return CONTINENTS[x] ? x : ''; };
+  /** the one continent a shape of the map belongs to (Russia: Europe, as in the UN list) */
+  const continentOf = (c) => (c.id ? Object.keys(CONTINENTS).find((k) => CONTINENTS[k].split(' ').includes(c.id)) || '' : NO_ID[c.name] || '');
+  /** the box of the main land of a country (its largest outline: France without French Guiana, Norway without Svalbard…) */
+  const mainBox = (d) => {
+    let best = null;
+    for (const part of d.split(/(?=M)/)) {
+      const n = (part.match(/-?\d+(\.\d+)?/g) || []).map(Number); if (n.length < 4) continue;
+      const xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2 === 1);
+      const b = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+      if (!best || (b[2] - b[0]) * (b[3] - b[1]) > (best[2] - best[0]) * (best[3] - best[1])) best = b;
+    }
+    return best;
+  };
   let worldP;
   const loadWorld = () => (worldP ||= fetch(Sav.mapBase + 'world.json').then((r) => r.json()).catch(() => ({ countries: [], viewBox: '0 0 1000 520' })));
   class SavChartMap extends SavChart {
-    static get observedAttributes() { return ['data', 'label', 'height', 'focus', 'highlight', 'antarctica', 'levels', 'locale', 'max']; }
+    static get observedAttributes() { return ['data', 'label', 'height', 'focus', 'highlight', 'antarctica', 'levels', 'locale', 'max', 'region', 'by']; }
+    /** by="continent": data and highlight name continents ({ "europe": 40 }) and each continent is one area */
+    get byContinent() { return this.getAttribute('by') === 'continent'; }
+    /** the name of a country (alpha-2) or of a continent, in the language of the page */
+    areaName(k) {
+      const loc = safeLocale(this.getAttribute('locale'));
+      if (!CONTINENT_M49[k]) return displayName(loc, 'region', k);
+      // the browser's name when it has one, else the list above (by the language of the page)
+      const fromIntl = displayName(loc, 'region', CONTINENT_M49[k]);
+      if (fromIntl && fromIntl !== CONTINENT_M49[k]) return fromIntl;
+      const lang = String(loc || document.documentElement.lang || navigator.language || 'en').slice(0, 2).toLowerCase();
+      return (CONTINENT_NAMES[lang] || CONTINENT_NAMES.en)[k];
+    }
     defaultData() { return {}; }
-    connectedCallback() { super.connectedCallback(); loadWorld().then((w) => { this._world = w; this.draw(); }); if (!this._clk) { this._clk = true; this.$('.svg').addEventListener('click', (e) => { const p = e.target.closest('[data-c]'); if (p) this.emit('sav-country', { code: p.dataset.c, value: this.values()[p.dataset.c] ?? null }); }); } }
+    /** region="europe" (africa, asia, north-america, south-america, oceania, antarctica): the map frames that continent and dims the rest */
+    get region() { const r = (this.getAttribute('region') || '').toLowerCase(); return CONTINENTS[r] ? r : ''; }
+    connectedCallback() { super.connectedCallback(); loadWorld().then((w) => { this._world = w; this.draw(); }); if (!this._clk) { this._clk = true; this.$('.svg').addEventListener('click', (e) => { const p = e.target.closest('[data-c]'); if (p) this.emit(this.byContinent ? 'sav-continent' : 'sav-country', { code: p.dataset.c, value: this.values()[p.dataset.c] ?? null }); }); } }
     /** Values keyed by alpha-2 (alpha-3 keys are converted). */
-    values() { const out = {}; for (const [k, v] of Object.entries(this.data || {})) { const K = k.toUpperCase(); const c = K.length === 3 ? ISO_COUNTRIES.find((x) => x.a3 === K)?.a2 : K; if (c) out[c] = Number(v); } return out; }
+    values() { const out = {}; for (const [k, v] of Object.entries(this.data || {})) { if (this.byContinent) { const c = contKey(k); if (c) out[c] = Number(v); continue; } const K = k.toUpperCase(); const c = K.length === 3 ? ISO_COUNTRIES.find((x) => x.a3 === K)?.a2 : K; if (c) out[c] = Number(v); } return out; }
     legendItems() { return []; }
-    summary() { const v = Object.entries(this.values()).sort((a, b) => b[1] - a[1]); return v.length ? `${v.length} countries, highest ${displayName(this.getAttribute('locale'), 'region', v[0][0])} ${nfmt(v[0][1])}` : 'World map'; }
-    tableHtml() { const loc = safeLocale(this.getAttribute('locale')); return `<caption>${esc(this.getAttribute('label') || 'Map data')}</caption>` + Object.entries(this.values()).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><th>${esc(displayName(loc, 'region', c))}</th><td>${v}</td></tr>`).join(''); }
+    summary() { const v = Object.entries(this.values()).sort((a, b) => b[1] - a[1]); return v.length ? `${v.length} ${this.byContinent ? 'continents' : 'countries'}, highest ${this.areaName(v[0][0])} ${nfmt(v[0][1])}` : 'World map'; }
+    tableHtml() { const loc = safeLocale(this.getAttribute('locale')); return `<caption>${esc(this.getAttribute('label') || 'Map data')}</caption>` + Object.entries(this.values()).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><th>${esc(this.areaName(c) || displayName(loc, 'region', c))}</th><td>${v}</td></tr>`).join(''); }
     render() {
       const w = this._world; if (!w) return '<svg viewBox="0 0 1000 520"></svg>';
-      const vals = this.values(), hi = new Set((this.getAttribute('highlight') || '').toUpperCase().split(/[\s,]+/).filter(Boolean));
+      const vals = this.values(), by = this.byContinent;
+      // highlight: country codes, or continents (europe…): a continent lights all its countries
+      const hi = new Set((this.getAttribute('highlight') || '').split(/[\s,]+/).filter(Boolean).flatMap((h) => { const c = contKey(h); return c ? (by ? [c] : CONTINENTS[c].split(' ')) : [h.toUpperCase()]; }));
       const max = Number(this.getAttribute('max')) || Math.max(1, ...Object.values(vals)), lv = Number(this.getAttribute('levels')) || 5, loc = safeLocale(this.getAttribute('locale'));
       const shade = (v) => { const k = Math.min(lv, Math.max(1, Math.ceil((v / max) * lv))); return `color-mix(in oklab, var(--sav-chart-1) ${Math.round(18 + (82 * k) / lv)}%, var(--sav-color-surface-2))`; };
       let g = '';
+      const groups = {};
+      const region = this.region, members = region ? new Set(CONTINENTS[region].split(' ')) : null;
+      const inRegion = (c) => !members || (c.id ? members.has(c.id) : NO_ID[c.name] === region);
       for (const c of w.countries) {
-        if (c.id === 'AQ' && !this.hasAttribute('antarctica')) continue;
-        const v = vals[c.id], on = hi.has(c.id);
+        if (c.id === 'AQ' && !this.hasAttribute('antarctica') && region !== 'antarctica') continue;
+        const v = vals[c.id], on = hi.has(c.id), out = !inRegion(c);
         const fill = v !== undefined ? shade(v) : on ? 'var(--sav-chart-1)' : 'var(--sav-color-surface-2)';
         const name = c.id ? displayName(loc, 'region', c.id) : c.name;
-        g += `<path d="${c.d}" ${c.id ? `data-c="${c.id}"` : ''} data-t="${esc(name)}${v !== undefined ? ': ' + nfmt(v) : ''}" style="fill:${fill};stroke:var(--sav-color-surface);stroke-width:.5;vector-effect:non-scaling-stroke"/>`;
+        if (by) { const k = continentOf(c); (groups[k] ||= []).push(c.d); continue; }
+        g += `<path d="${c.d}" ${c.id ? `data-c="${c.id}"` : ''} data-t="${esc(name)}${v !== undefined ? ': ' + nfmt(v) : ''}" style="fill:${fill};stroke:var(--sav-color-surface);stroke-width:.5;vector-effect:non-scaling-stroke${out ? ';opacity:.35' : ''}"/>`;
+      }
+      // by continent: each continent is one shape, filled by its value (or highlighted); its countries are drawn without borders between them
+      for (const [k, ds] of Object.entries(groups)) {
+        if (!k) continue;
+        const v = vals[k], on = hi.has(k), dim = region && k !== region;
+        const fill = v !== undefined ? shade(v) : on ? 'var(--sav-chart-1)' : 'var(--sav-color-surface-2)';
+        g += `<g data-c="${k}" data-t="${esc(this.areaName(k))}${v !== undefined ? ': ' + nfmt(v) : ''}" style="fill:${fill};stroke:${fill};stroke-width:.6;vector-effect:non-scaling-stroke${dim ? ';opacity:.35' : ''}">${ds.map((d) => `<path d="${d}" style="vector-effect:non-scaling-stroke"/>`).join('')}</g>`;
       }
       const vb = w.viewBox.split(' ').map(Number);
       let box = this.hasAttribute('antarctica') ? vb : [vb[0], vb[1], vb[2], vb[3] * 0.86];
+      // a continent: the box around the main land of its countries (Russia only counts for Asia), with a little room
+      if (region && !(this.getAttribute('focus') || '').trim()) {
+        const boxes = w.countries.filter((c) => inRegion(c) && !(region === 'europe' && c.id === 'RU')).map((c) => mainBox(c.d)).filter(Boolean);
+        if (boxes.length) {
+          const x0 = Math.min(...boxes.map((b) => b[0])), y0 = Math.min(...boxes.map((b) => b[1])), x1 = Math.max(...boxes.map((b) => b[2])), y1 = Math.max(...boxes.map((b) => b[3]));
+          const pad = Math.max(x1 - x0, y1 - y0) * 0.04 + 3;
+          box = [x0 - pad, y0 - pad, x1 - x0 + pad * 2, y1 - y0 + pad * 2];
+        }
+      }
       const focus = (this.getAttribute('focus') || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
       if (focus.length) {
         const nums = w.countries.filter((c) => focus.includes(c.id)).flatMap((c) => (c.d.match(/-?\d+(\.\d+)?/g) || []).map(Number));
