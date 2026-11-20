@@ -48,10 +48,15 @@
       });
     }
     const own = cls.observedAttributes || [];
-    Object.defineProperty(cls, 'observedAttributes', { get: () => [...new Set([...own, ...attrs])] });
+    Object.defineProperty(cls, 'observedAttributes', { configurable: true, get: () => [...new Set([...own, ...attrs])] });
   }
 
   function define(name, cls) {
+    // every component understands animation and animation-duration (see MOTION)
+    if (typeof SavElement === 'function' && cls.prototype instanceof SavElement) {
+      const own = cls.observedAttributes || [];
+      Object.defineProperty(cls, 'observedAttributes', { configurable: true, get: () => [...new Set([...own, 'animation', 'animation-duration'])] });
+    }
     if (!customElements.get(name)) customElements.define(name, cls);
   }
 
@@ -62,6 +67,9 @@
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     minus: '<path d="M5 12h14"/>',
+    rewind: '<path d="M11 18.5 3 12l8-6.5z"/><path d="M21 18.5 13 12l8-6.5z"/>',
+    'fast-forward': '<path d="M13 18.5 21 12l-8-6.5z"/><path d="M3 18.5 11 12 3 5.5z"/>',
+    'grip-vertical': '<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/>',
     'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.8 2.7L16 9.5"/>',
     'alert-triangle': '<path d="M10.3 4.2L2.9 17.3A2 2 0 0 0 4.6 20.3h14.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17v.1"/>',
@@ -239,6 +247,10 @@
   const AUTO_TEXT = 'var(--text-color, color(from var(--_eb) srgb clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) / 1))';
   const SOLID_EB = 'color-mix(in oklab, var(--_c) var(--sav-fill-opacity, 100%), var(--sav-color-bg))';
   const SOFT_EB = 'color-mix(in oklab, var(--_c) 13%, var(--sav-color-bg))';
+  /** Animations. --sav-motion scales every duration: 1 = as designed, 0 = none, 2 = twice as long. On one component (and what is
+      inside it): animation="off", animation="on", animation-duration="ms" (from 50 to 1000; 200 is the normal pace). */
+  const MOTION = { base: 200, min: 50, max: 1000 };
+  const motion = (el) => { const v = el ? parseFloat(getComputedStyle(el).getPropertyValue('--sav-motion')) : NaN; return Number.isFinite(v) ? Math.max(0, v) : 1; };
   /* behind the current item (breadcrumb, menu, header, pagination, tree): a tint, or the solid tile of Tilt and Brutal (--sav-current-behind) */
   const CUR_EB = (pct) => `var(--sav-current-behind, color-mix(in oklab, var(--sav-color-primary) ${pct}%, var(--sav-color-bg)))`;
   /** auto-text on a group (steps, timeline, tree, menu, breadcrumb, button, chip and radio groups) reaches its items as data-auto-text */
@@ -268,7 +280,7 @@
       border-radius: inherit; background: var(--_fbg); background-image: var(--sav-sheen, none); border: var(--sav-border-width) solid var(--_fbd); box-shadow: var(--_fsh);
       -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
       transform: rotate(${TILT});
-      transition: border-color var(--sav-duration), box-shadow var(--sav-duration), background var(--sav-duration), transform .25s var(--sav-easing);
+      transition: border-color calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.25s * var(--sav-motion, 1)) var(--sav-easing);
     }
     :host([pill]) .box { border-radius: var(--sav-radius-pill); padding: 0 1rem; }
     :host([appearance="filled"]) .box { --_fbg: var(--sav-color-surface-2); --_fbd: transparent; }
@@ -314,7 +326,16 @@
       return this.dispatchEvent(new CustomEvent(name, { bubbles: true, composed: true, cancelable, detail }));
     }
     attributeChangedCallback(name, oldV, newV) {
+      if (name === 'animation' || name === 'animation-duration') { this.applyMotion(); return; }
       if (oldV !== newV && this.shadowRoot.firstChild) this.changed?.(name, newV);
+    }
+    /** animation="off" | "on" and animation-duration="ms" become --sav-motion on this component (inherited by what is inside it) */
+    applyMotion() {
+      const a = this.getAttribute('animation'), ms = Number(this.getAttribute('animation-duration'));
+      const k = a === 'off' ? 0 : ms > 0 ? Math.min(MOTION.max, Math.max(MOTION.min, ms)) / MOTION.base : a === 'on' ? 1 : null;
+      if (k === null && !this._motion) return;
+      if (!this._motion) { this._motion = new CSSStyleSheet(); this.shadowRoot.adoptedStyleSheets = [...this.shadowRoot.adoptedStyleSheets, this._motion]; }
+      this._motion.replaceSync(k === null ? '' : `:host { --sav-motion: ${+k.toFixed(3)}; }`);
     }
     /** True when a slot has elements or non-blank text assigned */
     hasSlot(name) {
@@ -523,14 +544,14 @@
         font: inherit; font-size: calc(var(--_fs) * var(--sav-button-font-scale, 1)); font-weight: var(--sav-font-weight-semibold); line-height: 1.1;
         letter-spacing: var(--sav-button-letter-spacing, normal); text-transform: var(--sav-button-text-transform, none);
         text-decoration: none; white-space: nowrap; cursor: pointer; user-select: none; -webkit-user-select: none;
-        transition: color var(--sav-duration), transform var(--sav-duration);
+        transition: color calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(var(--sav-duration) * var(--sav-motion, 1));
       }
       .btn::before {
         content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
         background: var(--_bg); background-image: var(--_sheen); border: var(--sav-border-width) solid var(--_bd); box-shadow: var(--_sh);
         -webkit-backdrop-filter: var(--_bdf, var(--sav-button-backdrop, none)); backdrop-filter: var(--_bdf, var(--sav-button-backdrop, none));
         transform: rotate(var(--sav-button-tilt, ${TILT}));
-        transition: background var(--sav-duration), border-color var(--sav-duration), box-shadow var(--sav-duration), transform .22s var(--sav-easing);
+        transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.22s * var(--sav-motion, 1)) var(--sav-easing);
       }
       .btn:hover { transform: var(--sav-button-hover-transform, none); }
       .btn:hover::before { background: var(--_bg-h); background-image: var(--_sheen); border-color: var(--_bd-h); box-shadow: var(--_sh-h); transform: rotate(var(--sav-button-tilt-hover, calc(var(--sav-button-tilt, ${TILT}) * var(--sav-tilt-hover, -1)))); }
@@ -684,7 +705,7 @@
       :host([dot]) .b::before { transform: none; }
       :host([pill]) .b { border-radius: var(--sav-radius-pill); }
       :host([dot]) .b { width: .6em; height: .6em; padding: 0; border-radius: 50%; font-size: 1em; }
-      :host([pulse]) .b { animation: sav-pulse 1.6s ease-out infinite; }
+      :host([pulse]) .b { animation: sav-pulse calc(1.6s * var(--sav-motion, 1)) ease-out infinite; }
       @keyframes sav-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--_c) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 .5em transparent; } }
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host { --_eb: ${SOLID_EB}; }
@@ -713,14 +734,14 @@
       :host([sparkle]) .ic { display: block; }
       /* shine: a gloss crosses the label now and then */
       .b::after { content: ""; position: absolute; inset: -20% auto -20% -60%; width: 40%; background: linear-gradient(100deg, transparent, rgb(255 255 255 / .55), transparent); transform: skewX(-18deg); opacity: 0; }
-      :host([shine]) .b::after { animation: sav-new-shine 3.2s ease-in-out infinite; }
+      :host([shine]) .b::after { animation: sav-new-shine calc(3.2s * var(--sav-motion, 1)) ease-in-out infinite; }
       @keyframes sav-new-shine { 0%, 55% { left: -60%; opacity: 0; } 60% { opacity: 1; } 85%, 100% { left: 130%; opacity: 0; } }
       .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       /* text: just the coloured word, next to a menu item or a heading */
       :host([appearance="text"]) .b { padding: 0; color: var(--text-color, var(--_c-text)); } :host([appearance="text"]) .b::before { display: none; }
       /* dot: a small pulsing dot; the word stays for screen readers */
       :host([appearance="dot"]) .b { width: .55rem; height: .55rem; padding: 0; border-radius: 50%; overflow: visible; }
-      :host([appearance="dot"]) .b::before { border-radius: 50%; transform: none; animation: sav-new-dot 1.8s ease-out infinite; }
+      :host([appearance="dot"]) .b::before { border-radius: 50%; transform: none; animation: sav-new-dot calc(1.8s * var(--sav-motion, 1)) ease-out infinite; }
       :host([appearance="dot"]) .t, :host([appearance="dot"]) .ic { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
       @keyframes sav-new-dot { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--_c) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 .45rem transparent; } }
       /* corner: a tab in the top-right corner of the parent (give the parent position: relative) */
@@ -789,6 +810,9 @@
       :host { --_eb: ${SOFT_EB}; }
       :host([appearance="solid"]) { --_eb: ${SOLID_EB}; }
       :host([auto-text]) .t { color: ${AUTO_TEXT}; }
+      /* animation: changes of colour and state ease in (paced by --sav-motion) */
+      .t { transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), color calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      .t button, .t .x { transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), color calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.15s * var(--sav-motion, 1)); }
     `];
     connectedCallback() { if (!this.shadowRoot.firstChild) this.render(); }
     changed(n) { if (n === 'removable') this.render(); }
@@ -876,7 +900,7 @@
     close() {
       if (!this.emit('sav-close', {}, true)) return;
       if (this.hasAttribute('toast')) {
-        this.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(12px)' }], { duration: 180, easing: 'ease-in' }).onfinish = () => this.remove();
+        this.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(12px)' }], { duration: 180 * motion(this), easing: 'ease-in' }).onfinish = () => this.remove();
       } else this.hidden = true;
     }
   }
@@ -925,7 +949,7 @@
     stack.append(t);
     // bring the stack above open dialogs
     if (supportsPopover) { if (stack.matches(':popover-open')) stack.hidePopover(); stack.showPopover(); }
-    t.animate([{ opacity: 0, transform: 'translateY(10px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    t.animate([{ opacity: 0, transform: 'translateY(10px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 220 * motion(t), easing: 'cubic-bezier(.2,.7,.3,1)' });
     return t;
   };
 
@@ -936,12 +960,12 @@
       :host { display: block; position: relative; isolation: isolate; }
       /* a tinted layer that peeks out behind the card (shown by the tilt shape) */
       .back { display: var(--sav-card-back, none); position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-lg);
-              background: color-mix(in oklab, var(--sav-color-primary) 16%, transparent); transform: rotate(var(--sav-card-tilt, calc(${TILT} * -2.2))); transition: transform .3s var(--sav-easing); }
+              background: color-mix(in oklab, var(--sav-color-primary) 16%, transparent); transform: rotate(var(--sav-card-tilt, calc(${TILT} * -2.2))); transition: transform calc(.3s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([interactive]:hover) .back { transform: rotate(calc(var(--sav-card-tilt, calc(${TILT} * -2.2)) * -1.4)); }
       .c { position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; background: var(--sav-color-surface); background-image: var(--sav-sheen, none); color: var(--sav-color-text);
            border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius-lg); box-shadow: var(--sav-shadow-sm);
            -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
-           transition: box-shadow var(--sav-duration), transform var(--sav-duration), border-color var(--sav-duration); }
+           transition: box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)); }
       :host([appearance="elevated"]) .c { border-color: transparent; box-shadow: var(--sav-shadow); }
       :host([appearance="flat"]) .c { box-shadow: none; background: var(--sav-color-surface-2); border-color: transparent; }
       :host([interactive]) .c { cursor: pointer; }
@@ -1017,14 +1041,14 @@
       :host { display: inline-flex; position: relative; width: 1em; height: 1em; vertical-align: -.125em; --track-width: 2.5px; }
       .b, svg { position: absolute; inset: 0; width: 100%; height: 100%; }
       svg { overflow: visible; }
-      .ring { opacity: calc(1 - var(--sav-spinner-tiles, 0)); animation: sav-spin .8s linear infinite; }
+      .ring { opacity: calc(1 - var(--sav-spinner-tiles, 0)); animation: sav-spin calc(.8s * var(--sav-motion, 1)) linear infinite; }
       .ring rect { fill: none; stroke-width: var(--track-width); rx: var(--sav-spinner-radius, 9.5px); }
       .tr { stroke: var(--_c-soft-hover); }
       .in { stroke: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); stroke-linecap: var(--sav-ring-cap, round); stroke-dasharray: 22 58; }
       .tiles { opacity: var(--sav-spinner-tiles, 0); }
-      .tiles rect { fill: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); opacity: .3; animation: sav-tile 1s var(--sav-easing) infinite; }
-      .tiles .t2 { fill: color-mix(in oklab, var(--_c) 60%, #fff); animation-delay: .25s; }
-      .tiles .t3 { animation-delay: .5s; } .tiles .t4 { animation-delay: .75s; }
+      .tiles rect { fill: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); opacity: .3; animation: sav-tile calc(1s * var(--sav-motion, 1)) var(--sav-easing) infinite; }
+      .tiles .t2 { fill: color-mix(in oklab, var(--_c) 60%, #fff); animation-delay: calc(.25s * var(--sav-motion, 1)); }
+      .tiles .t3 { animation-delay: calc(.5s * var(--sav-motion, 1)); } .tiles .t4 { animation-delay: calc(.75s * var(--sav-motion, 1)); }
       @keyframes sav-spin { to { transform: rotate(360deg); } }
       @keyframes sav-tile { 0%, 100% { opacity: .3; } 25% { opacity: 1; } }
       /* variant="current": the colour of the text around it (inside a button, a link, a badge) */
@@ -1032,7 +1056,7 @@
       :host([variant="current"]) .in, :host([variant="current"]) .tiles rect { stroke: currentColor; fill: currentColor; }
       :host([variant="current"]) .in { fill: none; }
       :host([variant="current"]) .tiles .t2 { fill: color-mix(in oklab, currentColor 60%, transparent); }
-      @media (prefers-reduced-motion: reduce) { .ring { animation-duration: 2.4s; } .tiles rect { animation-duration: 3s; } }
+      @media (prefers-reduced-motion: reduce) { .ring { animation-duration: calc(2.4s * var(--sav-motion, 1)); } .tiles rect { animation-duration: calc(3s * var(--sav-motion, 1)); } }
     `];
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
@@ -1055,10 +1079,10 @@
       .t { position: relative; height: var(--height); border-radius: var(--sav-radius-pill); background: var(--sav-color-surface-2); overflow: hidden; box-shadow: var(--sav-track-shadow, inset 0 0 0 1px var(--sav-color-border)); -webkit-backdrop-filter: var(--sav-button-backdrop, none); backdrop-filter: var(--sav-button-backdrop, none); }
       /* the value on the bar is always black or white, whichever is readable on the bar (WCAG); --text-color sets it by hand */
       .i { --_fill: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); height: 100%; width: var(--_v, 0%); border-radius: inherit; background: var(--_fill); background-image: var(--sav-sheen, none); transform: skewX(calc(var(--sav-tilt, 0deg) * 4)); transform-origin: left;
-           --_eb: var(--_fill); color: ${AUTO_TEXT}; transition: width .35s var(--sav-easing);
+           --_eb: var(--_fill); color: ${AUTO_TEXT}; transition: width calc(.35s * var(--sav-motion, 1)) var(--sav-easing);
            display: flex; align-items: center; justify-content: flex-end; padding-right: .5em; font-size: calc(var(--height) * .7); font-weight: var(--sav-font-weight-bold); white-space: nowrap; overflow: hidden; }
-      :host([striped]) .i { background-image: linear-gradient(45deg, rgb(255 255 255 / .2) 25%, transparent 25% 50%, rgb(255 255 255 / .2) 50% 75%, transparent 75%); background-size: 1rem 1rem; animation: sav-stripes 1s linear infinite; }
-      :host([indeterminate]) .i { width: 40%; position: absolute; animation: sav-indet 1.4s var(--sav-easing) infinite; }
+      :host([striped]) .i { background-image: linear-gradient(45deg, rgb(255 255 255 / .2) 25%, transparent 25% 50%, rgb(255 255 255 / .2) 50% 75%, transparent 75%); background-size: 1rem 1rem; animation: sav-stripes calc(1s * var(--sav-motion, 1)) linear infinite; }
+      :host([indeterminate]) .i { width: 40%; position: absolute; animation: sav-indet calc(1.4s * var(--sav-motion, 1)) var(--sav-easing) infinite; }
       .head { display: none; justify-content: space-between; margin-bottom: .35rem; font-size: var(--sav-font-size-sm); color: var(--sav-color-text); }
       .has-head .head { display: flex; } .head .v { color: var(--sav-color-text-muted); font-variant-numeric: tabular-nums; }
       @keyframes sav-indet { from { left: -40%; } to { left: 100%; } }
@@ -1097,7 +1121,7 @@
       .tr { stroke: var(--sav-color-surface-2); }
       /* the arc starts at the top centre whatever the corners: --sav-ring-start is how far along the outline that is (in hundredths).
          Length and start are written as SVG attributes by sync(): Safari ignores calc() in stroke-dasharray and would draw the whole outline. */
-      .in { stroke: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); stroke-linecap: var(--sav-ring-cap, round); stroke-linejoin: miter; transition: stroke-dasharray .4s var(--sav-easing); }
+      .in { stroke: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); stroke-linecap: var(--sav-ring-cap, round); stroke-linejoin: miter; transition: stroke-dasharray calc(.4s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([data-empty]) .in { visibility: hidden; }
       .lab { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--size) * .24); font-weight: var(--sav-font-weight-bold); font-variant-numeric: tabular-nums; color: var(--sav-color-text); }
     `];
@@ -1150,8 +1174,8 @@
       /* the round placeholder of an avatar takes the avatar's shape of the style (a leaning square in Tilt, a square in Sharp) */
       :host([shape="circle"]) .s { border-radius: var(--sav-avatar-radius, 50%); transform: rotate(var(--sav-avatar-tilt, 0deg)); margin: var(--sav-avatar-inset, 0%);
         width: calc(100% - 2 * var(--sav-avatar-inset, 0%)); height: calc(100% - 2 * var(--sav-avatar-inset, 0%)); } :host([shape="rect"]) .s { border-radius: var(--sav-radius); }
-      :host(:not([effect])) .s, :host([effect="sheen"]) .s { background: linear-gradient(90deg, var(--color) 30%, var(--sheen) 50%, var(--color) 70%); background-size: 300% 100%; animation: sav-sheen 1.6s ease-in-out infinite; }
-      :host([effect="pulse"]) .s { animation: sav-pulse-o 1.4s ease-in-out infinite; }
+      :host(:not([effect])) .s, :host([effect="sheen"]) .s { background: linear-gradient(90deg, var(--color) 30%, var(--sheen) 50%, var(--color) 70%); background-size: 300% 100%; animation: sav-sheen calc(1.6s * var(--sav-motion, 1)) ease-in-out infinite; }
+      :host([effect="pulse"]) .s { animation: sav-pulse-o calc(1.4s * var(--sav-motion, 1)) ease-in-out infinite; }
       :host([effect="none"]) .s { animation: none; background: var(--color); }
       @keyframes sav-sheen { from { background-position: 100% 0; } to { background-position: 0 0; } }
       @keyframes sav-pulse-o { 50% { opacity: .45; } }
@@ -1274,7 +1298,7 @@
               background: none; color: var(--_c-text); cursor: pointer; font: inherit; -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; }
       /* the button background is a layer: in Tilt it leans like the knobs, the sign stays upright */
       .step::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_c-soft);
-              transform: rotate(var(--sav-knob-tilt, 0deg)) scale(var(--_sc, 1)); transition: background var(--sav-duration), transform .18s var(--sav-easing); }
+              transform: rotate(var(--sav-knob-tilt, 0deg)) scale(var(--_sc, 1)); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.18s * var(--sav-motion, 1)) var(--sav-easing); }
       .step:hover:not(:disabled)::before { background: var(--_c-soft-hover); transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -.5)); }
       .step:active:not(:disabled)::before { --_sc: .88; }
       .step:disabled { color: var(--sav-color-text-muted); cursor: not-allowed; }
@@ -1394,22 +1418,37 @@
 
   /* ================================================================== sav-color-picker */
 
-  /** A colour field: a swatch that opens the system colour picker, the hex code you can type, and suggested colours (swatches).
-      The value is "#rrggbb", or empty with clearable. compact shows only the swatch. */
-  const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
-  const toHex = (v) => { const m = String(v ?? '').trim().match(HEX); if (!m) return null; let h = m[1].toLowerCase(); if (h.length === 3) h = [...h].map((c) => c + c).join(''); return '#' + h; };
+  /** A colour field: a swatch, the hex code you can type, and suggested colours (swatches). The swatch opens the library's own panel
+      (a saturation and brightness area, hue, opacity with alpha, the code, the eyedropper where the browser has one), which follows the
+      style and the theme; picker="native" opens the system picker instead. The value is "#rrggbb" ("#rrggbbaa" with alpha), or empty with clearable. */
+  const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+  const toHex = (v) => { const m = String(v ?? '').trim().match(HEX); if (!m) return null; let h = m[1].toLowerCase(); if (h.length <= 4) h = [...h].map((c) => c + c).join(''); if (h.endsWith('ff') && h.length === 8) h = h.slice(0, 6); return '#' + h; };
+  const hexRgba = (h) => { const x = h.slice(1); return [parseInt(x.slice(0, 2), 16), parseInt(x.slice(2, 4), 16), parseInt(x.slice(4, 6), 16), x.length === 8 ? parseInt(x.slice(6, 8), 16) / 255 : 1]; };
+  const rgbHsv = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b); let h = 0;
+    if (d) { h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; if (h < 0) h += 360; } return { h, s: mx ? d / mx : 0, v: mx }; };
+  const hsvRgb = (h, s, v) => { const f = (n) => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); }; return [f(5), f(3), f(1)].map((x) => Math.round(x * 255)); };
+  const rgbHex = (r, g, b, a = 1) => '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('') + (a < 1 ? Math.round(a * 255).toString(16).padStart(2, '0') : '');
+  const clamp01 = (x) => Math.min(1, Math.max(0, x));
+  const CHECKER = 'repeating-conic-gradient(color-mix(in oklab, var(--sav-color-text) 16%, transparent) 0 25%, transparent 0 50%) 50% / 8px 8px';
+
   class SavColorPicker extends SavFormControl {
-    static styles = [SIZES, FIELD, `
+    static styles = [SIZES, FIELD, FLOAT, `
       :host { min-width: 9.5rem; }
       :host([compact]) { min-width: 0; display: inline-block; }
       .ctl { font-family: var(--sav-font-mono, ui-monospace, monospace); font-size: .92em; text-transform: lowercase; letter-spacing: .02em; }
       .ctl::placeholder { font-family: var(--sav-font); text-transform: none; letter-spacing: 0; }
-      /* the swatch: the colour itself; the system picker sits invisibly on top of it */
+      /* the swatch: the colour itself (over a checkerboard when it is see-through); a button opens the panel, or the system picker sits invisibly on top */
       .sw { position: relative; flex: none; width: calc(var(--_h) - .75rem); height: calc(var(--_h) - .75rem); margin-inline-start: -.2rem; border-radius: var(--sav-radius-sm);
-            background: var(--_v); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 22%, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); overflow: hidden; }
-      .sw.none { background: repeating-conic-gradient(color-mix(in oklab, var(--sav-color-text) 16%, transparent) 0 25%, transparent 0 50%) 50% / 8px 8px; }
-      .pick { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); padding: 0; border: 0; opacity: 0; cursor: pointer; }
-      :host([disabled]) .pick { cursor: not-allowed; }
+            background: linear-gradient(var(--_v), var(--_v)), ${CHECKER}; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 22%, transparent);
+            transform: rotate(var(--sav-knob-tilt, 0deg)); overflow: hidden; }
+      .sw.none { background: ${CHECKER}; }
+      .pick, .swb { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); padding: 0; border: 0; opacity: 0; cursor: pointer; }
+      .swb { opacity: 1; background: none; }
+      .swb:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: -2px; }
+      /* with the library's panel the system picker stays in place but out of reach: the eyedropper button may still open it (Safari, Firefox on Apple devices) */
+      :host(:not([data-native])) .pick { pointer-events: none; visibility: hidden; }
+      :host([data-native]) .swb { display: none; }
+      :host([disabled]) :is(.pick, .swb) { cursor: not-allowed; }
       .x { display: none; flex: none; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; margin-inline-end: -.3rem; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
       .x:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
       .x svg { width: .95em; height: .95em; }
@@ -1419,48 +1458,108 @@
       :host([compact]) .ctl, :host([compact]) .x { display: none; }
       :host([compact]) .sw { margin: 0; }
       :host([compact]) .sw:focus-within { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; }
-      /* suggested colours under the field */
+      /* suggested colours under the field (and in the panel) */
       .sws { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }
       .sws:empty { display: none; }
-      .sws button { width: 1.45rem; height: 1.45rem; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: var(--_v); cursor: pointer;
-            box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 20%, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform .15s var(--sav-easing); }
+      .sws button { width: 1.45rem; height: 1.45rem; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: linear-gradient(var(--_v), var(--_v)), ${CHECKER}; cursor: pointer;
+            box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 20%, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform calc(.15s * var(--sav-motion, 1)) var(--sav-easing); }
       .sws button:hover { transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.12); }
       .sws button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--sav-color-bg), 0 0 0 4px var(--sav-color-text); }
       .sws button:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; }
-      @media (prefers-reduced-motion: reduce) { .sws button { transition: none; } }
+
+      /* the panel: area, hue, opacity, preview, code, eyedropper, suggestions */
+      .cp { width: 15.5rem; max-width: calc(100vw - 16px); padding: .75rem; border-radius: var(--sav-radius); color: var(--sav-color-text); font-family: var(--sav-font); font-size: var(--sav-font-size-sm);
+            flex-direction: column; gap: .7rem; }
+      .cp:popover-open, .cp.open { display: flex; animation: sav-cp-in calc(.14s * var(--sav-motion, 1)) var(--sav-easing); }
+      @keyframes sav-cp-in { from { opacity: 0; transform: translateY(-4px); } }
+      ${panelLayer('.cp')}
+      .sv { position: relative; height: 9.5rem; border-radius: var(--sav-radius-sm); cursor: crosshair; touch-action: none; outline: none;
+            background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(var(--_hue, 0) 100% 50%));
+            box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 14%, transparent); }
+      .track { position: relative; height: .8rem; border-radius: var(--sav-radius-pill); cursor: pointer; touch-action: none; outline: none;
+               box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 14%, transparent); }
+      .hue { background: linear-gradient(to right, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00); }
+      .al { background: linear-gradient(to right, transparent, var(--_rgb, #000)), ${CHECKER}; }
+      .th { position: absolute; left: calc(var(--_x, 0) * 100%); top: calc(var(--_y, .5) * 100%); width: 1rem; height: 1rem; box-sizing: border-box; border: 2px solid #fff;
+            border-radius: var(--sav-knob-radius, 50%); background: var(--_c, transparent); box-shadow: 0 0 0 1px rgb(0 0 0 / .35), 0 2px 6px rgb(0 0 0 / .3);
+            transform: translate(-50%, -50%) rotate(var(--sav-knob-tilt, 0deg)); pointer-events: none; }
+      .track .th { width: 1.05rem; height: 1.05rem; }
+      :is(.sv, .track):focus-visible .th { box-shadow: 0 0 0 1px rgb(0 0 0 / .35), 0 0 0 4px var(--sav-color-focus); }
+      .row { display: flex; align-items: center; gap: .6rem; }
+      .sls { flex: 1; min-width: 0; display: grid; gap: .65rem; }
+      :host(:not([alpha])) .al { display: none; }
+      .pv { flex: none; width: 2.2rem; height: 2.2rem; border-radius: var(--sav-radius-sm); background: linear-gradient(var(--_v), var(--_v)), ${CHECKER};
+            box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 20%, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); }
+      .hx { flex: 1; min-width: 0; height: 2rem; padding: 0 .55rem; border: var(--sav-border-width) solid var(--sav-color-border-strong); border-radius: var(--sav-radius-sm);
+            background: var(--sav-color-input-bg); color: inherit; font: inherit; font-family: var(--sav-font-mono, ui-monospace, monospace); text-transform: lowercase; outline: none; }
+      .hx:focus-visible { border-color: var(--sav-color-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--sav-color-primary) 22%, transparent); }
+      .ib { display: grid; place-items: center; flex: none; width: 2rem; height: 2rem; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: var(--sav-color-surface-2);
+            color: var(--sav-color-text-muted); cursor: pointer; transition: color calc(var(--sav-duration) * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      .ib:hover { color: var(--sav-color-text); background: color-mix(in oklab, var(--sav-color-text) 12%, transparent); }
+      .ib:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
+      .ib svg { width: 1rem; height: 1rem; }
+      .cp .sws { margin: 0; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      @media (prefers-reduced-motion: reduce) { .sws button { transition: none; } .cp:popover-open, .cp.open { animation: none; } }
     `];
-    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'placeholder', 'swatches', 'clearable', 'compact', 'readonly']; }
+    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'placeholder', 'swatches', 'clearable', 'compact', 'readonly', 'picker', 'alpha']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       const id = nextId('co');
       this.shadowRoot.innerHTML = `<div class="w" part="form-control">
         <label class="lbl" part="label" for="${id}"><slot name="label"></slot><span class="lbl-text"></span></label>
         <div class="box" part="base">
-          <span class="sw" part="swatch"><input class="pick" type="color" tabindex="-1"></span>
-          <input class="ctl" part="input" id="${id}" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" maxlength="7">
+          <span class="sw" part="swatch"><input class="pick" type="color" tabindex="-1"><button type="button" class="swb" aria-haspopup="dialog" aria-expanded="false" aria-controls="${id}-p"></button></span>
+          <input class="ctl" part="input" id="${id}" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" maxlength="9">
           <button type="button" class="x" part="clear-button" aria-label="No colour">${svgIcon('x')}</button>
         </div>
         <div class="sws" part="swatches" role="group" aria-label="Suggested colours"></div>
         <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span></div>
+        <div class="cp float" id="${id}-p" part="panel" role="dialog" aria-label="Choose a colour" ${supportsPopover ? 'popover="manual"' : ''}>
+          <div class="sv" part="area" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100"><span class="th"></span></div>
+          <div class="row"><div class="sls">
+            <div class="track hue" part="hue" role="slider" tabindex="0" aria-label="Hue" aria-valuemin="0" aria-valuemax="360"><span class="th"></span></div>
+            <div class="track al" part="opacity" role="slider" tabindex="0" aria-label="Opacity" aria-valuemin="0" aria-valuemax="100"><span class="th"></span></div>
+          </div><span class="pv" part="preview" aria-hidden="true"></span></div>
+          <div class="row"><input class="hx" part="panel-input" type="text" spellcheck="false" autocomplete="off" maxlength="9" aria-label="Colour code">
+            <button type="button" class="ib eye" part="eyedropper" aria-label="Pick a colour from the screen" title="Pick a colour from the screen" hidden>${svgIcon('pipette')}</button></div>
+          <div class="sws psw" role="group" aria-label="Suggested colours"></div>
+          <span class="sr" aria-live="polite"></span>
+        </div>
       </div>`;
       const text = (this.native = this.$('.ctl')), pick = this.$('.pick');
-      this._default = toHex(this.getAttribute('value')) || '';
+      this._default = this.norm(this.getAttribute('value')) || '';
       this._v = this._default;
       // typing: the colour changes as soon as the code is a real colour; leaving the field puts back the last good one
-      text.addEventListener('input', (e) => { e.stopPropagation(); const h = toHex(text.value); if (h) this.set(h, 'input'); });
-      text.addEventListener('change', (e) => { e.stopPropagation(); const h = toHex(text.value); if (h || (text.value.trim() === '' && this.hasAttribute('clearable'))) this.set(h || '', 'change'); else this.show(); });
-      text.addEventListener('keydown', (e) => { if (e.key === 'Enter' && this.form && !e.isComposing) { e.preventDefault(); this.form.requestSubmit(); } });
+      text.addEventListener('input', (e) => { e.stopPropagation(); const h = this.norm(text.value); if (h) this.set(h, 'input'); });
+      text.addEventListener('change', (e) => { e.stopPropagation(); const h = this.norm(text.value); if (h || (text.value.trim() === '' && this.hasAttribute('clearable'))) this.set(h || '', 'change'); else this.show(); });
+      text.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' && (e.altKey || this.custom) && !this.isOpen) { e.preventDefault(); this.open(true); return; }
+        if (e.key === 'Enter' && this.form && !e.isComposing) { e.preventDefault(); this.form.requestSubmit(); }
+      });
       // the system picker: input while dragging, change when it closes
       pick.addEventListener('input', (e) => { e.stopPropagation(); this.set(pick.value, 'input'); });
       pick.addEventListener('change', (e) => { e.stopPropagation(); this.set(pick.value, 'change'); });
+      // the library's panel
+      this.$('.swb').addEventListener('click', () => (this.isOpen ? this.close(true) : this.open(true)));
+      this.panel();
       this.$('.x').addEventListener('click', () => { this.set('', 'change'); text.focus(); });
-      this.$('.sws').addEventListener('click', (e) => { const b = e.target.closest('button[data-c]'); if (b && !this.isDisabled) this.set(b.dataset.c, 'change'); });
+      this.shadowRoot.addEventListener('click', (e) => { const b = e.target.closest('.sws button[data-c]'); if (b && !this.isDisabled) { this.set(b.dataset.c, 'change'); } });
       this.$$('slot').forEach((sl) => sl.addEventListener('slotchange', () => this.syncLabels(this.$('.w'))));
       this.sync();
       this.show();
     }
+    disconnectedCallback() { this.close(false); }
+    /** picker: auto (the default) is the library's panel where the browser offers all of it (the eyedropper too: Chrome, Edge) and the
+        system picker elsewhere (Safari, Firefox); custom is always the panel, native always the system picker */
+    get custom() { const p = this.getAttribute('picker'); return p === 'native' ? false : p === 'custom' ? true : typeof window.EyeDropper === 'function'; }
+    get alpha() { return this.hasAttribute('alpha'); }
+    /** a colour code made tidy: lower case, 6 digits (8 with alpha and some transparency), or null when it is not a colour */
+    norm(v) { const h = toHex(v); return h && !this.alpha ? h.slice(0, 7) : h; }
+    get isOpen() { return !!this.$('.cp')?.matches(supportsPopover ? ':popover-open' : '.open'); }
     changed(name, v) {
-      if (name === 'value') { const h = toHex(v) || ''; this._default = h; if (h !== this._v) { this._v = h; this.show(); } return; }
+      if (name === 'value') { const h = this.norm(v) || ''; this._default = h; if (h !== this._v) { this._v = h; this.show(); } return; }
+      if (name === 'picker' && !this.custom) this.close(false);
       this.sync();
     }
     sync() {
@@ -1469,45 +1568,158 @@
       text.disabled = this.isDisabled; text.readOnly = this.hasAttribute('readonly');
       text.placeholder = this.getAttribute('placeholder') ?? (this.hasAttribute('clearable') ? 'None' : '#000000');
       text.name = this.name || '';
-      this.$('.pick').disabled = off;
+      text.maxLength = this.alpha ? 9 : 7;
+      const pick = this.$('.pick'), swb = this.$('.swb'), compact = this.hasAttribute('compact');
+      this.toggleAttribute('data-native', !this.custom);
+      pick.disabled = off; swb.disabled = off;
       // compact: the swatch is the field, so it takes the focus and the name
-      const pick = this.$('.pick'), compact = this.hasAttribute('compact');
-      pick.tabIndex = compact ? 0 : -1;
-      compact ? pick.setAttribute('aria-label', this.getAttribute('label') || this.getAttribute('aria-label') || 'Colour') : pick.setAttribute('aria-hidden', 'true');
-      if (compact) pick.removeAttribute('aria-hidden');
+      const name = this.getAttribute('label') || this.getAttribute('aria-label') || 'Colour';
+      pick.tabIndex = compact && !this.custom ? 0 : -1;
+      if (compact && !this.custom) { pick.setAttribute('aria-label', name); pick.removeAttribute('aria-hidden'); } else pick.setAttribute('aria-hidden', 'true');
+      swb.tabIndex = compact ? 0 : -1;
+      swb.setAttribute('aria-label', compact ? `${name}: choose a colour` : 'Choose a colour');
       const lbl = this.getAttribute('aria-label'); if (lbl) text.setAttribute('aria-label', lbl);
       text.setAttribute('aria-describedby', this.$('.help').id);
-      const list = (this.getAttribute('swatches') || '').split(/[\s,]+/).map(toHex).filter(Boolean);
-      this.$('.sws').innerHTML = list.map((c) => `<button type="button" data-c="${c}" style="--_v:${c}" aria-label="${c}" title="${c}" ${off ? 'disabled' : ''}></button>`).join('');
+      const list = (this.getAttribute('swatches') || '').split(/[\s,]+/).map((c) => this.norm(c)).filter(Boolean);
+      const sw = list.map((c) => `<button type="button" data-c="${c}" style="--_v:${c}" aria-label="${c}" title="${c}" ${off ? 'disabled' : ''}></button>`).join('');
+      this.$('.sws').innerHTML = sw;
+      // in the panel the suggestions show only when the field hides them (compact)
+      this.$('.psw').innerHTML = compact ? sw : '';
+      // the eyedropper: the browser's own (Chrome, Edge); where there is none, on Apple devices the system colour picker has one (Safari, Firefox)
+      const eye = this.$('.eye'), own = typeof window.EyeDropper === 'function';
+      const apple = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+      eye.hidden = !own && !apple;
+      eye.dataset.via = own ? 'eyedropper' : 'system';
+      const tip = own ? 'Pick a colour from the screen' : 'Pick a colour from the screen, with the eyedropper of the system colour picker';
+      eye.title = tip; eye.setAttribute('aria-label', tip);
       this.syncLabels(this.$('.w'));
       this.show();
     }
-    /** puts the value on screen: field text, swatch, picker, chosen suggestion, form value, validity */
+    /** puts the value on screen: field text, swatch, picker, panel, chosen suggestion, form value, validity */
     show() {
       const text = this.native; if (!text) return;
       const v = this._v;
-      if (this.shadowRoot.activeElement !== text || toHex(text.value) !== v) text.value = v;
+      if (this.shadowRoot.activeElement !== text || this.norm(text.value) !== v) text.value = v;
       const sw = this.$('.sw'); sw.style.setProperty('--_v', v || 'transparent'); sw.classList.toggle('none', !v);
-      this.$('.pick').value = v || '#000000';
+      this.$('.pick').value = (v || '#000000').slice(0, 7);
       this.$$('.sws button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === v)));
       this.$('.w').classList.toggle('has-value', !!v);
       this.internals.setFormValue(v);
       if (this.required && !v) this.internals.setValidity({ valueMissing: true }, 'Choose a colour.', text); else this.internals.setValidity({});
+      // the panel follows the value, unless the value came from the panel itself (a grey keeps the hue you were on)
+      if (!this._fromPanel) { const [r, g, b, a] = hexRgba(v || '#000000'); const hsv = rgbHsv(r, g, b); this._hsv = { h: hsv.s ? hsv.h : this._hsv?.h ?? 0, s: hsv.s, v: hsv.v }; this._a = v ? a : 1; }
+      this.paint();
+    }
+    /** the panel drawn from the hue, saturation, brightness and opacity */
+    paint() {
+      const cp = this.$('.cp'); if (!cp || !this._hsv) return;
+      const { h, s, v } = this._hsv, a = this._a ?? 1, [r, g, b] = hsvRgb(h, s, v), solid = rgbHex(r, g, b);
+      cp.style.setProperty('--_hue', Math.round(h)); cp.style.setProperty('--_rgb', solid);
+      const sv = this.$('.sv'), hue = this.$('.hue'), al = this.$('.al');
+      sv.querySelector('.th').style.cssText = `--_x:${s};--_y:${1 - v};--_c:${solid}`;
+      hue.querySelector('.th').style.cssText = `--_x:${h / 360};--_c:hsl(${Math.round(h)} 100% 50%)`;
+      al.querySelector('.th').style.cssText = `--_x:${a};--_c:${solid}`;
+      sv.setAttribute('aria-valuenow', String(Math.round(s * 100)));
+      sv.setAttribute('aria-valuetext', `Saturation ${Math.round(s * 100)}%, brightness ${Math.round(v * 100)}%`);
+      hue.setAttribute('aria-valuenow', String(Math.round(h))); hue.setAttribute('aria-valuetext', `${Math.round(h)} degrees`);
+      al.setAttribute('aria-valuenow', String(Math.round(a * 100))); al.setAttribute('aria-valuetext', `${Math.round(a * 100)}%`);
+      this.$('.pv').style.setProperty('--_v', this._v || 'transparent');
+      const hx = this.$('.hx'); if (this.shadowRoot.activeElement !== hx) hx.value = this._v;
+    }
+    /** a change made in the panel: the value, input now; change once the gesture ends */
+    fromPanel(ev = 'input') {
+      const { h, s, v } = this._hsv, [r, g, b] = hsvRgb(h, s, v);
+      this._fromPanel = true; this.set(rgbHex(r, g, b, this.alpha ? this._a : 1), 'input'); this._fromPanel = false;
+      this.paint();
+      if (ev === 'change' && this._v !== this._at) { this._at = this._v; this.markTouched(); this.emit('change', { value: this._v }); }
+    }
+    /** pointer and keys of the area and the two sliders */
+    panel() {
+      const drag = (el, fn) => {
+        el.addEventListener('pointerdown', (e) => {
+          if (e.button || this.isDisabled || this.hasAttribute('readonly')) return;
+          e.preventDefault(); el.focus(); el.setPointerCapture?.(e.pointerId);
+          const go = (ev) => { const b = el.getBoundingClientRect(); fn(clamp01((ev.clientX - b.left) / b.width), clamp01((ev.clientY - b.top) / b.height)); this.fromPanel('input'); };
+          go(e);
+          const up = () => { el.removeEventListener('pointermove', go); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); this.fromPanel('change'); };
+          el.addEventListener('pointermove', go); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+        });
+      };
+      const keys = (el, fn) => el.addEventListener('keydown', (e) => {
+        if (this.isDisabled || this.hasAttribute('readonly')) return;
+        const big = e.shiftKey || e.key === 'PageUp' || e.key === 'PageDown' ? 10 : 1;
+        const d = { ArrowRight: [big, 0], ArrowLeft: [-big, 0], ArrowUp: [0, big], ArrowDown: [0, -big], PageUp: [0, big], PageDown: [0, -big] }[e.key];
+        if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); fn(null, e.key); this.fromPanel('change'); return; }
+        if (!d) return;
+        e.preventDefault(); fn(d); this.fromPanel('change');
+      });
+      const sv = this.$('.sv'), hue = this.$('.hue'), al = this.$('.al');
+      drag(sv, (x, y) => { this._hsv.s = x; this._hsv.v = 1 - y; });
+      drag(hue, (x) => { this._hsv.h = Math.min(359.9, x * 360); });
+      drag(al, (x) => { this._a = Math.round(x * 100) / 100; });
+      keys(sv, (d, k) => { if (!d) { this._hsv.v = k === 'Home' ? 1 : 0; return; } this._hsv.s = clamp01(this._hsv.s + d[0] / 100); this._hsv.v = clamp01(this._hsv.v + d[1] / 100); });
+      keys(hue, (d, k) => { if (!d) { this._hsv.h = k === 'Home' ? 0 : 359; return; } this._hsv.h = (this._hsv.h + (d[0] || d[1]) + 360) % 360; });
+      keys(al, (d, k) => { if (!d) { this._a = k === 'Home' ? 0 : 1; return; } this._a = clamp01(Math.round((this._a + (d[0] || d[1]) / 100) * 100) / 100); });
+      // the code in the panel: like the field
+      const hx = this.$('.hx');
+      hx.addEventListener('input', (e) => { e.stopPropagation(); const h = this.norm(hx.value); if (h) this.set(h, 'input'); });
+      hx.addEventListener('change', (e) => { e.stopPropagation(); const h = this.norm(hx.value); if (h) this.set(h, 'change'); else hx.value = this._v; });
+      hx.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); hx.dispatchEvent(new Event('change')); this.close(true); } });
+      // the eyedropper, where the browser has one (Chrome, Edge)
+      // while it is picking, the panel stays open (losing the focus to the eyedropper would close it and cancel the pick)
+      this.$('.eye').addEventListener('click', async () => {
+        if (this.$('.eye').dataset.via === 'system') {
+          // no eyedropper in this browser: the system picker opens (its eyedropper is the magnifier / pipette button); its colour comes back through the usual events
+          const p = this.$('.pick'); this.close(false);
+          p.style.visibility = 'visible';
+          try { p.showPicker ? p.showPicker() : p.click(); } catch { p.click(); }
+          setTimeout(() => { p.style.visibility = ''; }, 0);
+          return;
+        }
+        this._picking = true;
+        try { const r = await new window.EyeDropper().open(); if (r?.sRGBHex) { this.set(this.norm(r.sRGBHex), 'change'); this.$('.sr').textContent = `${this._v} picked`; } }
+        catch (e) { if (e?.name !== 'AbortError') this.$('.sr').textContent = 'The browser did not allow picking a colour from the screen.'; }
+        finally { this._picking = false; if (this.isOpen) this.$('.eye').focus({ preventScroll: true }); }
+      });
+      // Escape closes; leaving the panel and the swatch closes it too
+      this.$('.cp').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(true); } });
+      this.$('.cp').addEventListener('focusout', () => setTimeout(() => { const a = this.shadowRoot.activeElement; if (this.isOpen && !this._picking && document.hasFocus() && (!a || !(a.closest('.cp') || a.closest('.sw')))) this.close(false); }, 0));
+      this._outside = (e) => { if (this.isOpen && !this._picking && !e.composedPath().includes(this)) this.close(false); };
+      this._reflow = () => { if (!this.isOpen) return; if (anchorGone(this.$('.box'))) { this.close(false); return; } this.place(); };
+    }
+    place() { place(this.$('.cp'), this.$('.box'), 'bottom-start', 6); }
+    /** opens the colour picker: the library's panel, or the system one with picker="native" (browsers allow that only after a user action) */
+    open(focus = false) {
+      if (this.isDisabled || this.hasAttribute('readonly')) return;
+      if (!this.custom) { const p = this.$('.pick'); try { p.showPicker ? p.showPicker() : p.click(); } catch { p.click(); } return; }
+      if (this.isOpen) return;
+      if (!this.emit('sav-show', {}, true)) return;
+      this._at = this._v;
+      const cp = this.$('.cp'); showPop(cp); tiltWatch(cp); this.place(); this.paint();
+      this.$('.swb').setAttribute('aria-expanded', 'true'); this.setAttribute('open', '');
+      document.addEventListener('pointerdown', this._outside, true); addEventListener('scroll', this._reflow, true); addEventListener('resize', this._reflow);
+      if (focus) this.$('.sv').focus({ preventScroll: true });
+    }
+    close(focusBack = false) {
+      const cp = this.$('.cp'); if (!cp || !this.isOpen) return;
+      hidePop(cp); this.$('.swb').setAttribute('aria-expanded', 'false'); this.removeAttribute('open');
+      document.removeEventListener('pointerdown', this._outside, true); removeEventListener('scroll', this._reflow, true); removeEventListener('resize', this._reflow);
+      if (this._v !== this._at) { this._at = this._v; this.markTouched(); this.emit('change', { value: this._v }); }
+      this.emit('sav-hide');
+      if (focusBack) (this.hasAttribute('compact') ? this.$('.swb') : this.native)?.focus({ preventScroll: true });
     }
     set(v, ev) {
-      const h = v ? toHex(v) : '';
+      const h = v ? this.norm(v) : '';
       if (h === null || h === this._v) { if (ev === 'change' && h === this._v) this.show(); return; }
       this._v = h; this.show();
-      if (ev === 'change') this.markTouched();
+      if (ev === 'change') { this._at = h; this.markTouched(); }
       this.emit(ev, { value: h });
     }
-    get value() { return this.native ? this._v : toHex(this.getAttribute('value')) || ''; }
-    set value(v) { const h = v ? toHex(v) || '' : ''; if (this.native) { this._v = h; this.show(); } else this.setAttribute('value', h); }
+    get value() { return this.native ? this._v : this.norm(this.getAttribute('value')) || ''; }
+    set value(v) { const h = v ? this.norm(v) || '' : ''; if (this.native) { this._v = h; this.show(); } else this.setAttribute('value', h); }
     formResetCallback() { this._v = this._default; this.show(); this.removeAttribute('data-user-invalid'); }
-    formStateRestoreCallback(st) { this._v = toHex(st) || ''; this.show(); }
-    focus(o) { (this.hasAttribute('compact') ? this.$('.pick') : this.native)?.focus(o); }
-    /** opens the system colour picker (from a click: browsers allow it only after a user action) */
-    open() { try { this.$('.pick').showPicker?.() ?? this.$('.pick').click(); } catch { this.$('.pick').click(); } }
+    formStateRestoreCallback(st) { this._v = this.norm(st) || ''; this.show(); }
+    focus(o) { (this.hasAttribute('compact') ? (this.custom ? this.$('.swb') : this.$('.pick')) : this.native)?.focus(o); }
   }
   define('sav-color-picker', SavColorPicker);
 
@@ -1515,8 +1727,10 @@
 
   class SavTextarea extends SavFormControl {
     static styles = [SIZES, FIELD, `
-      .box { padding: .55rem .8rem; align-items: stretch; }
+      /* the inner space belongs to the text area itself, so its resize handle sits in the corner of the field */
+      .box { padding: 0; align-items: stretch; }
       textarea { resize: vertical; min-height: 3.2em; display: block; }
+      textarea.ctl { box-sizing: border-box; padding: .55rem .8rem; border-radius: inherit; }
       :host([resize="none"]) textarea, :host([resize="auto"]) textarea { resize: none; }
       :host([resize="auto"]) textarea { overflow: hidden; }
       .count { display: none; margin-top: .35rem; text-align: right; font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); font-variant-numeric: tabular-nums; }
@@ -1587,7 +1801,7 @@
     .val { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ph { color: var(--sav-color-text-muted); }
     .end { display: flex; align-items: center; gap: .1rem; color: var(--sav-color-text-muted); flex: none; }
-    .end > svg { width: 1.1em; height: 1.1em; transition: transform .2s var(--sav-easing); }
+    .end > svg { width: 1.1em; height: 1.1em; transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
     :host([open]) .end > svg.chev { transform: rotate(180deg); }
     .has-value .clear { display: inline-flex; }
     :host(:not([clearable])) .clear, :host([disabled]) .clear, :host([readonly]) .clear { display: none !important; }
@@ -1598,7 +1812,7 @@
     .pop { min-width: var(--_pw, 12rem); max-width: min(var(--popup-width, 24rem), calc(100vw - 16px)); max-height: min(var(--popup-height, 22rem), calc(100vh - 2rem));
            flex-direction: column; padding: 0; border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface); color: var(--sav-color-text);
            box-shadow: var(--sav-shadow-lg); font-family: var(--sav-font); font-size: var(--sav-font-size-md); -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); }
-    .pop:popover-open, .pop.open { display: flex; animation: sav-pop .16s var(--sav-easing); }
+    .pop:popover-open, .pop.open { display: flex; animation: sav-pop calc(.16s * var(--sav-motion, 1)) var(--sav-easing); }
     .body { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: var(--_pp, .3rem); }
     ${panelLayer('.pop')}
     .sheet-head { display: none; }
@@ -1607,7 +1821,7 @@
     /* sheet-on-mobile: on small screens the popup rises from the bottom, full width */
     @media (max-width: 640px) {
       :host([sheet-on-mobile]) .pop { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; min-width: 0; max-height: 85dvh; margin: 0;
-             border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .6rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet .25s var(--sav-easing); }
+             border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .6rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([sheet-on-mobile]) .pop::before { transform: none; border-bottom: 0; }
       :host([sheet-on-mobile]) .pop::after { display: none; }
       :host([sheet-on-mobile]) .pop::backdrop { background: var(--sav-color-overlay); }
@@ -1773,6 +1987,12 @@
       .pop[data-side="top"] .body > * { flex: none; }
       .pop[data-side="top"] .search { order: 1; top: auto; bottom: calc(var(--_pp, .3rem) * -1); margin: .3rem -.3rem -.3rem; border-bottom: 0; border-top: var(--sav-border-width) solid var(--sav-color-border); }
       .list { outline: none; }
+      /* select-all (multiple): one row on top that picks every option, or clears them all */
+      .all { display: flex; align-items: center; gap: .5rem; width: 100%; margin: 0 0 .25rem; padding: .5rem .6rem; border: 0; border-bottom: var(--sav-border-width) solid var(--sav-color-border);
+             border-radius: 0; background: none; color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); font: inherit; font-weight: var(--sav-font-weight-semibold); text-align: start; cursor: pointer; }
+      .all:hover { background: var(--sav-color-surface-2); }
+      .all:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: -2px; }
+      .all svg { width: 1em; height: 1em; }
       .grp { padding: .55rem .6rem .25rem; font-size: .72rem; font-weight: var(--sav-font-weight-bold); letter-spacing: .06em; text-transform: uppercase; color: var(--sav-color-text-muted); }
       .opt { position: relative; isolation: isolate; display: flex; align-items: center; gap: .55rem; padding: .5rem .6rem; border-radius: calc(var(--sav-radius) - 2px); cursor: pointer; user-select: none; }
       .opt::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_ob, transparent); transform: rotate(${TILT}); }
@@ -1783,7 +2003,7 @@
       .opt[aria-selected="true"] .ck { visibility: visible; }
       :host([multiple]) .opt .ck { visibility: visible; box-sizing: border-box; width: 1.1em; height: 1.1em; padding: 1px; border: calc(var(--sav-border-width) + .5px) solid var(--sav-color-border-strong);
         border-radius: calc(var(--sav-radius) * .55); background: var(--sav-color-input-bg); transform: rotate(var(--sav-knob-tilt, 0deg));
-        transition: background var(--sav-duration), border-color var(--sav-duration), transform .2s var(--sav-easing); }
+        transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([multiple]) .opt:hover .ck { border-color: var(--sav-color-primary); }
       :host([multiple]) .opt[aria-selected="true"] .ck { background: var(--sav-color-primary); border-color: var(--sav-color-primary); color: var(--sav-color-on-primary); transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -.5)); }
       :host([multiple]) .opt .ck * { stroke-width: 3; }
@@ -1800,7 +2020,7 @@
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host([auto-text][multiple]) .opt[aria-selected="true"] .ck { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
     `];
-    static get observedAttributes() { return [...SavPicker.observedAttributes, 'multiple', 'searchable', 'max-chips']; }
+    static get observedAttributes() { return [...SavPicker.observedAttributes, 'multiple', 'searchable', 'max-chips', 'select-all']; }
     init() {
       this._values = [];
       this._mo = new MutationObserver(() => { this.readOptions(); this.syncNative(); this.refresh(); if (this.open) this.renderBody(); });
@@ -1848,6 +2068,7 @@
     renderBody() {
       const id = this._lid ||= nextId('lb');
       let html = this.hasAttribute('searchable') ? `<div class="search">${svgIcon('search')}<input type="text" placeholder="${esc(this.getAttribute('search-placeholder') || 'Search')}" aria-controls="${id}" aria-autocomplete="list" autocomplete="off" spellcheck="false"></div>` : '';
+      if (this.multiple && this.hasAttribute('select-all')) html += `<button type="button" class="all" part="select-all"></button>`;
       html += `<div class="list" id="${id}" role="listbox" tabindex="-1" ${this.multiple ? 'aria-multiselectable="true"' : ''} aria-label="${esc(this.getAttribute('label') || 'Options')}">`;
       let group = null;
       this.opts.forEach((o, i) => {
@@ -1861,6 +2082,8 @@
       const list = body.querySelector('.list');
       list.addEventListener('click', (e) => { const el = e.target.closest('.opt'); if (el) this.pick(Number(el.dataset.i)); });
       list.addEventListener('pointermove', (e) => { const el = e.target.closest('.opt'); if (el && !el.classList.contains('active')) this.setActive(el); });
+      body.querySelector('.all')?.addEventListener('click', () => this.toggleAll());
+      this.syncAll();
       const keyTarget = body.querySelector('.search input') || list;
       keyTarget.addEventListener('keydown', (e) => this.listKey(e));
       body.querySelector('.search input')?.addEventListener('input', (e) => this.filter(e.target.value));
@@ -1888,6 +2111,7 @@
       this.reposition(true);
     }
     listKey(e) {
+      if (this.multiple && this.hasAttribute('select-all') && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !e.target.matches('.search input')) { e.preventDefault(); this.toggleAll(); return; }
       const opts = this.visibleOpts(), cur = opts.indexOf(this.$('.opt.active'));
       let n = null;
       if (e.key === 'ArrowDown') n = opts[Math.min(cur + 1, opts.length - 1)];
@@ -1902,6 +2126,19 @@
       }
       if (n) { e.preventDefault(); this.setActive(n); }
     }
+    /** select-all: every option that can be chosen, or none when they all are already (also Ctrl/⌘+A in the list) */
+    toggleAll() {
+      if (!this.multiple) return;
+      const can = this.opts.filter((o) => !o.disabled).map((o) => o.value), all = can.every((v) => this._values.includes(v));
+      this.setValue(all ? this._values.filter((v) => !can.includes(v)) : [...new Set([...this._values, ...can])], true);
+      this.$$('.opt').forEach((el) => el.setAttribute('aria-selected', String(this._values.includes(this.opts[el.dataset.i]?.value))));
+      this.syncAll();
+    }
+    syncAll() {
+      const b = this.$('.all'); if (!b) return;
+      const can = this.opts.filter((o) => !o.disabled).map((o) => o.value), all = can.length && can.every((v) => this._values.includes(v));
+      b.innerHTML = `${svgIcon(all ? 'x' : 'check')}<span>${esc(all ? this.getAttribute('clear-all-label') || 'Clear all' : this.getAttribute('select-all-label') || 'Select all')}</span>`;
+    }
     pick(i) {
       const o = this.opts[i];
       if (!o || o.disabled) return;
@@ -1910,6 +2147,7 @@
         this.setValue(next, true);
         const el = this.$(`.opt[data-i="${i}"]`);
         if (el) this.setActive(el);
+        this.syncAll();
       } else {
         this.setValue([o.value], true);
         this.hide();
@@ -2049,7 +2287,7 @@
       .cell { position: relative; isolation: isolate; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border: 0; padding: 0; background: none; color: inherit;
               font: inherit; font-variant-numeric: tabular-nums; border-radius: var(--sav-radius-sm); cursor: pointer; text-transform: capitalize; }
       .wide .cell { aspect-ratio: auto; padding: .7rem .2rem; }
-      .cell::before { content: ""; position: absolute; inset: 1px; z-index: -1; border-radius: inherit; background: var(--_cb, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: background var(--sav-duration); }
+      .cell::before { content: ""; position: absolute; inset: 1px; z-index: -1; border-radius: inherit; background: var(--_cb, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .cell:hover { --_cb: var(--sav-color-surface-2); }
       .cell.out { color: var(--sav-color-text-muted); opacity: .55; }
       .cell.today { font-weight: var(--sav-font-weight-bold); color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); }
@@ -2218,6 +2456,8 @@
       .t:disabled { opacity: .3; cursor: not-allowed; }
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host([auto-text]) .t.sel { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
+      /* animation: changes of colour and state ease in (paced by --sav-motion) */
+      .t::before { transition: background calc(var(--sav-duration) * var(--sav-motion, 1)); }
     `];
     static get observedAttributes() { return [...SavPicker.observedAttributes, 'step', 'hour-cycle']; }
     init() { this.parse(this.getAttribute('value') || ''); this.$('.body').addEventListener('click', (e) => this.bodyClick(e)); }
@@ -2285,11 +2525,11 @@
       input { appearance: none; -webkit-appearance: none; margin: 0; width: 100%; height: 100%; cursor: inherit;
               border: calc(var(--sav-border-width) + .5px) solid var(--sav-color-border-strong); border-radius: calc(var(--sav-radius) * .55); background: var(--sav-color-input-bg);
               transform: rotate(var(--sav-knob-tilt, 0deg));
-              transition: background var(--sav-duration), border-color var(--sav-duration), box-shadow var(--sav-duration), transform .2s var(--sav-easing); }
+              transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       input:checked, input:indeterminate { transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -.5)); }
       input:hover { border-color: var(--_c); }
       input:checked, input:indeterminate { background: var(--_c); border-color: var(--_c); }
-      .mark { position: absolute; inset: 0; margin: auto; width: 75%; height: 75%; color: var(--_on); pointer-events: none; opacity: 0; transform: scale(.6); transition: opacity var(--sav-duration), transform var(--sav-duration) var(--sav-easing); }
+      .mark { position: absolute; inset: 0; margin: auto; width: 75%; height: 75%; color: var(--_on); pointer-events: none; opacity: 0; transform: scale(.6); transition: opacity calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
       .mark * { stroke-width: 3; }
       input:checked ~ .tick, input:indeterminate ~ .dash { opacity: 1; transform: none; }
       input:indeterminate ~ .tick { opacity: 0; }
@@ -2360,10 +2600,10 @@
       :host([disabled]) .row { opacity: .55; cursor: not-allowed; }
       .ctl { position: relative; flex: none; width: var(--_w); height: var(--_th); margin-top: calc((1.4em - var(--_th)) / 2); }
       input { appearance: none; -webkit-appearance: none; margin: 0; width: 100%; height: 100%; cursor: inherit; border-radius: var(--sav-radius-pill);
-              background: var(--sav-switch-track, var(--sav-color-border-strong)); background-image: var(--sav-sheen, none); box-shadow: var(--sav-track-shadow, none); border: 0; transition: background var(--sav-duration); }
+              background: var(--sav-switch-track, var(--sav-color-border-strong)); background-image: var(--sav-sheen, none); box-shadow: var(--sav-track-shadow, none); border: 0; transition: background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       input:checked { background-color: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); }
       .thumb { position: absolute; top: 3px; left: 3px; width: calc(var(--_th) - 6px); height: calc(var(--_th) - 6px); border-radius: var(--sav-knob-radius, 50%); background: var(--sav-switch-thumb-bg, #fff);
-               box-shadow: var(--sav-switch-thumb-shadow, 0 1px 3px rgb(0 0 0 / .25)); pointer-events: none; transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform var(--sav-duration) var(--sav-easing); }
+               box-shadow: var(--sav-switch-thumb-shadow, 0 1px 3px rgb(0 0 0 / .25)); pointer-events: none; transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
       input:checked + .thumb { transform: translateX(calc(var(--_w) - var(--_th))) rotate(calc(var(--sav-knob-tilt, 0deg) * -1)); }
       .help { display: block; font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); margin: .15rem 0 0 calc(var(--_w) + .6rem); }
       .help:empty { display: none; }
@@ -2382,8 +2622,8 @@
       .row { display: inline-flex; align-items: flex-start; gap: .55rem; cursor: pointer; font-size: var(--_fs); line-height: 1.4; user-select: none; }
       :host([disabled]) .row { opacity: .55; cursor: not-allowed; }
       .dot { flex: none; position: relative; width: var(--_box); height: var(--_box); margin-top: calc((1.4em - var(--_box)) / 2); border-radius: var(--sav-knob-radius, 50%); transform: rotate(var(--sav-knob-tilt, 0deg));
-             border: calc(var(--sav-border-width) + .5px) solid var(--sav-color-border-strong); background: var(--sav-color-input-bg); transition: border-color var(--sav-duration), background var(--sav-duration); }
-      .dot::after { content: ""; position: absolute; inset: 0; margin: auto; width: 42%; height: 42%; border-radius: var(--sav-knob-radius, 50%); background: var(--_on); transform: scale(0); transition: transform var(--sav-duration) var(--sav-easing); }
+             border: calc(var(--sav-border-width) + .5px) solid var(--sav-color-border-strong); background: var(--sav-color-input-bg); transition: border-color calc(var(--sav-duration) * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      .dot::after { content: ""; position: absolute; inset: 0; margin: auto; width: 42%; height: 42%; border-radius: var(--sav-knob-radius, 50%); background: var(--_on); transform: scale(0); transition: transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
       .row:hover .dot { border-color: var(--_c); }
       :host([checked]) .dot { background: var(--_c); border-color: var(--_c); }
       :host([checked]) .dot::after { transform: scale(1); }
@@ -2391,9 +2631,9 @@
       /* segmented buttons: drawn like the segmented tabs (background on a layer that leans with the style, text upright) */
       :host([data-appearance="buttons"]) .dot { display: none; }
       :host([data-appearance="buttons"]) .row { position: relative; isolation: isolate; align-items: center; justify-content: center; min-height: var(--_h); padding: 0 calc(var(--_h) * .42);
-        border-radius: calc(var(--sav-radius) - 2px); font-weight: var(--sav-font-weight-semibold); color: var(--sav-color-text-muted); white-space: nowrap; transition: color var(--sav-duration); }
+        border-radius: calc(var(--sav-radius) - 2px); font-weight: var(--sav-font-weight-semibold); color: var(--sav-color-text-muted); white-space: nowrap; transition: color calc(var(--sav-duration) * var(--sav-motion, 1)); }
       :host([data-appearance="buttons"]) .row::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_rb, transparent); background-image: var(--_rsh, none); box-shadow: var(--_rs, none);
-        transform: rotate(${TILT}); transition: background var(--sav-duration), box-shadow var(--sav-duration), transform .22s var(--sav-easing); }
+        transform: rotate(${TILT}); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.22s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([data-appearance="buttons"]) .row:hover { color: var(--sav-color-text); }
       :host([data-appearance="buttons"][checked]) .row { color: var(--sav-color-text); --_rb: var(--sav-color-surface); --_rsh: var(--sav-sheen, none); --_rs: var(--sav-tab-segment-shadow, var(--sav-shadow-sm)); }
       :host([data-appearance="buttons"]:focus-visible) .row { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: -2px; }
@@ -2403,6 +2643,13 @@
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host { --_eb: var(--_c); }
       :host(:is([auto-text], [data-auto-text])) .dot::after { background: ${AUTO_TEXT}; }
+      /* the mark of the chosen option (mark, or data-mark from the group): fill (the default) fills the shape;
+         dot fills it with a small mark inside; ring keeps it light, with a coloured border and a mark in the middle */
+      :host([data-m="fill"]) .dot::after { display: none; }
+      /* the ring uses the indicator shade of the colour (darker in light mode), so a thin border still stands out on the field */
+      :host([data-m="ring"]) { --_ri: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); }
+      :host([data-m="ring"][checked]) .dot { background: var(--sav-color-input-bg); border-color: var(--_ri); border-width: calc(var(--sav-border-width) + 1.5px); }
+      :host([data-m="ring"]) .dot::after { width: 46%; height: 46%; background: var(--_ri); }
     `];
     connectedCallback() {
       if (!this.shadowRoot.firstChild) this.shadowRoot.innerHTML = '<div class="row" part="base"><span class="dot" part="control"></span><span class="lb" part="label"><slot></slot></span></div>';
@@ -2413,11 +2660,14 @@
     }
     changed() { this.sync(); }
     sync() {
+      // the mark in use: its own, or the group's, or fill
+      const m = this.getAttribute('mark') || this.getAttribute('data-mark');
+      this.setAttribute('data-m', ['dot', 'ring'].includes(m) ? m : 'fill');
       this.setAttribute('aria-checked', String(this.checked));
       this.disabled ? this.setAttribute('aria-disabled', 'true') : this.removeAttribute('aria-disabled');
     }
   }
-  props(SavRadio, { value: String, checked: Boolean, disabled: Boolean, variant: String, size: String });
+  props(SavRadio, { value: String, checked: Boolean, disabled: Boolean, variant: String, size: String, mark: String });
   define('sav-radio', SavRadio);
 
   class SavRadioGroup extends SavFormControl {
@@ -2433,7 +2683,7 @@
       :host([data-user-invalid]) .items { --sav-color-border-strong: var(--sav-color-danger); }
       .native { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
     `];
-    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'appearance', 'size', 'auto-text']; }
+    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'appearance', 'size', 'auto-text', 'mark']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = `<fieldset class="w" part="form-control" role="radiogroup">
@@ -2454,6 +2704,8 @@
     syncRadios() {
       const radios = this.radios;
       passAutoText(this, radios);
+      // the mark of the chosen option (fill, dot, ring) reaches every radio; a radio's own mark wins
+      radios.forEach((r) => { const m = this.getAttribute('mark'); if (m) r.setAttribute('data-mark', m); else r.removeAttribute('data-mark'); r.sync?.(); });
       const val = (r) => r.getAttribute('value') ?? '';
       const off = (r) => r.hasAttribute('disabled');
       if (!this._value) { const pre = radios.find((r) => r.hasAttribute('checked')); if (pre) this._value = this._default = val(pre); }
@@ -2491,7 +2743,7 @@
     }
     changed(name, v) {
       if (name === 'value') { this._value = v ?? ''; this.syncRadios(); return; }
-      if (name === 'appearance' || name === 'size' || name === 'auto-text') this.syncRadios();
+      if (name === 'appearance' || name === 'size' || name === 'auto-text' || name === 'mark') this.syncRadios();
       this.sync();
     }
     sync() {
@@ -2524,7 +2776,7 @@
                --_tt: var(--sav-range-thumb-tilt, 0deg); }
       input::-webkit-slider-thumb { -webkit-appearance: none; box-sizing: border-box; width: var(--sav-range-thumb-width, var(--_th)); height: var(--sav-range-thumb-height, var(--_th));
               border-radius: var(--sav-range-thumb-radius, 50%); background: var(--_tb); border: var(--_tbd); box-shadow: var(--sav-range-thumb-shadow, var(--sav-shadow-sm));
-              transform: rotate(var(--_tt)); transition: transform .2s var(--sav-easing), box-shadow var(--sav-duration); }
+              transform: rotate(var(--_tt)); transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)); }
       input::-moz-range-thumb { box-sizing: border-box; width: var(--sav-range-thumb-width, var(--_th)); height: var(--sav-range-thumb-height, var(--_th));
               border-radius: var(--sav-range-thumb-radius, 50%); background: var(--_tb); border: var(--_tbd); box-shadow: var(--sav-range-thumb-shadow, var(--sav-shadow-sm)); transform: rotate(var(--_tt)); }
       input:hover::-webkit-slider-thumb { transform: rotate(calc(var(--_tt) * -.5)); }
@@ -2770,7 +3022,7 @@
       :host { display: inline-block; --size: 1.5rem; --color: oklch(from var(--sav-color-warning) calc(l * var(--sav-indicator-l, 1)) c h); --empty: var(--sav-color-border-strong); }
       .stars { display: inline-flex; gap: .15rem; outline: none; border-radius: var(--sav-radius-sm); }
       .stars:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 3px; }
-      .s { position: relative; width: var(--size); height: var(--size); cursor: pointer; color: var(--empty); transition: transform var(--sav-duration) var(--sav-easing); }
+      .s { position: relative; width: var(--size); height: var(--size); cursor: pointer; color: var(--empty); transition: transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
       .s svg { width: 100%; height: 100%; }
       .s svg * { fill: currentColor; stroke-width: 1.2; }
       .s .full { position: absolute; inset: 0; color: var(--color); clip-path: inset(0 calc(100% - var(--_f, 0%)) 0 0); }
@@ -2849,7 +3101,7 @@
       .tip[data-side="bottom"]::after { top: -6px; left: calc(var(--_ax) - 6px); width: 12px; height: 6px; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
       .tip[data-side="left"]::after { right: -6px; top: calc(var(--_ay) - 6px); width: 6px; height: 12px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
       .tip[data-side="right"]::after { left: -6px; top: calc(var(--_ay) - 6px); width: 6px; height: 12px; clip-path: polygon(100% 0, 100% 100%, 0 50%); }
-      .tip:popover-open, .tip.open { animation: sav-tip .14s var(--sav-easing); }
+      .tip:popover-open, .tip.open { animation: sav-tip calc(.14s * var(--sav-motion, 1)) var(--sav-easing); }
       @keyframes sav-tip { from { opacity: 0; transform: scale(.96); } }
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host { --_eb: var(--sav-color-tooltip-bg); }
@@ -2958,7 +3210,7 @@
     }
     requestClose(source) {
       if (source === 'overlay' && this.hasAttribute('persistent')) {
-        this.dlg.animate([{ transform: this.dlg.style.transform || 'none' }, { transform: 'scale(1.02)' }, { transform: 'none' }], { duration: 200 });
+        this.dlg.animate([{ transform: this.dlg.style.transform || 'none' }, { transform: 'scale(1.02)' }, { transform: 'none' }], { duration: 200 * motion(this) });
         return;
       }
       if (!this.emit('sav-request-close', { source }, true)) return;
@@ -2973,14 +3225,14 @@
       document.documentElement.style.overflow = 'hidden';
       const auto = this.querySelector('[autofocus]');
       if (auto) auto.focus();
-      await this.dlg.animate(this.enterFrames(), { duration: 220, easing: 'cubic-bezier(.2,.7,.3,1)' }).finished.catch(() => {});
+      await this.dlg.animate(this.enterFrames(), { duration: 220 * motion(this), easing: 'cubic-bezier(.2,.7,.3,1)' }).finished.catch(() => {});
       this.emit('sav-after-show');
     }
     async hide(fromAttr) {
       if (!this.dlg?.open) return;
       if (!fromAttr) { this.open = false; return; }
       this.emit('sav-hide');
-      await this.dlg.animate(this.enterFrames().reverse(), { duration: 160, easing: 'ease-in' }).finished.catch(() => {});
+      await this.dlg.animate(this.enterFrames().reverse(), { duration: 160 * motion(this), easing: 'ease-in' }).finished.catch(() => {});
       this.dlg.close();
       if (!document.querySelector('sav-dialog[open], sav-drawer[open]')) document.documentElement.style.overflow = '';
       this._prev?.focus?.();
@@ -3049,10 +3301,10 @@
       .nav { position: relative; display: flex; gap: .25rem; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; box-shadow: inset 0 calc(var(--sav-border-width) * -1) 0 var(--sav-color-border); }
       .nav::-webkit-scrollbar { display: none; }
       .tab { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .45rem; padding: .7rem .95rem; margin: 0; border: 0; background: none; color: var(--sav-color-text-muted);
-             font: inherit; font-size: var(--sav-font-size-md); font-weight: var(--sav-font-weight-semibold); white-space: nowrap; cursor: pointer; border-radius: var(--sav-radius) var(--sav-radius) 0 0; transition: color var(--sav-duration); }
+             font: inherit; font-size: var(--sav-font-size-md); font-weight: var(--sav-font-weight-semibold); white-space: nowrap; cursor: pointer; border-radius: var(--sav-radius) var(--sav-radius) 0 0; transition: color calc(var(--sav-duration) * var(--sav-motion, 1)); }
       /* the background of a tab is a layer: it leans in the tilt style, the text stays upright */
       .tab::before { content: ""; position: absolute; inset: 3px 0; z-index: -1; border-radius: inherit; background: var(--_tb, transparent); background-image: var(--_tsh-img, none); box-shadow: var(--_ts, none);
-                     transform: rotate(${TILT}); transform-origin: center; transition: background var(--sav-duration), box-shadow var(--sav-duration), transform .22s var(--sav-easing); }
+                     transform: rotate(${TILT}); transform-origin: center; transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.22s * var(--sav-motion, 1)) var(--sav-easing); }
       .tab:hover { color: var(--sav-color-text); }
       .tab[aria-selected="true"] { color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); --_tb: var(--sav-tab-active-bg, transparent); }
       .tab:disabled { opacity: .45; cursor: not-allowed; }
@@ -3064,7 +3316,7 @@
       .tab.icon-end .ti { margin-inline-start: auto; padding-inline-start: .6rem; }
       .tab.icon-end .tl { flex: 0 1 auto; }
       :host([data-vertical]) .tab { justify-content: flex-start; text-align: start; }
-      .ink { position: absolute; bottom: 0; left: 0; height: 2px; background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); border-radius: 2px; transition: transform .25s var(--sav-easing), width .25s var(--sav-easing); }
+      .ink { position: absolute; bottom: 0; left: 0; height: 2px; background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); border-radius: 2px; transition: transform calc(.25s * var(--sav-motion, 1)) var(--sav-easing), width calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([appearance="pills"]) .nav { box-shadow: none; gap: .35rem; }
       :host([appearance="pills"]) .tab { border-radius: var(--sav-radius-pill); padding: .5rem 1rem; }
       :host([appearance="pills"]) .tab::before { inset: 0; }
@@ -3081,20 +3333,20 @@
       /* vertical: one column holds the tabs and, when collapsible, the fold button; the rail look (background, divider) is on it */
       :host([data-vertical]) .rail { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 2px; align-self: flex-start; flex: none; min-width: 10rem;
         padding: var(--sav-tab-vertical-rail-padding, 4px); background: var(--sav-tab-vertical-rail, var(--sav-color-surface-2)); border-radius: calc(var(--sav-radius) + 2px);
-        border-right: var(--sav-tab-vertical-divider, 0 solid transparent); transition: min-width .28s var(--sav-easing); }
+        border-right: var(--sav-tab-vertical-divider, 0 solid transparent); transition: min-width calc(.28s * var(--sav-motion, 1)) var(--sav-easing); }
       /* labels fold away smoothly; the icons never move */
-      :host([data-vertical]) .tl { max-width: 16rem; white-space: nowrap; transition: max-width .28s var(--sav-easing), opacity .2s; }
-      :host([data-vertical]) .tab { transition: color var(--sav-duration), gap .28s var(--sav-easing); }
+      :host([data-vertical]) .tl { max-width: 16rem; white-space: nowrap; transition: max-width calc(.28s * var(--sav-motion, 1)) var(--sav-easing), opacity calc(.2s * var(--sav-motion, 1)); }
+      :host([data-vertical]) .tab { transition: color calc(var(--sav-duration) * var(--sav-motion, 1)), gap calc(.28s * var(--sav-motion, 1)) var(--sav-easing); }
       /* the fold button: a row like the tabs, under a thin line, with the "panel" icons */
       :host([data-vertical][collapsible]) .fold { position: relative; isolation: isolate; display: flex; align-items: center; gap: .45rem; margin: .35rem 0 0; padding: .5rem .8rem;
         border: 0; border-radius: var(--sav-radius); background: none; color: var(--sav-color-text-muted); font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold);
-        text-align: start; white-space: nowrap; cursor: pointer; transition: color var(--sav-duration), gap .28s var(--sav-easing); }
-      .fold::before { content: ""; position: absolute; inset: 1px 0; z-index: -1; border-radius: inherit; background: var(--_fb, transparent); transform: rotate(${TILT}); transition: background var(--sav-duration); }
+        text-align: start; white-space: nowrap; cursor: pointer; transition: color calc(var(--sav-duration) * var(--sav-motion, 1)), gap calc(.28s * var(--sav-motion, 1)) var(--sav-easing); }
+      .fold::before { content: ""; position: absolute; inset: 1px 0; z-index: -1; border-radius: inherit; background: var(--_fb, transparent); transform: rotate(${TILT}); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .fold::after { content: ""; position: absolute; left: .55rem; right: .55rem; top: calc(-.2rem - 1px); height: 1px; background: var(--sav-color-border); }
       .fold:hover { color: var(--sav-color-text); --_fb: var(--sav-tab-vertical-hover, color-mix(in oklab, var(--sav-color-surface) 55%, transparent)); }
       .fold:focus-visible { outline-offset: -3px; }
       .fold svg, .fold sav-icon { flex: none; width: 1.1em; height: 1.1em; }
-      .fold-t { overflow: hidden; max-width: 12rem; transition: max-width .28s var(--sav-easing), opacity .2s; }
+      .fold-t { overflow: hidden; max-width: 12rem; transition: max-width calc(.28s * var(--sav-motion, 1)) var(--sav-easing), opacity calc(.2s * var(--sav-motion, 1)); }
       /* collapsed */
       :host([data-vertical][collapsed]) .rail { min-width: 0; }
       :host([data-vertical][collapsed]) :is(.tab, .fold) { gap: 0; }
@@ -3110,7 +3362,7 @@
       :host([data-vertical][collapsed]) .tab.sub::after { display: none; }
       :host([data-vertical][collapsed]) .tab.sub .ti { display: none; }
       :host([data-vertical][collapsed]) .tab.sub .sd { display: block; width: 6px; height: 6px; margin-inline: calc(.55em - 3px); border-radius: 50%; background: var(--sav-color-border-strong);
-        transition: transform .2s var(--sav-easing), background var(--sav-duration); }
+        transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       :host([data-vertical][collapsed]) .tab.sub.group-on .sd { background: color-mix(in oklab, var(--sav-color-primary) 55%, var(--sav-color-border-strong)); }
       :host([data-vertical][collapsed]) .tab.sub[aria-selected="true"] { --_tb: transparent; --_ts: none; --_tsh-img: none; }
       :host([data-vertical][collapsed]) .tab.sub[aria-selected="true"] .sd { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); transform: scale(1.45); }
@@ -3122,7 +3374,7 @@
       :host([data-vertical][collapsed]) :is(.tab, .fold):is(:hover, :focus-visible) .tip,
       :host([data-vertical][collapsible]:not([collapse-button="row"])) .fold:is(:hover, :focus-visible) .tip { display: block; position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
         padding: .35rem .6rem; border-radius: var(--sav-radius-sm); background: var(--sav-color-tooltip-bg); color: var(--sav-color-tooltip-text); box-shadow: var(--sav-tooltip-shadow, var(--sav-shadow));
-        font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); line-height: 1.3; white-space: nowrap; pointer-events: none; animation: sav-tab-tip .15s ease-out; }
+        font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); line-height: 1.3; white-space: nowrap; pointer-events: none; animation: sav-tab-tip calc(.15s * var(--sav-motion, 1)) ease-out; }
       .tip::before { content: ""; position: absolute; left: -6px; top: calc(50% - 6px); width: 6px; height: 12px; background: inherit; clip-path: polygon(100% 0, 100% 100%, 0 50%); }
       @keyframes sav-tab-tip { from { opacity: 0; transform: translate(-4px, -50%); } }
       @media (prefers-reduced-motion: reduce) { :host([data-vertical]) :is(.rail, .tl, .tab, .fold, .fold-t, .sd) { transition: none; } .tip { animation: none !important; } }
@@ -3160,15 +3412,15 @@
       /* the main tab of the open sub tab is coloured (not selected), and its group's guide line is tinted, so you see whose sub it is */
       .tab.parent-on { color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); }
       :host([data-vertical]) .tab.sub.group-on::after { background: color-mix(in oklab, oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h) 55%, var(--sav-color-border-strong)); }
-      /* placement="end": the rail on the right, the content on the left; the fold handle and the tooltips sit on the outer (left) side */
-      :host([placement="end"]) .wrap { flex-direction: row-reverse; }
-      :host([placement="end"]) .rail { border-right: 0; border-left: var(--sav-tab-vertical-divider, 0 solid transparent); }
-      :host([placement="end"][collapsed]) :is(.tab, .fold):is(:hover, :focus-visible) .tip,
-      :host([placement="end"][collapsible]:not([collapse-button="row"])) .fold:is(:hover, :focus-visible) .tip { left: auto; right: calc(100% + 10px); }
-      :host([placement="end"]) .tip::before { left: auto; right: -6px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-      :host([placement="end"][collapsible]:not([collapse-button="row"])) .fold { right: auto; left: -.85rem; }
-      :host([placement="end"][collapsible]:not([collapse-button="row"])) .tab:first-child .tip { left: auto; right: calc(100% + 2rem); }
-      :host([placement="end"]) .tab::before { transform-origin: right; }
+      /* side="end" (vertical): the rail on the right, the content on the left; the fold handle and the tooltips sit on the outer (left) side */
+      :host([data-end]) .wrap { flex-direction: row-reverse; }
+      :host([data-end]) .rail { border-right: 0; border-left: var(--sav-tab-vertical-divider, 0 solid transparent); }
+      :host([data-end][collapsed]) :is(.tab, .fold):is(:hover, :focus-visible) .tip,
+      :host([data-end][collapsible]:not([collapse-button="row"])) .fold:is(:hover, :focus-visible) .tip { left: auto; right: calc(100% + 10px); }
+      :host([data-end]) .tip::before { left: auto; right: -6px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+      :host([data-end][collapsible]:not([collapse-button="row"])) .fold { right: auto; left: -.85rem; }
+      :host([data-end][collapsible]:not([collapse-button="row"])) .tab:first-child .tip { left: auto; right: calc(100% + 2rem); }
+      :host([data-end]) .tab::before { transform-origin: right; }
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host { --_eb: color-mix(in oklab, var(--sav-color-primary) 14%, var(--sav-color-bg)); }
       :host([appearance="segmented"]) { --_eb: var(--sav-color-bg); }
@@ -3187,17 +3439,20 @@
       this.build();
     }
     /** start and end are both vertical: the shared rules key on data-vertical, only the side differs */
-    get vertical() { const p = this.getAttribute('placement'); return p === 'start' || p === 'end'; }
-    syncVertical() { this.toggleAttribute('data-vertical', this.vertical); }
+    /* orientation="vertical" puts the tabs in a column, side="end" on the right (start, the left, is the default).
+       The older placement="start" / "end" still works. */
+    get vertical() { const p = this.getAttribute('placement'); return this.getAttribute('orientation') === 'vertical' || p === 'start' || p === 'end'; }
+    get end() { return this.vertical && (this.getAttribute('side') === 'end' || this.getAttribute('placement') === 'end'); }
+    syncVertical() { this.toggleAttribute('data-vertical', this.vertical); this.toggleAttribute('data-end', this.end); }
     changed(name) {
-      if (name === 'placement') this.syncVertical();
+      if (['placement', 'orientation', 'side'].includes(name)) this.syncVertical();
       if (name === 'icon-placement') this.build();
-      else if (['collapsed', 'collapsible', 'placement', 'collapse-label', 'expand-label', 'collapse-button'].includes(name)) this.syncFold();
+      else if (['collapsed', 'collapsible', 'placement', 'orientation', 'side', 'collapse-label', 'expand-label', 'collapse-button'].includes(name)) this.syncFold();
     }
     /** the fold button and, when collapsed, a tooltip with the name of each tab */
     syncFold() {
       const b = this.$('.fold'); if (!b) return;
-      const c = this.collapsed && this.vertical, end = this.getAttribute('placement') === 'end';
+      const c = this.collapsed && this.vertical, end = this.end;
       const text = c ? this.getAttribute('expand-label') || 'Expand' : this.getAttribute('collapse-label') || 'Collapse';
       const edge = this.getAttribute('collapse-button') !== 'row'; // the handle on the border is the default; "row" puts a row at the bottom
       b.innerHTML = `${svgIcon(edge ? ((c !== end) ? 'chevrons-right' : 'chevrons-left') : `panel-${end ? 'right' : 'left'}-${c ? 'open' : 'close'}`)}<span class="fold-t">${esc(text)}</span><span class="tip" aria-hidden="true">${esc(text)}</span>`;
@@ -3280,7 +3535,7 @@
       next.click();
     }
   }
-  props(SavTabs, { appearance: String, placement: String, iconPlacement: String, collapsible: Boolean, collapsed: Boolean, collapseLabel: String, expandLabel: String, collapseButton: String });
+  props(SavTabs, { appearance: String, orientation: String, side: String, placement: String, iconPlacement: String, collapsible: Boolean, collapsed: Boolean, collapseLabel: String, expandLabel: String, collapseButton: String });
   define('sav-tabs', SavTabs);
 
   /* ================================================================== sav-details / sav-accordion */
@@ -3298,10 +3553,10 @@
       :host([appearance="plain"]) .sum:hover { background: none; color: var(--sav-color-primary); }
       .sum:focus-visible { outline-offset: -3px; }
       .st { flex: 1; }
-      .chev { width: 1.15em; height: 1.15em; color: var(--sav-color-text-muted); transition: transform .25s var(--sav-easing); }
+      .chev { width: 1.15em; height: 1.15em; color: var(--sav-color-text-muted); transition: transform calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([open]) .chev { transform: rotate(180deg); }
       :host([disabled]) .sum { opacity: .5; cursor: not-allowed; }
-      .rg { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s var(--sav-easing); }
+      .rg { display: grid; grid-template-rows: 0fr; transition: grid-template-rows calc(.28s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([open]) .rg { grid-template-rows: 1fr; }
       .rg > div { overflow: hidden; }
       .c { padding: 0 1rem 1rem; color: var(--sav-color-text); line-height: 1.55; }
@@ -3320,6 +3575,7 @@
     changed(name) {
       if (name === 'open') {
         if (this.open) { this.$('.rg').classList.add('vis'); this.closest('sav-accordion')?.onOpen(this); }
+        else if (!motion(this)) this.$('.rg').classList.remove('vis'); // no animation: no transitionend to wait for
         this.emit(this.open ? 'sav-show' : 'sav-hide');
       }
       this.sync();
@@ -3373,7 +3629,7 @@
       .chk { width: 1em; height: 1em; visibility: hidden; color: var(--sav-color-primary); }
       :host([type="checkbox"][checked]) .chk { visibility: visible; }
       :host(:not([type="checkbox"])) .chk { display: none; }
-      .arr { display: none; width: 1em; height: 1em; margin-left: auto; color: var(--sav-color-text-muted); transition: transform .2s var(--sav-easing); }
+      .arr { display: none; width: 1em; height: 1em; margin-left: auto; color: var(--sav-color-text-muted); transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([data-sub]) .arr { display: block; }
       :host([data-sub][open]:not([data-bar]):not([data-rail]):not([data-in-flyout])) .arr { transform: rotate(90deg); }
       :host([data-bar][data-sub]) .arr { transform: rotate(90deg); } :host([data-bar][data-sub][open]) .arr { transform: rotate(-90deg); }
@@ -3439,7 +3695,7 @@
       .menu { min-width: var(--min-width, 12rem); max-height: min(var(--max-height, 22rem), calc(100vh - 2rem)); flex-direction: column; padding: 0; border: var(--sav-border-width) solid var(--sav-color-border);
               border-radius: var(--sav-radius); background: var(--sav-color-surface); color: var(--sav-color-text); box-shadow: var(--sav-shadow-lg); font-family: var(--sav-font);
               -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); }
-      .menu:popover-open, .menu.open { display: flex; animation: sav-menu .16s var(--sav-easing); }
+      .menu:popover-open, .menu.open { display: flex; animation: sav-menu calc(.16s * var(--sav-motion, 1)) var(--sav-easing); }
       .items { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: .3rem 0; }
       ${panelLayer('.menu')}
       ::slotted(sav-divider) { --spacing: .3rem; }
@@ -3449,7 +3705,7 @@
       .sheet-head { display: none; }
       @media (max-width: 640px) {
         :host([sheet-on-mobile]) .menu { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; min-width: 0; max-height: 85dvh; margin: 0;
-          border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .3rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet .25s var(--sav-easing); }
+          border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .3rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
         :host([sheet-on-mobile]) .menu::before { transform: none; border-bottom: 0; }
         :host([sheet-on-mobile]) .menu::after { display: none; }
         :host([sheet-on-mobile]) .menu::backdrop { background: var(--sav-color-overlay); }
@@ -3563,7 +3819,7 @@
              background: var(--sav-color-surface); color: var(--sav-color-text); box-shadow: var(--sav-shadow-lg); font-family: var(--sav-font); font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-normal);
              line-height: 1.5; text-align: left; overflow: visible; }
       ${panelLayer('.tip')}
-      .tip:popover-open, .tip.open { animation: sav-tip .14s var(--sav-easing); }
+      .tip:popover-open, .tip.open { animation: sav-tip calc(.14s * var(--sav-motion, 1)) var(--sav-easing); }
       .arr { position: absolute; width: 9px; height: 9px; background: var(--sav-color-surface); border: var(--sav-border-width) solid var(--sav-color-border); transform: rotate(45deg); }
       .tip[data-side="top"] .arr { bottom: -5.5px; left: calc(var(--_ax) - 4.5px); border-width: 0 1px 1px 0; }
       .tip[data-side="bottom"] .arr { top: -5.5px; left: calc(var(--_ax) - 4.5px); border-width: 1px 0 0 1px; }
@@ -3579,7 +3835,7 @@
       @keyframes sav-tip { from { opacity: 0; transform: scale(.97); } }
       @keyframes sav-sheet { from { transform: translateY(100%); } }
       @media (max-width: 640px) {
-        :host([sheet-on-mobile]) .tip { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 1.2rem 1.1rem calc(1.2rem + env(safe-area-inset-bottom)); font-size: var(--sav-font-size-md); animation: sav-sheet .25s var(--sav-easing); }
+        :host([sheet-on-mobile]) .tip { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 1.2rem 1.1rem calc(1.2rem + env(safe-area-inset-bottom)); font-size: var(--sav-font-size-md); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
         :host([sheet-on-mobile]) .arr { display: none; }
         :host([sheet-on-mobile]) .tip::before { transform: none; }
         :host([sheet-on-mobile]) .tip::after { display: none; }
@@ -3651,7 +3907,7 @@
          like the card, the surface has a tinted plate behind it leaning the other way (--sav-card-back) */
       :host([appearance="surface"]) .c, :host([appearance="muted"]) .c { padding: var(--inner, 1.5rem); }
       :host([appearance="surface"]) .c::before, :host([appearance="muted"]) .c::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-lg);
-             transform: rotate(${PANEL_TILT}); transition: transform .3s var(--sav-easing); }
+             transform: rotate(${PANEL_TILT}); transition: transform calc(.3s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([appearance="surface"]) .c::before { border: var(--sav-border-width) solid var(--sav-color-border); background: var(--sav-color-surface); background-image: var(--sav-sheen, none);
              box-shadow: var(--sav-container-shadow, var(--sav-shadow-sm)); -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); }
       :host([appearance="muted"]) .c::before { background: var(--sav-color-surface-2); }
@@ -3701,7 +3957,7 @@
                border-radius: var(--sav-radius-pill); background: none; color: var(--text-color, var(--sav-color-text)); font: inherit; font-size: calc(var(--_fs) * .92); font-weight: var(--sav-font-weight-semibold); cursor: pointer;
                --_kb: var(--sav-color-surface); --_kbd: var(--sav-color-border-strong); }
       button::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_kb); background-image: var(--sav-sheen, none);
-               border: var(--sav-border-width) solid var(--_kbd); box-shadow: var(--sav-copy-shadow, none); transform: rotate(${TILT}); transition: background var(--sav-duration), border-color var(--sav-duration), transform .2s var(--sav-easing); }
+               border: var(--sav-border-width) solid var(--_kbd); box-shadow: var(--sav-copy-shadow, none); transform: rotate(${TILT}); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       button:hover { --_kb: var(--sav-color-surface-2); }
       :host([selected]) button { color: var(--text-color, var(--_c-text)); --_kb: var(--_c-soft); --_kbd: var(--sav-ink-border, var(--_c)); }
       :host([selected]) button::before { transform: rotate(calc(${TILT} * -1)); }
@@ -3894,7 +4150,7 @@
       .f { position: relative; isolation: isolate; }
       .f::before { content: ""; display: var(--sav-card-back, none); position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-lg); background: color-mix(in oklab, var(--sav-color-primary) 16%, transparent); transform: rotate(calc(${TILT} * -2.2)); }
       .fr { overflow: hidden; border-radius: var(--sav-radius-lg); aspect-ratio: var(--ratio, auto); background: var(--sav-color-surface-2); box-shadow: var(--sav-shadow-sm); }
-      img { display: block; width: 100%; height: 100%; object-fit: var(--fit, cover); transition: transform .4s var(--sav-easing); }
+      img { display: block; width: 100%; height: 100%; object-fit: var(--fit, cover); transition: transform calc(.4s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([zoom]) .fr { cursor: zoom-in; }
       :host([zoom]) .fr:hover img { transform: scale(1.04); }
       figcaption { font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); }
@@ -3959,7 +4215,7 @@
       :host { display: block; }
       .i { position: relative; isolation: isolate; display: flex; align-items: center; gap: .85rem; padding: .75rem 1rem; color: var(--sav-color-text); text-decoration: none; font: inherit; width: 100%; box-sizing: border-box; border: 0; background: none; text-align: left; }
       a.i, button.i { cursor: pointer; }
-      a.i::before, button.i::before { content: ""; position: absolute; inset: 2px 4px; z-index: -1; border-radius: var(--sav-radius-sm); background: var(--sav-color-surface-2); opacity: 0; transform: rotate(${TILT}); transition: opacity var(--sav-duration); }
+      a.i::before, button.i::before { content: ""; position: absolute; inset: 2px 4px; z-index: -1; border-radius: var(--sav-radius-sm); background: var(--sav-color-surface-2); opacity: 0; transform: rotate(${TILT}); transition: opacity calc(var(--sav-duration) * var(--sav-motion, 1)); }
       a.i:hover::before, button.i:hover::before { opacity: 1; }
       .t { flex: 1; min-width: 0; display: grid; gap: .15rem; }
       .tt { font-weight: var(--sav-font-weight-semibold); }
@@ -3993,7 +4249,7 @@
       .cell { position: relative; isolation: isolate; width: calc(var(--_h) * 1.05); height: calc(var(--_h) * 1.2); }
       .cell::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius); background: var(--sav-color-input-bg); background-image: var(--sav-sheen, none);
         border: var(--sav-border-width) solid var(--sav-color-border-strong); box-shadow: var(--sav-control-shadow, none); transform: rotate(${TILT});
-        transition: border-color var(--sav-duration), box-shadow var(--sav-duration), transform .2s var(--sav-easing); }
+        transition: border-color calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       .cell:focus-within::before { transform: none; border-color: var(--sav-color-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--sav-color-primary) 22%, transparent); }
       .cell.on::before { border-color: color-mix(in oklab, var(--sav-color-primary) 55%, var(--sav-color-border-strong)); }
       :host([data-user-invalid]) .cell::before { border-color: var(--sav-color-danger); }
@@ -4083,7 +4339,7 @@
     static styles = [`
       :host { display: block; }
       .meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: .55rem; }
-      .seg { height: 5px; border-radius: var(--sav-radius-pill); background: var(--sav-color-surface-2); box-shadow: inset 0 0 0 1px var(--sav-color-border); transition: background var(--sav-duration); transform: skewX(calc(var(--sav-knob-tilt, 0deg) * -1)); }
+      .seg { height: 5px; border-radius: var(--sav-radius-pill); background: var(--sav-color-surface-2); box-shadow: inset 0 0 0 1px var(--sav-color-border); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)); transform: skewX(calc(var(--sav-knob-tilt, 0deg) * -1)); }
       .seg.on { box-shadow: none; background: var(--_sc); }
       .row { display: flex; justify-content: space-between; gap: .5rem; margin-top: .35rem; font-size: var(--sav-font-size-sm); }
       .word { font-weight: var(--sav-font-weight-semibold); color: color-mix(in oklab, var(--_sc, var(--sav-color-text-muted)) 70%, var(--sav-color-text)); }
@@ -4228,12 +4484,12 @@
       .rm:hover { color: var(--sav-color-text); background: color-mix(in oklab, var(--sav-color-text) 10%, transparent); }
       .rm:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
       .rm svg { width: .9em; height: .9em; }
-      .term.dup { animation: sav-dup .5s var(--sav-easing); }
+      .term.dup { animation: sav-dup calc(.5s * var(--sav-motion, 1)) var(--sav-easing); }
       @keyframes sav-dup { 30%, 70% { transform: translateX(-3px); } 50% { transform: translateX(3px); } }
       .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       .pop { min-width: var(--_pw, 16rem); max-width: min(32rem, calc(100vw - 16px)); max-height: min(var(--popup-height, 22rem), calc(100vh - 2rem)); padding: 0; flex-direction: column;
              border-radius: var(--sav-radius); color: var(--sav-color-text); font-family: var(--sav-font); font-size: var(--sav-font-size-md); }
-      .pop:popover-open, .pop.open { display: flex; animation: sav-pop .14s var(--sav-easing); }
+      .pop:popover-open, .pop.open { display: flex; animation: sav-pop calc(.14s * var(--sav-motion, 1)) var(--sav-easing); }
       ${panelLayer('.pop')}
       .list { overflow: auto; padding: .3rem; }
       .grp { padding: .5rem .6rem .2rem; font-size: .7rem; font-weight: var(--sav-font-weight-bold); letter-spacing: .07em; text-transform: uppercase; color: var(--sav-color-text-muted); }
@@ -4301,9 +4557,10 @@
       i.addEventListener('keydown', (e) => this.key(e));
       i.addEventListener('blur', () => setTimeout(() => { if (!this.shadowRoot.activeElement) this.close(); }, 120));
       this.$('.x').addEventListener('click', () => {
-        const had = this.terms.length; i.value = ''; this._terms = []; this.renderTerms(); this.onValue(true); this.close(); i.focus();
+        const had = this.terms.length, typed = i.value.trim(); i.value = ''; this._terms = []; this.renderTerms(); this.onValue(true); this.close(); i.focus();
         this.emit('sav-clear'); if (had) this.emit('change', { value: this.value });
-        if (this.live) this.search();
+        // emptied: search again (with nothing, so the page can show everything), live or not
+        if (this.searches && (this.live || had || typed)) this.search();
       });
       this.$('.terms').addEventListener('click', (e) => { const b = e.target.closest('.rm'); if (b) this.removeTerm(Number(b.dataset.i), true); });
       this.$('.box').addEventListener('mousedown', (e) => { if (e.target === this.$('.box') || e.target === this.$('.flow')) { e.preventDefault(); i.focus(); } });
@@ -4362,8 +4619,12 @@
       if (!this.emit('sav-term-remove', { term: t }, true)) return;
       list.splice(n, 1); this.renderTerms(); this.sync(); this.say(`${t} removed`);
       if (focusInput) this.native.focus();
-      this.emit('change', { value: this.value }); this.liveSearch();
+      this.emit('change', { value: this.value });
+      // a term taken away changes what is searched: search again now (live or not), so the results follow
+      if (this.searches) this.search();
     }
+    /** sav-search fires on its own when the terms change (sav-chip-input, a plain field of chips, does not search) */
+    get searches() { return true; }
     renderTerms() {
       const box = this.$('.terms'); if (!box) return;
       const list = this.multiple ? this._terms || [] : [];
@@ -4436,6 +4697,8 @@
       this._active = -1;
       list.querySelectorAll('.opt').forEach((o) => tiltWatch(o));
       this.open();
+      // the first suggestion is ready: Enter takes it (Escape closes the list, then Enter searches the text as typed); no-autoselect turns this off
+      if (items.length && !this.hasAttribute('no-autoselect')) this.activate(0);
     }
     open() {
       const p = this.$('.pop'); showPop(p); this.native.setAttribute('aria-expanded', 'true'); this.position();
@@ -4452,9 +4715,7 @@
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault(); if (!this.isOpen) { if (!this.native.readOnly) this.renderList(); return; }
         if (!opts.length) return;
-        this._active = (this._active + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length;
-        opts.forEach((o, n) => { o.classList.toggle('active', n === this._active); o.setAttribute('aria-selected', String(n === this._active)); });
-        const a = opts[this._active]; this.native.setAttribute('aria-activedescendant', a.id); a.scrollIntoView({ block: 'nearest' });
+        this.activate((this._active + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length);
         return;
       }
       if (e.key === 'Escape') { if (this.isOpen) { e.preventDefault(); this.close(); } return; }
@@ -4474,6 +4735,13 @@
         this.close(); this.search();
       }
     }
+    /** marks suggestion n as the one Enter takes */
+    activate(n) {
+      const opts = this.$$('.opt'); if (!opts.length) return;
+      this._active = n;
+      opts.forEach((o, k) => { o.classList.toggle('active', k === n); o.setAttribute('aria-selected', String(k === n)); });
+      const a = opts[n]; if (!a) return; this.native.setAttribute('aria-activedescendant', a.id); a.scrollIntoView({ block: 'nearest' });
+    }
     choose(n) {
       const it = this._items?.[n]; if (!it) return;
       if (!this.emit('sav-pick', { value: it.value ?? it.label, label: it.label, item: it }, true)) return;
@@ -4485,6 +4753,68 @@
     focus() { this.native?.focus(); }
   }
   define('sav-search', SavSearch);
+
+
+  /* ================================================================== sav-chip-input */
+
+  /** A field whose values are chips: type one and press Enter, a comma or a semicolon (separators), paste a list, remove with × or Backspace.
+      kind="color" takes colour codes and shows each one as a small swatch; kind="number" takes numbers. Suggestions come from <option> children.
+      The value is the list of chips (a comma-separated text in the value attribute); the form gets one entry per chip. Built on sav-search. */
+  class SavChipInput extends SavSearch {
+    static styles = [...SavSearch.styles, `
+      .ic { display: none; }
+      .term .dot { flex: none; width: .85em; height: .85em; margin-inline-end: .1rem; border-radius: calc(var(--sav-radius-sm) * .6);
+                   background: linear-gradient(var(--_v), var(--_v)), repeating-conic-gradient(color-mix(in oklab, var(--sav-color-text) 16%, transparent) 0 25%, transparent 0 50%) 50% / 6px 6px;
+                   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sav-color-text) 25%, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); }
+      :host([kind="color"]) .tt { font-family: var(--sav-font-mono, ui-monospace, monospace); font-weight: 500; }
+      .box.bad { animation: sav-ci-bad calc(.35s * var(--sav-motion, 1)) var(--sav-easing); }
+      @keyframes sav-ci-bad { 25%, 75% { translate: -3px 0; } 50% { translate: 3px 0; } }
+      @media (prefers-reduced-motion: reduce) { .box.bad { animation: none; } }
+    `];
+    static get observedAttributes() { return [...SavSearch.observedAttributes, 'kind']; }
+    connectedCallback() {
+      if (!this.hasAttribute('multiple')) this.setAttribute('multiple', '');
+      const first = !this.shadowRoot.firstChild;
+      super.connectedCallback();
+      if (first && this.native) { this.native.type = 'text'; this.native.setAttribute('enterkeyhint', 'enter'); this.sync(); }
+    }
+    /* values may hold spaces (New York): Space does not split them unless separators says so; nothing "searches" */
+    get separators() { return SavSearch.keys(this.getAttribute('separators') ?? ', ; enter'); }
+    get searchKeys() { return SavSearch.keys(this.getAttribute('search-keys') ?? ''); }
+    get searches() { return false; }
+    /** a value made tidy for its kind, or null when it is not one (#ABC becomes #aabbcc; "1,5" is not split: comma is a separator) */
+    tidy(raw) {
+      const t = String(raw ?? '').trim(); if (!t) return '';
+      const kind = this.getAttribute('kind');
+      if (kind === 'color') return toHex(t);
+      if (kind === 'number') return /^-?\d+(\.\d+)?$/.test(t) ? String(Number(t)) : null;
+      return t;
+    }
+    addTerm(raw, o = {}) {
+      const t = this.tidy(raw);
+      if (t === null) {
+        if (!o.quiet) { const b = this.$('.box'); b?.classList.remove('bad'); void b?.offsetWidth; b?.classList.add('bad'); this.say(this.getAttribute('kind') === 'color' ? `${String(raw).trim()} is not a colour code` : `${String(raw).trim()} is not a number`); }
+        return false;
+      }
+      return super.addTerm(t, o);
+    }
+    /** the suggestions show only when some match: no "No results" list for a field where any value is fine */
+    renderList() { if (!this.matches().length) { this.close(); return; } super.renderList(); }
+    renderTerms() {
+      super.renderTerms();
+      if (this.getAttribute('kind') !== 'color') return;
+      const list = this._terms || [];
+      this.$$('.term').forEach((el, n) => el.insertAdjacentHTML('afterbegin', `<span class="dot" style="--_v:${esc(list[n] || 'transparent')}" aria-hidden="true"></span>`));
+    }
+    sync() {
+      super.sync();
+      const i = this.native; if (!i) return;
+      // the hint for an empty field: what to type (the field shows none once it has chips)
+      if (!this.getAttribute('placeholder') && !(this._terms || []).length && !i.readOnly) i.placeholder = this.getAttribute('kind') === 'color' ? '#3b82f6, then Enter' : 'Type, then Enter';
+      if (!this.getAttribute('label') && !this.getAttribute('aria-label')) i.setAttribute('aria-label', 'Values');
+    }
+  }
+  define('sav-chip-input', SavChipInput);
 
   /* ================================================================== sav-carousel / sav-slide */
 
@@ -4501,7 +4831,7 @@
       .nav { position: absolute; top: 50%; z-index: 2; display: grid; place-items: center; width: var(--arrow-size, 2.6rem); height: var(--arrow-size, 2.6rem); padding: 0; margin: 0;
              border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-knob-radius, 50%); background: color-mix(in oklab, var(--sav-color-surface) 92%, transparent);
              color: var(--sav-color-text); box-shadow: 0 4px 14px rgb(0 0 0 / .22), var(--sav-control-shadow, 0 0 transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-             cursor: pointer; translate: 0 -50%; transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform .2s var(--sav-easing), opacity .2s, background var(--sav-duration); }
+             cursor: pointer; translate: 0 -50%; transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing), opacity calc(.2s * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .nav svg { width: 1.3rem; height: 1.3rem; transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -1)); }
       .nav:hover { background: var(--sav-color-surface); transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.08); }
       .nav:active { transform: rotate(var(--sav-knob-tilt, 0deg)) scale(.95); }
@@ -4510,7 +4840,7 @@
       .prev { left: .65rem; } .next { right: .65rem; }
       :host([controls="outside"]) .prev { left: calc(var(--arrow-size, 2.6rem) / -2); } :host([controls="outside"]) .next { right: calc(var(--arrow-size, 2.6rem) / -2); }
       .dots { display: flex; justify-content: center; gap: .45rem; margin-top: .75rem; }
-      .dot { width: .6rem; height: .6rem; padding: 0; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-border-strong); cursor: pointer; transform: rotate(var(--sav-knob-tilt, 0deg)); transition: background var(--sav-duration), transform .2s var(--sav-easing); }
+      .dot { width: .6rem; height: .6rem; padding: 0; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-border-strong); cursor: pointer; transform: rotate(var(--sav-knob-tilt, 0deg)); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       .dot[aria-current="true"] { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.25); }
       :host([no-dots]) .dots, :host([no-arrows]) .nav { display: none; }
       :host(:not([no-swipe])) .vp { cursor: grab; } .vp.drag { cursor: grabbing; user-select: none; } .vp.drag ::slotted(*) { pointer-events: none; }
@@ -4586,7 +4916,7 @@
       if (this._hinted || this.positions < 2 || this.index >= this.positions - 1 || !this.$('.hint')?.animate) return;
       this._hinted = true;
       // the finger and the slides move by the same distance, so the finger looks like it is pulling them
-      const ease = 'cubic-bezier(.45,0,.25,1)', dur = 1500, d = Math.round(Math.min(120, this.slides[0].offsetWidth * 0.22));
+      const ease = 'cubic-bezier(.45,0,.25,1)', dur = 1500 * motion(this), d = Math.round(Math.min(120, this.slides[0].offsetWidth * 0.22));
       this.$('.hint').animate([
         { opacity: 0, transform: 'translateX(0) scale(1.3)', offset: 0 }, { opacity: 1, transform: 'translateX(0) scale(1)', offset: .15 },
         { opacity: 1, transform: `translateX(${-d}px) scale(1)`, offset: .6 }, { opacity: 0, transform: `translateX(${-d - 8}px) scale(.9)`, offset: .75 }, { opacity: 0, offset: 1 }
@@ -4669,14 +4999,122 @@
   }
   define('sav-slide', SavSlide);
 
+  /* The seek and volume bars of the players: drawn by the library, so they look the same in every browser and follow the style
+     (the thumb takes the knob shape); --_p is the filled part, set by mediaFill(). --_mf fill, --_mt track, --_mr ring around the thumb. */
+  /* the back and forward buttons: the rewind / fast-forward icon with "10" next to it (Replay keeps the round arrow, Loop the repeat icon) */
+  const MEDIA_SKIP = `
+    .bar button.skip { display: inline-flex; align-items: center; justify-content: center; gap: .1rem; }
+    button.skip .sn { font-size: .68rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+    button.skip svg * { fill: currentColor; }
+  `;
+  const MEDIA_RANGE = `
+    input.mr { -webkit-appearance: none; appearance: none; height: 1.3rem; margin: 0; padding: 0; background: transparent; cursor: pointer; --_p: 0%; }
+    input.mr::-webkit-slider-runnable-track { height: .32rem; border-radius: var(--sav-radius-pill); background: linear-gradient(to right, var(--_mf) var(--_p), var(--_mt) var(--_p)); }
+    input.mr::-moz-range-track { height: .32rem; border-radius: var(--sav-radius-pill); background: linear-gradient(to right, var(--_mf) var(--_p), var(--_mt) var(--_p)); }
+    input.mr::-webkit-slider-thumb { -webkit-appearance: none; width: .9rem; height: .9rem; margin-top: -.29rem; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--_mf);
+      box-shadow: 0 0 0 2px var(--_mr); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform calc(.15s * var(--sav-motion, 1)); }
+    input.mr::-moz-range-thumb { width: .9rem; height: .9rem; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--_mf); box-shadow: 0 0 0 2px var(--_mr); transform: rotate(var(--sav-knob-tilt, 0deg)); }
+    input.mr:hover::-webkit-slider-thumb { transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.15); }
+    input.mr:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; border-radius: var(--sav-radius-sm); }
+  `;
+  const mediaFill = (r) => { const min = Number(r.min) || 0, max = Number(r.max) || 1; r.style.setProperty('--_p', `${Math.min(100, Math.max(0, ((Number(r.value) - min) / ((max - min) || 1)) * 100))}%`); };
+
+  /* The "more" menu of the players: when the bar has no room, the controls that do not fit move into a small panel of the library
+     (named rows: "Mute", "Speed 1×", the volume bar…), opened by the ⋯ button; with room again they come back to the bar. */
+  const MEDIA_MENU = `
+    .more { display: inline-grid; }
+    .mm { min-width: 12.5rem; padding: .35rem; border-radius: var(--sav-radius); color: var(--sav-color-text); font-family: var(--sav-font); font-size: var(--sav-font-size-sm); flex-direction: column; gap: 2px; }
+    .mm:popover-open, .mm.open { display: flex; animation: sav-mm calc(.14s * var(--sav-motion, 1)) var(--sav-easing); }
+    @keyframes sav-mm { from { opacity: 0; transform: translateY(4px); } }
+    ${panelLayer('.mm')}
+    .mm button { display: flex; align-items: center; gap: .65rem; width: 100%; height: 2.25rem; min-width: 0; padding: 0 .6rem; border: 0; border-radius: var(--sav-radius-sm); background: none;
+                 color: var(--sav-color-text); font: inherit; font-weight: var(--sav-font-weight-normal); text-align: start; cursor: pointer; }
+    .mm button:hover { background: var(--sav-color-surface-2); }
+    .mm button:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: -2px; }
+    .mm button[aria-pressed="true"] { background: color-mix(in oklab, var(--sav-color-primary) 14%, transparent); }
+    .mm button:not(.speed)::after { content: attr(aria-label); }
+    .mm button svg, .mm button sav-icon { flex: none; width: 1.1rem; height: 1.1rem; font-size: 1.1rem; color: var(--sav-color-text-muted); }
+    .mm .speed { font-weight: var(--sav-font-weight-semibold); }
+    .mm .sn { display: none; }
+    /* the volume pop-up: a mute switch and the volume bar, above the volume button */
+    .vp { align-items: center; gap: .35rem; padding: .35rem .55rem; border-radius: var(--sav-radius); color: var(--sav-color-text); }
+    .vp:popover-open, .vp.open { display: flex; animation: sav-mm calc(.14s * var(--sav-motion, 1)) var(--sav-easing); }
+    ${panelLayer('.vp')}
+    .vp input.vol { width: 7.5rem; --_mf: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); --_mt: var(--sav-color-border); --_mr: var(--sav-color-surface); }
+    .vp .vmute { display: inline-grid; place-items: center; width: 2rem; height: 2rem; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
+    .vp .vmute:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
+    .vp .vmute:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
+    .vp .vmute sav-icon { font-size: 1.1rem; }
+    .mm .speed::before { content: "Speed"; font-weight: var(--sav-font-weight-normal); margin-inline-end: auto; }
+    .mm input.mr { width: calc(100% - 1.2rem); margin: .35rem .6rem; --_mf: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); --_mt: var(--sav-color-border); --_mr: var(--sav-color-surface); }
+    .mm .time { padding: .35rem .6rem; color: var(--sav-color-text-muted); }
+    @media (prefers-reduced-motion: reduce) { .mm:popover-open, .mm.open { animation: none; } }
+  `;
+  /** Puts the controls that do not fit in the bar into the menu (order: the first to go first), and back when there is room.
+      Each control keeps a placeholder in the bar, so it returns to its place. */
+  function mediaFit(bar, menu, more, order, host) {
+    if (!bar || !bar.isConnected) return;
+    // an entry may be a group (the two 10 s buttons) that moves together, or { el, into, flag }: it goes into its own place
+    // (the volume bar into the pop-up of the volume button) and sets flag on the player instead of opening the ⋯ menu
+    const entries = order.map((g) => (g && g.el ? { els: [g.el], into: g.into, flag: g.flag } : { els: [].concat(g).filter(Boolean) })).filter((e) => e.els.length);
+    for (const e of entries) { if (e.flag) host?.removeAttribute(e.flag); for (const el of e.els) { el._ph ||= (el.after(document.createComment('')), el.nextSibling); if (el.parentElement !== el._ph.parentElement) el._ph.before(el); } }
+    more.hidden = true;
+    const over = () => bar.scrollWidth > bar.clientWidth + 4; // a few pixels of rounding are not "no room"
+    for (const e of entries) {
+      if (!over()) break;
+      const shown = e.els.filter((el) => !el.hidden); if (!shown.length) continue;
+      shown.forEach((el) => (e.into || menu).append(el));
+      if (e.flag) host?.setAttribute(e.flag, ''); else more.hidden = false;
+    }
+    // in natural order in the menu
+    [...menu.children].sort((a, b) => (a._ph.compareDocumentPosition(b._ph) & 4 ? -1 : 1)).forEach((c) => menu.append(c));
+    if (!menu.children.length) { more.hidden = true; hidePop(menu); more.setAttribute('aria-expanded', 'false'); }
+  }
+  /** The volume button when the volume bar has no room (data-vol-pop on the player): a press opens a small panel with the bar
+      and a mute switch, instead of muting. With room again the bar is back in the line and the button mutes. */
+  function mediaVolume(host, btn, pop, media) {
+    const isOpen = () => pop.matches(supportsPopover ? ':popover-open' : '.open');
+    const close = (back) => { hidePop(pop); btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', out, true); if (back) btn.focus({ preventScroll: true }); };
+    const out = (e) => { if (!e.composedPath().includes(pop) && !e.composedPath().includes(btn)) close(false); };
+    btn.addEventListener('click', (e) => {
+      if (!host.hasAttribute('data-vol-pop')) return;
+      e.stopImmediatePropagation();
+      if (isOpen()) { close(false); return; }
+      showPop(pop); tiltWatch(pop); place(pop, btn, 'top', 8); btn.setAttribute('aria-expanded', 'true');
+      document.addEventListener('pointerdown', out, true);
+      pop.querySelector('input')?.focus({ preventScroll: true });
+    }, { capture: true });
+    pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); } });
+    pop.querySelector('.vmute').addEventListener('click', () => { media.muted = !media.muted; if (!media.muted && media.volume === 0) media.volume = .5; });
+    return { close, isOpen };
+  }
+  /** the controls a player shows: controls="play seek time …" ("none": no controls at all); without it, the usual ones (defaults) */
+  const mediaWants = (host, defaults) => {
+    const v = (host.getAttribute('controls') || '').split(/[\s,]+/).filter(Boolean);
+    return new Set(!v.length ? defaults : v.filter((x) => x !== 'none'));
+  };
+  /** the ⋯ button and its menu: opens above it, closes on Escape, outside, or a choice that is not a bar */
+  function mediaMenu(host, more, menu, onOpen) {
+    const close = (back) => { hidePop(menu); more.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', out, true); if (back) more.focus({ preventScroll: true }); };
+    const out = (e) => { if (!e.composedPath().includes(menu) && !e.composedPath().includes(more)) close(false); };
+    more.addEventListener('click', () => {
+      if (menu.matches(supportsPopover ? ':popover-open' : '.open')) { close(false); return; }
+      showPop(menu); tiltWatch(menu); place(menu, more, 'top-end', 6); more.setAttribute('aria-expanded', 'true');
+      document.addEventListener('pointerdown', out, true); onOpen?.();
+      menu.querySelector('button:not([hidden]), input')?.focus({ preventScroll: true });
+    });
+    menu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); } });
+    return close;
+  }
   /* ================================================================== sav-video */
 
-  /** A video in a frame with the style's corners, a fixed ratio, a poster with a big play button and a caption; the browser's own controls. */
+  /** A video in a frame with the style's corners, a fixed ratio, a poster with a big play button and a caption (controls: see below). */
   class SavVideo extends SavElement {
     /* A video with its own control bar (the same in every browser and in every style): play, back and forward 10 s, seek, time,
        volume, speed, captions, picture-in-picture, full screen. It hides while playing and comes back on movement or focus.
-       Keys: Space/K play, arrows seek and volume, M mute, F full screen, C captions. native-controls uses the browser's bar instead. */
-    static styles = `
+       Keys: Space/K play, arrows seek and volume, M mute, F full screen, C captions. When the room is short, the controls that do not fit move
+       into a ⋯ menu; controls="…" chooses which ones show; native-controls uses the browser's bar instead. */
+    static styles = [MEDIA_RANGE, MEDIA_SKIP, FLOAT, MEDIA_MENU, `
       :host { display: block; width: 100%; min-width: 0; }
       figure { margin: 0; display: grid; gap: .5rem; }
       .fr { position: relative; isolation: isolate; aspect-ratio: var(--ratio, 16 / 9); border-radius: var(--sav-radius-lg); overflow: hidden; background: #000; box-shadow: var(--sav-shadow-sm); outline: none; }
@@ -4684,16 +5122,25 @@
       .fr:fullscreen { border-radius: 0; aspect-ratio: auto; }
       video { display: block; width: 100%; height: 100%; object-fit: var(--fit, contain); }
       .play { position: absolute; inset: 0; margin: auto; width: 4.4rem; height: 4.4rem; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-primary); color: var(--sav-color-on-primary);
-              display: grid; place-items: center; cursor: pointer; box-shadow: 0 8px 24px rgb(0 0 0 / .35); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform .2s var(--sav-easing), opacity .2s; z-index: 2; }
+              display: grid; place-items: center; cursor: pointer; box-shadow: 0 8px 24px rgb(0 0 0 / .35); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing), opacity calc(.2s * var(--sav-motion, 1)); z-index: 2; }
       .play:hover { transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.06); }
       .play svg { width: 1.8rem; height: 1.8rem; margin-left: 3px; transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -1)); }
       .play svg * { fill: currentColor; }
       .started .play { opacity: 0; pointer-events: none; }
+      /* the end screen: the last frame dimmed, the big button again (same shape and colour as the play button) with "Replay" under it */
+      .fr.done::before { content: ""; position: absolute; inset: 0; z-index: 1; background: rgb(0 0 0 / .5); animation: sav-end-in calc(.3s * var(--sav-motion, 1)) var(--sav-easing); }
+      .fr.done .play { opacity: 1; pointer-events: auto; translate: 0 -.9rem; }
+      .again { display: none; position: absolute; left: 0; right: 0; top: calc(50% + 2.1rem); z-index: 2; text-align: center; color: #fff; font-weight: var(--sav-font-weight-semibold);
+               font-size: var(--sav-font-size-md); text-shadow: 0 1px 3px rgb(0 0 0 / .4); pointer-events: none; }
+      .fr.done .again { display: block; animation: sav-end-in calc(.3s * var(--sav-motion, 1)) var(--sav-easing); }
+      @keyframes sav-end-in { from { opacity: 0; } }
+      .play sav-icon { font-size: 1.9rem; width: 1.9rem; height: 1.9rem; transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -1)); }
       .bar { position: absolute; inset: auto 0 0 0; z-index: 3; display: flex; align-items: center; gap: .35rem; padding: 2.2rem .7rem .55rem; color: #fff;
-             background: linear-gradient(to top, rgb(0 0 0 / .75), rgb(0 0 0 / .35) 60%, transparent); font-size: .85rem; transition: opacity .25s, translate .25s; }
+             background: linear-gradient(to top, rgb(0 0 0 / .75), rgb(0 0 0 / .35) 60%, transparent); font-size: .85rem; transition: opacity calc(.25s * var(--sav-motion, 1)), translate calc(.25s * var(--sav-motion, 1)); }
       .fr:not(.started) .bar, .fr.idle .bar { opacity: 0; translate: 0 .4rem; pointer-events: none; }
       .fr.idle { cursor: none; }
-      .bar button { display: inline-grid; place-items: center; min-width: 2.1rem; height: 2.1rem; padding: 0 .3rem; border: 0; border-radius: var(--sav-radius-sm); background: none; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+      .bar button { display: inline-grid; place-items: center; flex: none; min-width: 2.1rem; height: 2.1rem; padding: 0 .3rem; border: 0; border-radius: var(--sav-radius-sm); background: none; color: inherit; font: inherit; font-weight: 700; cursor: pointer;
+                    transition: background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .bar button:hover { background: rgb(255 255 255 / .16); }
       .bar button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
       .bar button[aria-pressed="true"] { background: rgb(255 255 255 / .22); }
@@ -4705,74 +5152,102 @@
       .time { font-variant-numeric: tabular-nums; white-space: nowrap; padding: 0 .3rem; opacity: .95; }
       .speed { font-size: .8rem; min-width: 2.8rem !important; }
       [hidden] { display: none !important; }
-      @media (max-width: 520px) { .vol, .skip, .speed { display: none !important; } }
+      .bar .vol { flex: none; }
       :host([native-controls]) .bar { display: none; }
+      /* controls="none": only the video (for a muted loop that plays by itself, for example) */
+      :host([data-bare]:not([native-controls])) :is(.bar, .play) { display: none; }
       figcaption { font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); }
       figcaption:empty { display: none; }
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host([auto-text]) .play { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
-    `;
-    static get observedAttributes() { return ['src', 'poster', 'ratio', 'caption', 'label']; }
+      .bar input.mr { --_mf: #fff; --_mt: rgb(255 255 255 / .32); --_mr: rgb(0 0 0 / .25); }
+    `];
+    static get observedAttributes() { return ['src', 'poster', 'ratio', 'caption', 'label', 'controls', 'replay-label', 'loop']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       const ic = (n) => `<sav-icon name="${n}"></sav-icon>`;
       this.shadowRoot.innerHTML = `<figure part="base"><div class="fr" part="frame" tabindex="-1"><video part="video" preload="metadata" playsinline><slot></slot></video>
-        <button type="button" class="play" part="play-button">${svgIcon('play')}</button>
+        <button type="button" class="play" part="play-button">${svgIcon('play')}</button><span class="again" part="replay-label" aria-hidden="true"></span>
         <div class="bar" part="controls">
           <button type="button" class="pp" aria-label="Play">${svgIcon('play')}</button>
-          <button type="button" class="skip back" aria-label="Back 10 seconds">${ic('rotate-ccw')}</button>
-          <button type="button" class="skip fwd" aria-label="Forward 10 seconds">${ic('rotate-cw')}</button>
+          <button type="button" class="skip back" aria-label="Back 10 seconds">${svgIcon('rewind')}<span class="sn" aria-hidden="true">10</span></button>
+          <button type="button" class="skip fwd" aria-label="Forward 10 seconds"><span class="sn" aria-hidden="true">10</span>${svgIcon('fast-forward')}</button>
           <span class="time"><span class="cur">0:00</span> / <span class="dur">0:00</span></span>
-          <input class="seek" type="range" min="0" max="100" step="0.1" value="0" aria-label="Position">
+          <input class="seek mr" type="range" min="0" max="100" step="0.1" value="0" aria-label="Position">
           <button type="button" class="mute" aria-label="Mute" aria-pressed="false">${ic('volume-2')}</button>
-          <input class="vol" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+          <input class="vol mr" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
           <button type="button" class="speed" aria-label="Speed 1×">1×</button>
+          <button type="button" class="loop" aria-label="Loop" aria-pressed="false"><sav-icon name="repeat"></sav-icon></button>
           <button type="button" class="cc" aria-label="Captions" aria-pressed="false" hidden>${ic('captions')}</button>
           <button type="button" class="pip" aria-label="Picture in picture" hidden>${ic('picture-in-picture-2')}</button>
           <button type="button" class="fs" aria-label="Full screen">${svgIcon('maximize')}</button>
-        </div></div><figcaption part="caption"></figcaption></figure>`;
+          <button type="button" class="more" aria-label="More controls" aria-haspopup="true" aria-expanded="false" hidden>${svgIcon('more-horizontal')}</button>
+        </div><div class="mm float" part="more-menu" role="group" aria-label="More controls" ${supportsPopover ? 'popover="manual"' : ''}></div>
+        <div class="vp float" part="volume-popup" role="group" aria-label="Volume" ${supportsPopover ? 'popover="manual"' : ''}><button type="button" class="vmute" aria-label="Mute" aria-pressed="false">${ic('volume-2')}</button></div></div><figcaption part="caption"></figcaption></figure>`;
       const v = (this.video = this.$('video')), fr = this.$('.fr'), $ = (q) => this.$(q);
       for (const a of ['autoplay', 'muted', 'loop']) if (this.hasAttribute(a)) v[a] = true;
+      mediaLoop(this, v, this.$('.loop'));
       if (this.hasAttribute('native-controls')) v.controls = false; // they come on with the first play
       const toggle = () => (v.paused || v.ended ? v.play() : v.pause());
       $('.play').addEventListener('click', () => { if (this.hasAttribute('native-controls')) v.controls = true; v.play(); fr.focus({ preventScroll: true }); });
       $('.pp').addEventListener('click', toggle);
-      v.addEventListener('click', () => { if (!this.hasAttribute('native-controls') && fr.classList.contains('started')) toggle(); });
+      v.addEventListener('click', () => { if (!this.hasAttribute('native-controls') && !this.hasAttribute('data-bare') && fr.classList.contains('started')) toggle(); });
       $('.back').addEventListener('click', () => (v.currentTime = Math.max(0, v.currentTime - 10)));
       $('.fwd').addEventListener('click', () => (v.currentTime = Math.min(v.duration || 0, v.currentTime + 10)));
       const seek = $('.seek'), vol = $('.vol');
-      seek.addEventListener('input', () => { this._seeking = true; $('.cur').textContent = fmtTime(Number(seek.value)); });
+      seek.addEventListener('input', () => { this._seeking = true; $('.cur').textContent = fmtTime(Number(seek.value)); mediaFill(seek); });
       seek.addEventListener('change', () => { v.currentTime = Number(seek.value); this._seeking = false; });
-      vol.addEventListener('input', () => { v.volume = Number(vol.value); v.muted = v.volume === 0; });
+      vol.addEventListener('input', () => { v.volume = Number(vol.value); v.muted = v.volume === 0; mediaFill(vol); });
       $('.mute').addEventListener('click', () => { v.muted = !v.muted; if (!v.muted && v.volume === 0) v.volume = .5; });
       const speeds = [1, 1.25, 1.5, 2, 0.5, 0.75];
       $('.speed').addEventListener('click', () => { const i = (speeds.indexOf(v.playbackRate) + 1) % speeds.length; v.playbackRate = speeds[i]; });
       v.addEventListener('ratechange', () => { const r = `${v.playbackRate}×`; $('.speed').textContent = r; $('.speed').setAttribute('aria-label', `Speed ${r}`); });
       $('.cc').addEventListener('click', () => { const t = v.textTracks[0]; if (!t) return; t.mode = t.mode === 'showing' ? 'hidden' : 'showing'; $('.cc').setAttribute('aria-pressed', String(t.mode === 'showing')); });
       $('.pip').addEventListener('click', () => (document.pictureInPictureElement ? document.exitPictureInPicture() : v.requestPictureInPicture?.()).catch?.(() => {}));
-      $('.fs').addEventListener('click', () => (document.fullscreenElement ? document.exitFullscreen() : fr.requestFullscreen?.())?.catch?.(() => {}));
+      // iPhone has no full screen for elements: there only the video itself goes full screen, with the iOS controls
+      $('.fs').addEventListener('click', () => {
+        if (!fr.requestFullscreen && v.webkitEnterFullscreen) { v.webkitEnterFullscreen(); return; }
+        (document.fullscreenElement ? document.exitFullscreen() : fr.requestFullscreen?.())?.catch?.(() => {});
+      });
       this._fs = () => { const on = document.fullscreenElement === fr; $('.fs').innerHTML = svgIcon(on ? 'minimize' : 'maximize'); $('.fs').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); };
       document.addEventListener('fullscreenchange', this._fs);
       const paint = () => {
-        const playing = !v.paused && !v.ended;
-        $('.pp').innerHTML = svgIcon(playing ? 'pause' : 'play'); $('.pp').setAttribute('aria-label', playing ? 'Pause' : 'Play');
-        $('.mute').innerHTML = ic(v.muted || v.volume === 0 ? 'volume-x' : 'volume-2'); $('.mute').setAttribute('aria-pressed', String(v.muted)); $('.mute').setAttribute('aria-label', v.muted ? 'Unmute' : 'Mute');
+        const playing = !v.paused && !v.ended, again = v.ended;
+        $('.pp').innerHTML = again ? '<sav-icon name="rotate-ccw"></sav-icon>' : svgIcon(playing ? 'pause' : 'play'); $('.pp').setAttribute('aria-label', again ? this.replayLabel : playing ? 'Pause' : 'Play');
+        const pop = this.hasAttribute('data-vol-pop'), icon = ic(v.muted || v.volume === 0 ? 'volume-x' : 'volume-2');
+        $('.mute').innerHTML = icon; $('.mute').setAttribute('aria-label', pop ? 'Volume' : v.muted ? 'Unmute' : 'Mute');
+        pop ? ($('.mute').removeAttribute('aria-pressed'), $('.mute').setAttribute('aria-haspopup', 'true')) : ($('.mute').setAttribute('aria-pressed', String(v.muted)), $('.mute').removeAttribute('aria-haspopup'), $('.mute').removeAttribute('aria-expanded'));
+        $('.vmute').innerHTML = icon; $('.vmute').setAttribute('aria-pressed', String(v.muted)); $('.vmute').setAttribute('aria-label', v.muted ? 'Unmute' : 'Mute');
         if (!this._seeking) vol.value = v.muted ? 0 : v.volume;
+        mediaFill(vol);
       };
       v.addEventListener('play', () => { fr.classList.add('started'); paint(); this.wake(); this.emit('play'); });
       v.addEventListener('pause', () => { paint(); this.wake(); this.emit('pause'); });
-      v.addEventListener('ended', () => { paint(); this.wake(); this.emit('ended'); });
+      v.addEventListener('ended', () => {
+        paint(); this.wake(); this.emit('ended');
+        if (v.loop) return;
+        // the end screen with its Replay button (loop starts again by itself; not with native controls or without controls)
+        if (this.hasAttribute('data-bare') || this.hasAttribute('native-controls')) return;
+        fr.classList.add('done'); $('.play').innerHTML = '<sav-icon name="rotate-ccw"></sav-icon>'; $('.play').setAttribute('aria-label', this.replayLabel); $('.again').textContent = this.replayLabel;
+      });
+      v.addEventListener('play', () => { if (fr.classList.contains('done')) { fr.classList.remove('done'); $('.play').innerHTML = svgIcon('play'); this.sync(); } });
       v.addEventListener('volumechange', paint);
       v.addEventListener('loadedmetadata', () => {
         $('.dur').textContent = fmtTime(v.duration); seek.max = v.duration || 100;
-        $('.cc').hidden = !v.textTracks.length; $('.pip').hidden = !document.pictureInPictureEnabled || v.disablePictureInPicture;
+        this._has = { captions: !!v.textTracks.length, pip: !!document.pictureInPictureEnabled && !v.disablePictureInPicture };
+        this.controlsShown();
       });
-      v.addEventListener('timeupdate', () => { if (!this._seeking) seek.value = v.currentTime; $('.cur').textContent = fmtTime(v.currentTime); seek.setAttribute('aria-valuetext', `${fmtTime(v.currentTime)} of ${fmtTime(v.duration)}`); });
+      // the menu of the controls that do not fit, and fitting them again when the player changes size
+      const close = mediaMenu(this, $('.more'), $('.mm'), () => this.wake());
+      this._vol = mediaVolume(this, $('.mute'), $('.vp'), v); this._paint = paint;
+      $('.mm').addEventListener('click', (e) => { if (e.target.closest('.fs, .pip, .cc')) close(false); });
+      this._ro = new ResizeObserver(() => this.fit()); this._ro.observe($('.bar'));
+      v.addEventListener('timeupdate', () => { if (!this._seeking) seek.value = v.currentTime; mediaFill(seek); $('.cur').textContent = fmtTime(v.currentTime); seek.setAttribute('aria-valuetext', `${fmtTime(v.currentTime)} of ${fmtTime(v.duration)}`); });
       // the bar hides while playing and comes back on movement, touch or focus
       fr.addEventListener('pointermove', () => this.wake());
       fr.addEventListener('focusin', () => this.wake());
       fr.addEventListener('keydown', (e) => {
-        if (this.hasAttribute('native-controls') || e.target.matches('input[type=range]') && /Arrow/.test(e.key)) return;
+        if (this.hasAttribute('native-controls') || this.hasAttribute('data-bare') || (e.target.matches('input[type=range]') && /Arrow/.test(e.key))) return;
         const k = e.key.toLowerCase(); let used = true;
         if (k === ' ' || k === 'k') { if (e.target.closest('button')) return; toggle(); }
         else if (k === 'arrowleft') v.currentTime = Math.max(0, v.currentTime - 5);
@@ -4786,80 +5261,206 @@
         if (used) { e.preventDefault(); this.wake(); }
       });
       if (v.autoplay) fr.classList.add('started');
-      paint(); this.sync();
+      paint(); this.sync(); this.controlsShown();
+    }
+    /** which controls show: controls="play skip seek time mute volume speed captions pip fullscreen" (default all), then fitted to the room */
+    controlsShown() {
+      if (!this.video) return;
+      // by default: play / pause / replay, the progress bar, the time, mute, the volume and full screen; skip, speed, loop, captions and pip on request
+      const want = mediaWants(this, ['play', 'seek', 'time', 'mute', 'volume', 'fullscreen']), has = this._has || { captions: false, pip: false };
+      const map = { play: ['.pp'], skip: ['.back', '.fwd'], seek: ['.seek'], time: ['.time'], mute: ['.mute'], volume: ['.vol'], speed: ['.speed'], loop: ['.loop'], captions: ['.cc'], pip: ['.pip'], fullscreen: ['.fs'] };
+      for (const [k, qs] of Object.entries(map)) for (const q of qs) { const el = this.$(q); if (el) el.hidden = !want.has(k) || (k in has && !has[k]); }
+      // no controls at all (controls="none", or all of them hidden): only the video, no bar and no big play button
+      this.toggleAttribute('data-bare', !want.size);
+      this.fit();
+    }
+    /** the controls that do not fit go into the ⋯ menu: first the volume bar, then picture in picture, speed, captions, the 10 s buttons, mute, full screen, the time */
+    fit() {
+      const $ = (q) => this.$(q), was = this.hasAttribute('data-vol-pop');
+      // first the volume bar moves into the pop-up of the volume button; then the others into the ⋯ menu
+      mediaFit($('.bar'), $('.mm'), $('.more'), [{ el: $('.vol'), into: $('.vp'), flag: 'data-vol-pop' }, $('.loop'), $('.pip'), $('.speed'), $('.cc'), [$('.back'), $('.fwd')], $('.mute'), $('.fs'), $('.time')], this);
+      if (was && !this.hasAttribute('data-vol-pop')) this._vol?.close(false);
+      this._paint?.();
     }
     /** Shows the control bar, and hides it again after a while if the video is playing. */
     wake() {
       const fr = this.$('.fr'), v = this.video; fr.classList.remove('idle'); clearTimeout(this._idle);
-      if (!v.paused && !v.ended && !fr.matches(':focus-within:has(.bar :focus-visible)')) this._idle = setTimeout(() => fr.classList.add('idle'), 2600);
+      const menuOpen = this.$('.mm')?.matches(supportsPopover ? ':popover-open' : '.open') || this._vol?.isOpen();
+      if (!v.paused && !v.ended && !menuOpen && !fr.matches(':focus-within:has(.bar :focus-visible)')) this._idle = setTimeout(() => fr.classList.add('idle'), 2600);
     }
-    changed() { this.sync(); }
+    changed(name) { if (name === 'controls') this.controlsShown(); else this.sync(); }
     sync() {
       const v = this.video; if (!v) return;
       const src = this.getAttribute('src'); if (src && v.getAttribute('src') !== src) v.src = src;
       const p = this.getAttribute('poster'); p ? (v.poster = p) : v.removeAttribute('poster');
+      v.loop = this.hasAttribute('loop'); this._loopPaint?.();
       const r = this.getAttribute('ratio'); r ? this.style.setProperty('--ratio', r.replace(':', ' / ')) : this.style.removeProperty('--ratio');
       this.$('figcaption').textContent = this.getAttribute('caption') || '';
       this.$('.play').setAttribute('aria-label', 'Play ' + (this.getAttribute('label') || 'video'));
     }
+    get replayLabel() { return this.getAttribute('replay-label') || 'Replay'; }
     play() { return this.video?.play(); } pause() { this.video?.pause(); }
-    disconnectedCallback() { if (this._fs) document.removeEventListener('fullscreenchange', this._fs); }
+    disconnectedCallback() { if (this._fs) document.removeEventListener('fullscreenchange', this._fs); hidePop(this.$('.mm')); }
   }
   define('sav-video', SavVideo);
 
   /* ================================================================== sav-audio */
 
+
+  /** the Loop button of the players: pressed when the media starts again by itself (the loop attribute); a press turns it on or off */
+  function mediaLoop(host, media, btn) {
+    const paint = () => { const on = media.loop; btn.setAttribute('aria-pressed', String(on)); btn.title = on ? 'Loop: on' : 'Loop: off'; };
+    btn.addEventListener('click', () => { host.toggleAttribute('loop', !media.loop); });
+    host._loopPaint = paint; paint();
+  }
   const fmtTime = (s) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '0:00');
-  /** An audio player in the style: play/pause, a seek bar, time, mute, with title, artist and cover. */
+  /** An audio player in the style, with the controls of the video player: play/pause, back and forward 10 s, a seek bar, time,
+      mute and volume, speed; title, artist and cover. Keys (with the focus in the player): Space/K play, ← → 5 s, ↑ ↓ volume, M mute.
+      When the room is short, the controls that do not fit move into a ⋯ menu. controls="…" chooses them; native-controls uses the browser's own player. */
   class SavAudio extends SavElement {
-    static styles = `
+    static styles = [MEDIA_RANGE, MEDIA_SKIP, FLOAT, MEDIA_MENU, `
       :host { display: block; width: 100%; min-width: 0; }
-      .p { position: relative; isolation: isolate; display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: .85rem; padding: .75rem .9rem; }
+      .p { position: relative; isolation: isolate; display: grid; grid-template-columns: auto auto minmax(0, 1fr); grid-template-areas: "cv pp head" "cv pp bar";
+           align-items: center; column-gap: .85rem; row-gap: .15rem; padding: .75rem .9rem; outline: none; }
       .p::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-lg); background: var(--sav-color-surface); background-image: var(--sav-sheen, none);
         border: var(--sav-border-width) solid var(--sav-color-border); box-shadow: var(--sav-shadow-sm); transform: rotate(${PANEL_TILT}); }
-      .cv { width: 3rem; height: 3rem; border-radius: var(--sav-radius); object-fit: cover; background: var(--sav-color-surface-2); }
+      .cv { grid-area: cv; width: 3.4rem; height: 3.4rem; border-radius: var(--sav-radius); object-fit: cover; background: var(--sav-color-surface-2); }
       :host(:not([cover])) .cv { display: none; }
-      :host(:not([cover])) .p { grid-template-columns: auto 1fr auto; }
-      .pp { width: 2.6rem; height: 2.6rem; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-primary); color: var(--sav-color-on-primary); display: grid; place-items: center; cursor: pointer; transform: rotate(var(--sav-knob-tilt, 0deg)); }
+      :host(:not([cover])) .p { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "pp head" "pp bar"; }
+      /* very little room: the cover steps aside, so the bar keeps its space */
+      :host { container-type: inline-size; }
+      @container (max-width: 17rem) { .cv { display: none; } .p { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "pp head" "pp bar"; } }
+      @container (max-width: 15rem) { .dur { display: none; } .bar .seek { min-width: 2.5rem; } }
+      .pp { grid-area: pp; width: 2.7rem; height: 2.7rem; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-primary); color: var(--sav-color-on-primary); display: grid; place-items: center; cursor: pointer;
+            transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      .pp:hover { transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.06); }
+      .pp:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 3px; }
       .pp svg { width: 1.15rem; height: 1.15rem; transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -1)); }
       .pp svg * { fill: currentColor; }
-      .mid { min-width: 0; display: grid; gap: .25rem; }
+      .pp sav-icon { font-size: 1.2rem; width: 1.2rem; height: 1.2rem; transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -1)); }
+      .head { grid-area: head; min-width: 0; display: grid; }
       .ti { font-weight: var(--sav-font-weight-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .ar { font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); }
+      .ar { font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .ti:empty, .ar:empty { display: none; }
-      .bar { display: flex; align-items: center; gap: .55rem; font-size: .78rem; color: var(--sav-color-text-muted); font-variant-numeric: tabular-nums; }
-      input[type=range] { flex: 1; min-width: 4rem; accent-color: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); }
-      .mu { display: inline-flex; padding: .35rem; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
-      .mu:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
-      .mu svg { width: 1.1rem; height: 1.1rem; }
+      .bar { grid-area: bar; display: flex; align-items: center; gap: .3rem; min-width: 0; margin-inline-start: -.25rem; font-size: .78rem; color: var(--sav-color-text-muted); font-variant-numeric: tabular-nums; }
+      .bar > * { flex: none; }
+      .seek { flex: 1; min-width: 3rem; }
+      .bar .seek { flex: 1 1 auto; }
+      .vol { width: 4.5rem; }
+      [hidden] { display: none !important; }
+      input.mr { --_mf: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); --_mt: var(--sav-color-border); --_mr: var(--sav-color-surface); }
+      .ib { display: inline-grid; place-items: center; min-width: 2rem; height: 2rem; padding: 0 .25rem; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted);
+            font: inherit; font-size: .78rem; font-weight: var(--sav-font-weight-bold); cursor: pointer; transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), color calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      .ib:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); }
+      .ib:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
+      .ib[aria-pressed="true"] { color: var(--sav-color-text); }
+      .ib svg, .ib sav-icon { width: 1.1rem; height: 1.1rem; font-size: 1.1rem; }
+      .speed { min-width: 2.6rem; }
+      .t { white-space: nowrap; }
+      /* native-controls: the browser's own player instead */
+      audio { display: none; width: 100%; }
+      :host([native-controls]) .p { display: none; }
+      :host([data-bare]) :is(.bar, .pp) { display: none; }
+      :host([data-bare]) .p { grid-template-areas: "cv pp head" "cv pp head"; }
+      :host([native-controls]) audio { display: block; }
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host([auto-text]) .pp { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
-    `;
-    static get observedAttributes() { return ['src', 'title', 'artist', 'cover']; }
+    `];
+    static get observedAttributes() { return ['src', 'title', 'artist', 'cover', 'native-controls', 'controls', 'replay-label', 'loop', 'autoplay', 'muted']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<div class="p" part="base"><img class="cv" part="cover" alt=""><button type="button" class="pp" part="play-button" aria-label="Play">${svgIcon('play')}</button>
-        <div class="mid"><span class="ti" part="title"></span><span class="ar" part="artist"></span><div class="bar"><span class="cur">0:00</span><input type="range" min="0" max="100" step="0.1" value="0" aria-label="Position"><span class="dur">0:00</span></div></div>
-        <button type="button" class="mu" part="mute-button" aria-label="Mute" aria-pressed="false"><sav-icon name="volume-2"></sav-icon></button><audio preload="metadata"><slot></slot></audio></div>`;
-      const a = (this.audio = this.$('audio')), r = this.$('input'), pp = this.$('.pp');
-      tiltWatch(this.$('.p'));
-      pp.addEventListener('click', () => (a.paused ? a.play() : a.pause()));
-      a.addEventListener('play', () => { pp.innerHTML = svgIcon('pause'); pp.setAttribute('aria-label', 'Pause'); this.emit('play'); });
-      a.addEventListener('pause', () => { pp.innerHTML = svgIcon('play'); pp.setAttribute('aria-label', 'Play'); this.emit('pause'); });
-      a.addEventListener('ended', () => this.emit('ended'));
-      a.addEventListener('loadedmetadata', () => { this.$('.dur').textContent = fmtTime(a.duration); r.max = a.duration || 100; });
-      a.addEventListener('timeupdate', () => { if (!this._seeking) r.value = a.currentTime; this.$('.cur').textContent = fmtTime(a.currentTime); r.setAttribute('aria-valuetext', `${fmtTime(a.currentTime)} of ${fmtTime(a.duration)}`); });
-      r.addEventListener('input', () => { this._seeking = true; this.$('.cur').textContent = fmtTime(Number(r.value)); });
-      r.addEventListener('change', () => { a.currentTime = Number(r.value); this._seeking = false; });
-      const mu = this.$('.mu');
-      mu.addEventListener('click', () => { a.muted = !a.muted; mu.setAttribute('aria-pressed', String(a.muted)); mu.setAttribute('aria-label', a.muted ? 'Unmute' : 'Mute'); mu.innerHTML = `<sav-icon name="${a.muted ? 'volume-x' : 'volume-2'}"></sav-icon>`; });
-      this.sync();
+      const ic = (n) => `<sav-icon name="${n}"></sav-icon>`;
+      this.shadowRoot.innerHTML = `<div class="p" part="base" role="group" aria-label="Audio player"><img class="cv" part="cover" alt="">
+        <button type="button" class="pp" part="play-button" aria-label="Play">${svgIcon('play')}</button>
+        <div class="head"><span class="ti" part="title"></span><span class="ar" part="artist"></span></div>
+        <div class="bar" part="controls"><button type="button" class="ib skip back" aria-label="Back 10 seconds">${svgIcon('rewind')}<span class="sn" aria-hidden="true">10</span></button>
+          <span class="t cur">0:00</span><input class="seek mr" type="range" min="0" max="100" step="0.1" value="0" aria-label="Position"><span class="t dur">0:00</span>
+          <button type="button" class="ib skip fwd" aria-label="Forward 10 seconds"><span class="sn" aria-hidden="true">10</span>${svgIcon('fast-forward')}</button><button type="button" class="ib speed" aria-label="Speed 1×">1×</button>
+          <button type="button" class="ib loop" aria-label="Loop" aria-pressed="false"><sav-icon name="repeat"></sav-icon></button>
+          <button type="button" class="ib mute" part="mute-button" aria-label="Mute" aria-pressed="false">${ic('volume-2')}</button><input class="vol mr" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+          <button type="button" class="ib more" aria-label="More controls" aria-haspopup="true" aria-expanded="false" hidden>${svgIcon('more-horizontal')}</button></div>
+        <div class="mm float" part="more-menu" role="group" aria-label="More controls" ${supportsPopover ? 'popover="manual"' : ''}></div>
+        <div class="vp float" part="volume-popup" role="group" aria-label="Volume" ${supportsPopover ? 'popover="manual"' : ''}><button type="button" class="vmute" aria-label="Mute" aria-pressed="false">${ic('volume-2')}</button></div>
+      </div><audio part="audio" preload="metadata"><slot></slot></audio>`;
+      const a = (this.audio = this.$('audio')), $ = (q) => this.$(q), pp = $('.pp'), seek = $('.seek'), vol = $('.vol');
+      tiltWatch($('.p'));
+      const toggle = () => (a.paused || a.ended ? a.play() : a.pause());
+      pp.addEventListener('click', toggle);
+      $('.back').addEventListener('click', () => (a.currentTime = Math.max(0, a.currentTime - 10)));
+      $('.fwd').addEventListener('click', () => (a.currentTime = Math.min(a.duration || 0, a.currentTime + 10)));
+      seek.addEventListener('input', () => { this._seeking = true; $('.cur').textContent = fmtTime(Number(seek.value)); mediaFill(seek); });
+      seek.addEventListener('change', () => { a.currentTime = Number(seek.value); this._seeking = false; });
+      vol.addEventListener('input', () => { a.volume = Number(vol.value); a.muted = a.volume === 0; mediaFill(vol); });
+      $('.mute').addEventListener('click', () => { a.muted = !a.muted; if (!a.muted && a.volume === 0) a.volume = .5; });
+      const speeds = [1, 1.25, 1.5, 2, 0.5, 0.75];
+      $('.speed').addEventListener('click', () => { const i = (speeds.indexOf(a.playbackRate) + 1) % speeds.length; a.playbackRate = speeds[i]; });
+      a.addEventListener('ratechange', () => { const r = `${a.playbackRate}×`; $('.speed').textContent = r; $('.speed').setAttribute('aria-label', `Speed ${r}`); });
+      const paint = () => {
+        const playing = !a.paused && !a.ended;
+        const again = a.ended;
+        pp.innerHTML = again ? '<sav-icon name="rotate-ccw"></sav-icon>' : svgIcon(playing ? 'pause' : 'play'); pp.setAttribute('aria-label', again ? (this.getAttribute('replay-label') || 'Replay') : playing ? 'Pause' : 'Play');
+        const pop = this.hasAttribute('data-vol-pop'), icon = ic(a.muted || a.volume === 0 ? 'volume-x' : 'volume-2');
+        $('.mute').innerHTML = icon; $('.mute').setAttribute('aria-label', pop ? 'Volume' : a.muted ? 'Unmute' : 'Mute');
+        pop ? ($('.mute').removeAttribute('aria-pressed'), $('.mute').setAttribute('aria-haspopup', 'true')) : ($('.mute').setAttribute('aria-pressed', String(a.muted)), $('.mute').removeAttribute('aria-haspopup'), $('.mute').removeAttribute('aria-expanded'));
+        $('.vmute').innerHTML = icon; $('.vmute').setAttribute('aria-pressed', String(a.muted)); $('.vmute').setAttribute('aria-label', a.muted ? 'Unmute' : 'Mute');
+        vol.value = a.muted ? 0 : a.volume; mediaFill(vol);
+      };
+      a.addEventListener('play', () => { paint(); this.emit('play'); });
+      a.addEventListener('pause', () => { paint(); this.emit('pause'); });
+      a.addEventListener('ended', () => { paint(); this.emit('ended'); });
+      a.addEventListener('volumechange', paint);
+      a.addEventListener('loadedmetadata', () => { $('.dur').textContent = fmtTime(a.duration); seek.max = a.duration || 100; mediaFill(seek); });
+      a.addEventListener('timeupdate', () => { if (!this._seeking) seek.value = a.currentTime; mediaFill(seek); $('.cur').textContent = fmtTime(a.currentTime); seek.setAttribute('aria-valuetext', `${fmtTime(a.currentTime)} of ${fmtTime(a.duration)}`); });
+      // keys with the focus anywhere in the player (the bars keep their own arrows)
+      $('.p').addEventListener('keydown', (e) => {
+        if (e.target.matches('input[type=range]') && /Arrow|Home|End|Page/.test(e.key)) return;
+        const k = e.key.toLowerCase(); let used = true;
+        if (k === ' ' || k === 'k') { if (e.target.closest('button')) return; toggle(); }
+        else if (k === 'arrowleft') a.currentTime = Math.max(0, a.currentTime - 5);
+        else if (k === 'arrowright') a.currentTime = Math.min(a.duration || 0, a.currentTime + 5);
+        else if (k === 'arrowup') { a.volume = Math.min(1, a.volume + .1); a.muted = false; }
+        else if (k === 'arrowdown') a.volume = Math.max(0, a.volume - .1);
+        else if (k === 'm') a.muted = !a.muted;
+        else used = false;
+        if (used) e.preventDefault();
+      });
+      mediaMenu(this, $('.more'), $('.mm'));
+      mediaLoop(this, a, $('.loop'));
+      this._vol = mediaVolume(this, $('.mute'), $('.vp'), a); this._paint = paint;
+      this._ro = new ResizeObserver(() => this.fit()); this._ro.observe($('.bar'));
+      paint(); mediaFill(seek); this.sync(); this.controlsShown();
     }
-    changed() { this.sync(); }
+    /** which controls show: controls="play skip seek time mute volume speed" (default all), then fitted to the room */
+    controlsShown() {
+      if (!this.audio) return;
+      // by default: play / pause / replay, the progress bar, the time, mute and the volume; skip, speed and loop on request
+      const want = mediaWants(this, ['play', 'seek', 'time', 'mute', 'volume']);
+      const map = { play: ['.pp'], skip: ['.back', '.fwd'], seek: ['.seek'], time: ['.cur', '.dur'], mute: ['.mute'], volume: ['.vol'], speed: ['.speed'], loop: ['.loop'] };
+      for (const [k, qs] of Object.entries(map)) for (const q of qs) { const el = this.$(q); if (el) el.hidden = !want.has(k); }
+      // no controls at all: title, artist and cover only (it plays with autoplay or from code)
+      this.toggleAttribute('data-bare', !want.size);
+      this.fit();
+    }
+    /** the controls that do not fit go into the ⋯ menu: first the volume bar, then speed, the 10 s buttons, mute */
+    fit() {
+      const $ = (q) => this.$(q), was = this.hasAttribute('data-vol-pop');
+      // first the volume bar moves into the pop-up of the volume button; then the others into the ⋯ menu
+      mediaFit($('.bar'), $('.mm'), $('.more'), [{ el: $('.vol'), into: $('.vp'), flag: 'data-vol-pop' }, $('.loop'), $('.speed'), [$('.back'), $('.fwd')], $('.mute')], this);
+      if (was && !this.hasAttribute('data-vol-pop')) this._vol?.close(false);
+      this._paint?.();
+    }
+    disconnectedCallback() { hidePop(this.$('.mm')); }
+    changed(name) { if (name === 'controls') this.controlsShown(); else this.sync(); }
     sync() {
       const a = this.audio; if (!a) return;
       const src = this.getAttribute('src'); if (src && a.getAttribute('src') !== src) a.src = src;
-      this.$('.ti').textContent = this.getAttribute('title') || ''; this.$('.ar').textContent = this.getAttribute('artist') || '';
+      a.controls = this.hasAttribute('native-controls');
+      // like the video: loop starts again at the end, autoplay (browsers allow it after the person used the page), muted
+      for (const x of ['loop', 'autoplay', 'muted']) a[x] = this.hasAttribute(x);
+      this._loopPaint?.();
+      const t = this.getAttribute('title') || '', ar = this.getAttribute('artist') || '';
+      this.$('.ti').textContent = t; this.$('.ar').textContent = ar;
+      this.$('.p').setAttribute('aria-label', t ? `Audio: ${t}${ar ? ', ' + ar : ''}` : 'Audio player');
       const c = this.getAttribute('cover'); if (c) this.$('.cv').src = c;
     }
     play() { return this.audio?.play(); } pause() { this.audio?.pause(); }
@@ -4884,7 +5485,7 @@
       :host([orientation="horizontal"]) ::slotted(sav-divider) { align-self: stretch; }
       .tog { display: flex; align-items: center; gap: .6rem; margin: .2rem .3rem 0; padding: .5rem .75rem; border: 0; border-radius: calc(var(--sav-radius) - 2px); background: none; color: var(--sav-color-text-muted); font: inherit; font-size: var(--sav-font-size-sm); cursor: pointer; }
       .tog:hover { background: var(--sav-color-surface-2); color: var(--sav-color-text); } .tog:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: -2px; }
-      .tog svg { width: 1.1em; height: 1.1em; flex: none; transition: transform .2s var(--sav-easing); }
+      .tog svg { width: 1.1em; height: 1.1em; flex: none; transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([collapsed]) .tog { justify-content: center; } :host([collapsed]) .tog svg { transform: scaleX(-1); } :host([collapsed]) .tog span { display: none; }
       :host(:not([collapsible])) .tog { display: none; }
     `;
@@ -4988,7 +5589,7 @@
       .i { position: relative; isolation: isolate; flex: 1; display: grid; justify-items: center; gap: .15rem; padding: .4rem .2rem; border: 0; background: none; color: var(--sav-color-text-muted);
            font: inherit; font-size: .72rem; font-weight: var(--sav-font-weight-semibold); text-decoration: none; cursor: pointer; min-height: 48px; }
       .ic { position: relative; isolation: isolate; display: grid; place-items: center; width: 3.2rem; height: 1.85rem; }
-      .ic::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-pill); background: transparent; transform: rotate(var(--sav-knob-tilt, 0deg)) scale(.6); opacity: 0; transition: transform .25s var(--sav-easing), opacity .2s; }
+      .ic::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-pill); background: transparent; transform: rotate(var(--sav-knob-tilt, 0deg)) scale(.6); opacity: 0; transition: transform calc(.25s * var(--sav-motion, 1)) var(--sav-easing), opacity calc(.2s * var(--sav-motion, 1)); }
       :host([current]) .i { color: var(--sav-color-text); }
       :host([current]) .ic::before { background: color-mix(in oklab, var(--sav-color-primary) 22%, transparent); transform: rotate(calc(var(--sav-knob-tilt, 0deg) * .5)) scale(1); opacity: 1; }
       ::slotted(sav-icon), .ic sav-icon { font-size: 1.3rem; }
@@ -5031,7 +5632,7 @@
       .nav { flex: 1 1 auto; display: flex; align-items: center; gap: .2rem; min-width: 0; }
       :host([align="center"]) .nav { justify-content: center; } :host([align="end"]) .nav { justify-content: flex-end; }
       ::slotted(a) { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .7rem; border-radius: var(--sav-radius-sm); color: var(--sav-color-text-muted); text-decoration: none;
-        font-weight: var(--sav-font-weight-semibold); white-space: nowrap; transition: color var(--sav-duration), background var(--sav-duration); }
+        font-weight: var(--sav-font-weight-semibold); white-space: nowrap; transition: color calc(var(--sav-duration) * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       ::slotted(a:hover) { color: var(--sav-color-text); background: var(--sav-color-surface-2); }
       ::slotted(a:focus-visible) { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
       /* the current page: the same highlight as the breadcrumb (a tint, a blue tile, an underline, an inked block, glass) */
@@ -5151,24 +5752,42 @@
 
   /* ================================================================== sav-sortable (drag and drop to reorder) */
 
-  /** Reorders its children by dragging (mouse, touch, pen) or with the keyboard: Space to pick up, arrows to move, Space to drop, Escape to cancel. */
+  /** Reorders its children by dragging (mouse, touch, pen) or with the keyboard: Space to pick up, arrows to move, Space to drop, Escape to cancel.
+      grip shows the drag handle (six dots) in each item, at the start or with grip="end" at the end; handle="grip" lets only that handle drag. */
   class SavSortable extends SavElement {
     static styles = `
       :host { display: grid; gap: var(--gap, .5rem); }
       :host([direction="horizontal"]) { grid-auto-flow: column; justify-content: start; }
-      ::slotted(*) { touch-action: none; cursor: grab; transition: transform .18s var(--sav-easing), box-shadow .18s; }
+      ::slotted(*) { touch-action: none; cursor: grab; transition: transform calc(.18s * var(--sav-motion, 1)) var(--sav-easing), box-shadow calc(.18s * var(--sav-motion, 1)); }
       ::slotted([data-sav-dragging]) { cursor: grabbing; opacity: .92; box-shadow: var(--sav-shadow-lg); z-index: 5; position: relative; transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.02); }
       ::slotted([data-sav-grabbed]) { outline: var(--sav-focus-width) dashed var(--sav-color-focus); outline-offset: 3px; }
+      /* with handle="grip" only the handle drags: the item itself keeps its normal pointer */
+      :host([handle="grip"]) ::slotted(*) { cursor: auto; }
       .live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     `;
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = '<slot></slot><div class="live" aria-live="assertive"></div>';
       this.setAttribute('role', 'list');
-      const prep = () => this.items.forEach((el, i) => { el.setAttribute('role', 'listitem'); if (!el.hasAttribute('tabindex')) el.tabIndex = 0; el.setAttribute('aria-roledescription', 'sortable item'); el.setAttribute('aria-describedby', ''); });
+      const prep = () => { this.items.forEach((el) => { el.setAttribute('role', 'listitem'); if (!el.hasAttribute('tabindex')) el.tabIndex = 0; el.setAttribute('aria-roledescription', 'sortable item'); el.setAttribute('aria-describedby', ''); }); this.grips(); };
       this.$('slot').addEventListener('slotchange', prep); prep();
       this.addEventListener('pointerdown', (e) => this.down(e));
       this.addEventListener('keydown', (e) => this.key(e));
+    }
+    static get observedAttributes() { return ['grip', 'direction', 'handle']; }
+    changed() { this.grips(); }
+    /** the drag handle in each item (grip, grip="end"): a small icon added as the item's first or last child, left out of screen readers */
+    grips() {
+      const want = this.hasAttribute('grip'), end = this.getAttribute('grip') === 'end', horiz = this.getAttribute('direction') === 'horizontal', only = this.getAttribute('handle') === 'grip';
+      for (const el of [...this.children]) {
+        let g = el.querySelector(':scope > [data-sav-grip]');
+        if (!want || el.hasAttribute('data-no-drag')) { g?.remove(); continue; }
+        if (!g) { g = document.createElement('span'); g.setAttribute('data-sav-grip', ''); g.setAttribute('aria-hidden', 'true'); g.innerHTML = svgIcon('grip-vertical'); }
+        g.style.cssText = `display:inline-flex;align-items:center;justify-content:center;flex:none;vertical-align:middle;color:var(--sav-color-text-muted);cursor:${only ? 'grab' : 'inherit'};touch-action:none;`
+          + `${end ? 'margin-inline-start:auto;padding-inline-start:.5rem' : 'margin-inline-end:.5rem'};`;
+        const svg = g.querySelector('svg'); if (svg) svg.style.cssText = `width:1.1em;height:1.1em;${horiz ? 'transform:rotate(90deg)' : ''}`;
+        if (end ? el.lastElementChild !== g : el.firstElementChild !== g) end ? el.append(g) : el.prepend(g);
+      }
     }
     get items() { return [...this.children].filter((c) => !c.hasAttribute('data-no-drag')); }
     say(t) { this.$('.live').textContent = t; }
@@ -5177,7 +5796,7 @@
       if (e.button) return;
       let el = e.target; while (el && el.parentElement !== this) el = el.parentElement; // the direct child that was grabbed
       if (!el || el.hasAttribute('data-no-drag')) return;
-      const handle = this.getAttribute('handle');
+      const handle = this.getAttribute('handle') === 'grip' ? '[data-sav-grip]' : this.getAttribute('handle');
       if (handle ? !e.target.closest(handle) : e.target.closest('input, textarea, select, a, [contenteditable]')) return;
       const horiz = this.getAttribute('direction') === 'horizontal';
       const natural = () => { const t = el.style.translate; el.style.translate = ''; const r = el.getBoundingClientRect(); el.style.translate = t; return r; };
@@ -5236,7 +5855,7 @@
     static styles = `
       :host { display: block; }
       .z { position: relative; isolation: isolate; display: grid; justify-items: center; gap: .4rem; padding: 1.6rem 1rem; text-align: center; cursor: pointer; color: var(--sav-color-text-muted); }
-      .z::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-lg); border: calc(var(--sav-border-width) + 1px) dashed var(--sav-color-border-strong); background: var(--sav-color-surface); transform: rotate(${PANEL_TILT}); transition: border-color var(--sav-duration), background var(--sav-duration); }
+      .z::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-lg); border: calc(var(--sav-border-width) + 1px) dashed var(--sav-color-border-strong); background: var(--sav-color-surface); transform: rotate(${PANEL_TILT}); transition: border-color calc(var(--sav-duration) * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .z:hover::before, .z.over::before { border-color: var(--sav-color-primary); background: color-mix(in oklab, var(--sav-color-primary) 7%, var(--sav-color-surface)); }
       .z:focus-visible { outline: none; } .z:focus-visible::before { box-shadow: 0 0 0 3px color-mix(in oklab, var(--sav-color-primary) 30%, transparent); }
       .z sav-icon { font-size: 1.8rem; color: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); }
@@ -5414,11 +6033,21 @@
     .legend i { width: .7rem; height: .7rem; border-radius: var(--sav-knob-radius, 3px); transform: rotate(var(--sav-knob-tilt, 0deg)); }
     :host([no-legend]) .legend, .legend:empty { display: none; }
     .tip { position: absolute; pointer-events: none; padding: .3rem .55rem; border-radius: var(--sav-radius-sm); background: var(--sav-color-tooltip-bg); color: var(--sav-color-tooltip-text);
-      font-size: .78rem; white-space: nowrap; transform: translate(-50%, calc(-100% - 8px)); opacity: 0; transition: opacity .12s; z-index: 2; }
+      font-size: .78rem; white-space: nowrap; transform: translate(-50%, calc(-100% - 8px)); opacity: 0; transition: opacity calc(.12s * var(--sav-motion, 1)); z-index: 2; }
     .tip.on { opacity: 1; }
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-    [data-t] { cursor: default; transition: opacity .15s; }
+    [data-t] { cursor: default; transition: opacity calc(.15s * var(--sav-motion, 1)); }
     svg:hover [data-t]:not(:hover) { opacity: var(--dim, .55); }
+    /* entrance: bars grow from their base, lines are drawn, slices, areas, points and cells fade in */
+    .enter :is(rect, path, polygon, circle)[data-t], .enter .series { transform-box: fill-box; transform-origin: center; animation: sav-chart-in calc(.5s * var(--sav-motion, 1)) var(--sav-easing) backwards; }
+    .enter[data-kind="bar"] rect[data-t] { transform-origin: bottom; animation-name: sav-chart-grow; }
+    .enter[data-kind="bar-h"] rect[data-t] { transform-origin: left; animation-name: sav-chart-grow-x; }
+    .enter .draw { stroke-dasharray: 1; animation: sav-chart-draw calc(.8s * var(--sav-motion, 1)) var(--sav-easing) backwards; }
+    @keyframes sav-chart-in { from { opacity: 0; transform: scale(.9); } }
+    @keyframes sav-chart-grow { from { transform: scaleY(0); } }
+    @keyframes sav-chart-grow-x { from { transform: scaleX(0); } }
+    @keyframes sav-chart-draw { from { stroke-dashoffset: 1; } }
+    @media (prefers-reduced-motion: reduce) { .enter * { animation: none !important; } }
   `;
   const nfmt = (v) => (Math.abs(v) >= 1000 ? Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(v) : Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(v));
   const niceMax = (m) => { if (m <= 0) return 1; const p = 10 ** Math.floor(Math.log10(m)); const f = m / p; return ([1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((x) => f <= x) || 10) * p; };
@@ -5428,7 +6057,7 @@
     static styles = CHART_CSS;
     static get observedAttributes() { return ['data', 'label', 'height']; }
     get data() { if (this._data) return this._data; try { return JSON.parse(this.getAttribute('data') || 'null') || this.defaultData(); } catch { return this.defaultData(); } }
-    set data(v) { this._data = v; this.draw(); }
+    set data(v) { this._data = v; this._enter = true; this.draw(); }
     defaultData() { return { labels: [], series: [] }; }
     connectedCallback() {
       if (!this.shadowRoot.firstChild) {
@@ -5441,15 +6070,22 @@
       this.draw();
     }
     disconnectedCallback() { this._ro?.disconnect(); }
-    changed() { this.draw(); }
+    changed(name) { if (name === 'data') this._enter = true; this.draw(); }
     get W() { return Math.max(240, this._w || this.getBoundingClientRect().width || 480); }
     get H() { return Number(this.getAttribute('height')) || Math.round(Math.min(360, Math.max(200, this.W * 0.55))); }
     /** Series as [{ name, values }]: also accepts { values } (one series) or plain numbers. */
     series() { const d = this.data; if (Array.isArray(d.series)) return d.series.map((s, i) => ({ name: s.name ?? `Series ${i + 1}`, values: s.values || [], color: s.color })); if (Array.isArray(d.values)) return [{ name: d.name || this.getAttribute('label') || 'Values', values: d.values }]; return []; }
     draw() {
       if (!this.$('.svg')) return;
-      const svg = this.render();
-      this.$('.svg').innerHTML = svg;
+      const svg = this.render(), box = this.$('.svg');
+      box.innerHTML = svg;
+      // the first drawing and new data animate in; a redraw for a new width does not
+      if (this._enter !== false) {
+        this._enter = false;
+        box.dataset.kind = this.localName === 'sav-chart-bar' ? (this.getAttribute('orientation') === 'horizontal' ? 'bar-h' : 'bar') : '';
+        box.classList.add('enter'); clearTimeout(this._et);
+        this._et = setTimeout(() => box.classList.remove('enter'), 900 * motion(this) + 50);
+      }
       const s = this.$('svg'); s.setAttribute('role', 'img'); s.setAttribute('aria-label', (this.getAttribute('label') || 'Chart') + '. ' + this.summary());
       this.$('.legend').innerHTML = this.legendItems().map(([n, c]) => `<span><i style="background:${c}"></i>${esc(n)}</span>`).join('');
       this.$('.legend').setAttribute('aria-hidden', 'true');
@@ -5586,7 +6222,7 @@
         const s = ss[j], c = s.color || col(j), pts = stack[j].map((v, i) => [X(i), Y(v)]);
         const base = stacked && j > 0 ? stack[j - 1].map((v, i) => [X(i), Y(v)]).reverse() : [[X(n - 1), Y(0)], [X(0), Y(0)]];
         if (area) g += `<path d="${line(pts)}${stacked && j > 0 ? 'L' + base.map((p) => p.join(' ')).join('L') : `L${X(n - 1)} ${Y(0)}L${X(0)} ${Y(0)}`}Z" style="fill:color-mix(in oklab, ${c} ${stacked ? 55 : 20}%, transparent)"/>`;
-        g += `<path d="${line(pts)}" style="fill:none;stroke:${c};stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round"/>`;
+        g += `<path class="draw" pathLength="1" d="${line(pts)}" style="fill:none;stroke:${c};stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round"/>`;
         pts.forEach((p, i) => (g += `<circle data-t="${esc(labels[i])} · ${esc(s.name)}: ${nfmt(s.values[i] || 0)}" cx="${p[0]}" cy="${p[1]}" r="${this.hasAttribute('points') ? 3.5 : 9}" style="fill:${this.hasAttribute('points') ? c : 'transparent'};stroke:${this.hasAttribute('points') ? 'var(--sav-color-surface)' : 'none'};stroke-width:2"/>`));
       });
       return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${g}</svg>`;
@@ -5681,9 +6317,9 @@
     static styles = `
       :host { display: inline-flex; align-items: center; min-width: 0; }
       .i { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .55rem; color: var(--sav-color-text-muted); text-decoration: none;
-           font-size: var(--sav-font-size-md); font-weight: var(--sav-font-weight-semibold); white-space: nowrap; border-radius: var(--sav-radius-sm); transition: color var(--sav-duration); }
+           font-size: var(--sav-font-size-md); font-weight: var(--sav-font-weight-semibold); white-space: nowrap; border-radius: var(--sav-radius-sm); transition: color calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .i::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_b, transparent); background-image: var(--_bi, none); box-shadow: var(--_s, none);
-           transform: rotate(${TILT}); transition: background var(--sav-duration), transform .2s var(--sav-easing); }
+           transform: rotate(${TILT}); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       a.i:hover { color: var(--sav-color-text); --_b: var(--sav-color-surface-2); }
       a.i:hover::before { transform: rotate(calc(${TILT} * var(--sav-tilt-hover, -1))); }
       a.i:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
@@ -5760,11 +6396,11 @@
       /* background and border on a layer (::before) that leans with the style (Tilt) while the icon and text stay upright */
       button { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-width: var(--_h); height: var(--_h); padding: 0 .55rem; margin: 0;
                border: 0; border-radius: var(--sav-radius); background: none; color: var(--sav-color-text-muted);
-               font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); cursor: pointer; transition: color var(--sav-duration);
+               font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); cursor: pointer; transition: color calc(var(--sav-duration) * var(--sav-motion, 1));
                --_cb: var(--sav-color-surface); --_cbd: var(--sav-color-border); }
       button::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_cb); background-image: var(--sav-sheen, none);
                border: var(--sav-border-width) solid var(--_cbd); box-shadow: var(--sav-copy-shadow, none); transform: rotate(${TILT});
-               transition: background var(--sav-duration), border-color var(--sav-duration), transform .22s var(--sav-easing); }
+               transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.22s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([appearance="ghost"]) button { --_cb: transparent; --_cbd: transparent; }
       :host([appearance="ghost"]) button::before { box-shadow: none; background-image: none; }
       :host([appearance="ghost"]) button:not(:hover):not(.ok):not(.err)::before { transform: none; }
@@ -5773,11 +6409,11 @@
       button:active::before { transform: rotate(calc(${TILT} * var(--sav-tilt-hover, -1))) scale(.94); }
       /* copied: the layer turns green and gives a little "stamp" the other way */
       button.ok { color: var(--sav-color-success); --_cb: color-mix(in oklab, var(--sav-color-success) 14%, var(--sav-color-surface)); --_cbd: color-mix(in oklab, var(--sav-color-success) 45%, transparent); }
-      button.ok::before { animation: sav-stamp .32s var(--sav-easing); }
+      button.ok::before { animation: sav-stamp calc(.32s * var(--sav-motion, 1)) var(--sav-easing); }
       button.err { color: var(--sav-color-danger); --_cbd: color-mix(in oklab, var(--sav-color-danger) 45%, transparent); }
       @keyframes sav-stamp { 40% { transform: rotate(calc(${TILT} * -3)) scale(1.08); } }
       .ic { display: inline-flex; }
-      button.ok .ic, button.err .ic { animation: sav-pop-ic .28s var(--sav-easing); }
+      button.ok .ic, button.err .ic { animation: sav-pop-ic calc(.28s * var(--sav-motion, 1)) var(--sav-easing); }
       @keyframes sav-pop-ic { from { transform: scale(.4); opacity: 0; } }
       svg { width: 1.1em; height: 1.1em; }
       .txt { display: none; }
@@ -5830,11 +6466,11 @@
       /* like the copy button: background and border on a layer that leans with the style, icon and text upright */
       button { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-width: var(--_h); height: var(--_h); padding: 0 .65rem; margin: 0;
                border: 0; border-radius: var(--sav-radius); background: none; color: var(--sav-color-text-muted);
-               font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); cursor: pointer; transition: color var(--sav-duration);
+               font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); cursor: pointer; transition: color calc(var(--sav-duration) * var(--sav-motion, 1));
                --_cb: var(--sav-color-surface); --_cbd: var(--sav-color-border); }
       button::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_cb); background-image: var(--sav-sheen, none);
                border: var(--sav-border-width) solid var(--_cbd); box-shadow: var(--sav-copy-shadow, none); transform: rotate(${TILT});
-               transition: background var(--sav-duration), border-color var(--sav-duration), transform .22s var(--sav-easing); }
+               transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.22s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([appearance="ghost"]) button { --_cb: transparent; --_cbd: transparent; }
       :host([appearance="ghost"]) button::before { box-shadow: none; background-image: none; }
       :host([appearance="ghost"]) button:not(:hover)::before { transform: none; }
@@ -5847,11 +6483,11 @@
                --_cb: color-mix(in oklab, var(--_fc) 12%, var(--sav-color-surface)); --_cbd: var(--sav-ink-border, color-mix(in oklab, var(--_fc) 45%, transparent)); }
       :host([pressed][appearance="ghost"]) button { --_cb: transparent; --_cbd: transparent; }
       svg { width: 1.15em; height: 1.15em; overflow: visible; }
-      svg path { transition: fill var(--sav-duration), stroke var(--sav-duration); }
+      svg path { transition: fill calc(var(--sav-duration) * var(--sav-motion, 1)), stroke calc(var(--sav-duration) * var(--sav-motion, 1)); }
       :host([pressed]) svg path { fill: oklch(from var(--_fc) calc(l * var(--sav-indicator-l, 1)) c h); stroke: oklch(from var(--_fc) calc(l * var(--sav-indicator-l, 1)) c h); }
       .ic { display: inline-flex; }
-      button.pop .ic { animation: sav-fav-pop .42s var(--sav-easing); }
-      button.pop::before { animation: sav-fav-stamp .32s var(--sav-easing); }
+      button.pop .ic { animation: sav-fav-pop calc(.42s * var(--sav-motion, 1)) var(--sav-easing); }
+      button.pop::before { animation: sav-fav-stamp calc(.32s * var(--sav-motion, 1)) var(--sav-easing); }
       @keyframes sav-fav-pop { 30% { transform: scale(.7); } 65% { transform: scale(1.28); } }
       @keyframes sav-fav-stamp { 40% { transform: rotate(calc(${TILT} * -3)) scale(1.08); } }
       .txt { display: none; }
@@ -6094,9 +6730,9 @@
       :host([align="center"]) nav { justify-content: center; } :host([align="end"]) nav { justify-content: flex-end; }
       .p { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; min-width: var(--_h); height: var(--_h); padding: 0 .55rem;
            border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text); font: inherit; font-size: var(--_fs); font-weight: var(--sav-font-weight-semibold);
-           font-variant-numeric: tabular-nums; text-decoration: none; cursor: pointer; transition: color var(--sav-duration); }
+           font-variant-numeric: tabular-nums; text-decoration: none; cursor: pointer; transition: color calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .p::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_b, transparent); background-image: var(--_bi, none); box-shadow: var(--_s, none);
-           transform: rotate(${TILT}); transition: background var(--sav-duration), transform .2s var(--sav-easing); }
+           transform: rotate(${TILT}); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       .p:hover:not([aria-current]):not(:disabled):not([aria-disabled="true"]) { --_b: var(--sav-color-surface-2); }
       .p:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; }
       /* the current page: the same highlight as the breadcrumb, by style (tint, blue tile, underline, inked block, glass) */
@@ -6216,7 +6852,7 @@
       .m { position: relative; isolation: isolate; z-index: 1; display: grid; place-items: center; flex: none; width: 2rem; height: 2rem; color: var(--sav-color-text-muted);
            font-weight: var(--sav-font-weight-bold); font-size: .85rem; font-variant-numeric: tabular-nums; }
       .m::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-surface);
-           box-shadow: inset 0 0 0 2px var(--sav-color-border-strong); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: background var(--sav-duration), box-shadow var(--sav-duration); }
+           box-shadow: inset 0 0 0 2px var(--sav-color-border-strong); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .m svg { width: 1rem; height: 1rem; }
       :host([data-state="current"]) .m { color: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); }
       :host([data-state="current"]) .m::before { box-shadow: inset 0 0 0 2px oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h), 0 0 0 4px color-mix(in oklab, var(--sav-color-primary) 18%, transparent); }
@@ -6289,6 +6925,12 @@
       svg.sp { flex: none; width: var(--spark-width, 6rem); height: 2.2rem; overflow: visible; }
       .sp .ar { fill: color-mix(in oklab, var(--_sc) 16%, transparent); } .sp .ln { fill: none; stroke: var(--_sc); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
       .sp .dt { fill: var(--_sc); }
+      /* animation: changes of colour and state ease in (paced by --sav-motion) */
+      :host { animation: sav-stat-in calc(.35s * var(--sav-motion, 1)) var(--sav-easing) backwards; }
+      .sp .ln { stroke-dasharray: 1; animation: sav-chart-draw calc(.8s * var(--sav-motion, 1)) var(--sav-easing) backwards; }
+      @keyframes sav-stat-in { from { opacity: 0; translate: 0 6px; } }
+      @keyframes sav-chart-draw { from { stroke-dashoffset: 1; } }
+      @media (prefers-reduced-motion: reduce) { :host, .sp .ln { animation: none; } }
     `;
     static get observedAttributes() { return ['label', 'value', 'unit', 'prefix', 'change', 'trend', 'invert', 'caption', 'icon', 'data', 'appearance']; }
     connectedCallback() { this.render(); }
@@ -6308,7 +6950,7 @@
         const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
         const col = good === 'bad' ? 'var(--sav-color-danger)' : good === 'good' ? 'var(--sav-color-success)' : 'var(--sav-color-primary)';
         const [lx, ly] = pts[pts.length - 1];
-        spark = `<svg class="sp" part="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="--_sc:${col}" aria-hidden="true"><path class="ar" d="${d} L${w} ${h} L0 ${h} Z"/><path class="ln" d="${d}"/><circle class="dt" cx="${lx}" cy="${ly}" r="2.4" vector-effect="non-scaling-stroke"/></svg>`;
+        spark = `<svg class="sp" part="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="--_sc:${col}" aria-hidden="true"><path class="ar" d="${d} L${w} ${h} L0 ${h} Z"/><path class="ln" pathLength="1" d="${d}"/><circle class="dt" cx="${lx}" cy="${ly}" r="2.4" vector-effect="non-scaling-stroke"/></svg>`;
       }
       const icon = A('icon');
       const said = `${A('label')}: ${A('prefix')}${A('value')}${A('unit') ? ' ' + A('unit') : ''}${ch ? `, ${good === 'good' ? 'better' : good === 'bad' ? 'worse' : 'changed'} by ${ch}` : ''}`;
@@ -6346,6 +6988,10 @@
       .h:empty, .t:empty { display: none; }
       .a { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin-top: .6rem; }
       .a[hidden] { display: none; }
+      /* animation: changes of colour and state ease in (paced by --sav-motion) */
+      .art { animation: sav-es-in calc(.45s * var(--sav-motion, 1)) var(--sav-easing) backwards; }
+      @keyframes sav-es-in { from { opacity: 0; transform: scale(.9); } }
+      @media (prefers-reduced-motion: reduce) { .art { animation: none; } }
     `;
     static get observedAttributes() { return ['icon', 'heading', 'text']; }
     connectedCallback() { this.render(); }
@@ -6371,7 +7017,7 @@
       .pop { width: max-content; max-width: min(var(--width), calc(100vw - 16px)); padding: 1rem 1.05rem; border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius);
              background: var(--sav-color-surface); color: var(--sav-color-text); font-family: var(--sav-font); font-size: var(--sav-font-size-md); line-height: 1.5; text-align: start; }
       ${panelLayer('.pop')}
-      .pop:popover-open, .pop.open { animation: sav-pop .15s var(--sav-easing); }
+      .pop:popover-open, .pop.open { animation: sav-pop calc(.15s * var(--sav-motion, 1)) var(--sav-easing); }
       .head { display: flex; align-items: flex-start; gap: .5rem; margin-bottom: .4rem; }
       .h { flex: 1; font-weight: var(--sav-font-weight-bold); }
       .head:has(.h:empty):not(:has(.x:not([hidden]))) { display: none; }
@@ -6491,6 +7137,10 @@
       :host { --_eb: var(--_c); }
       :host([icon]:not([variant])) { --_eb: var(--sav-color-bg); }
       :host(:is([auto-text], [data-auto-text])[icon]) .dot { color: ${AUTO_TEXT}; }
+      /* animation: changes of colour and state ease in (paced by --sav-motion) */
+      :host { animation: sav-tl-in calc(.35s * var(--sav-motion, 1)) var(--sav-easing) backwards; }
+      @keyframes sav-tl-in { from { opacity: 0; translate: 0 6px; } }
+      @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
     `];
     static get observedAttributes() { return ['time', 'heading', 'icon', 'variant', 'datetime']; }
     connectedCallback() { this.setAttribute('role', 'listitem'); this.render(); }
@@ -6580,7 +7230,7 @@
              --_b: var(--sav-breadcrumb-current-bg, color-mix(in oklab, var(--sav-color-primary) 14%, transparent)); --_s: var(--sav-breadcrumb-current-shadow, none); font-weight: var(--sav-font-weight-semibold); }
       :host([disabled]) > .row { opacity: .45; cursor: not-allowed; }
       .tw { display: grid; place-items: center; flex: none; width: 1.3rem; height: 1.3rem; margin: 0; padding: 0; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
-      .tw svg { width: .95rem; height: .95rem; transition: transform .18s var(--sav-easing); }
+      .tw svg { width: .95rem; height: .95rem; transition: transform calc(.18s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([expanded]) > .row .tw svg { transform: rotate(90deg); }
       .tw.leaf { visibility: hidden; }
       .ic { display: inline-flex; flex: none; color: var(--sav-color-text-muted); } .ic:empty { display: none; }
@@ -6632,7 +7282,7 @@
       :host { display: contents; }
       dialog { width: min(38rem, calc(100vw - 24px)); max-height: min(30rem, calc(100dvh - 4rem)); margin: 12vh auto auto; padding: 0; border: 0; background: transparent; color: var(--sav-color-text); overflow: visible; }
       dialog::backdrop { background: var(--sav-color-overlay, rgb(0 0 0 / .35)); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
-      dialog[open] { animation: sav-cmd .16s var(--sav-easing); }
+      dialog[open] { animation: sav-cmd calc(.16s * var(--sav-motion, 1)) var(--sav-easing); }
       .pnl { position: relative; isolation: isolate; display: flex; flex-direction: column; max-height: inherit; border-radius: var(--sav-radius-lg); font-family: var(--sav-font); }
       .pnl::before { content: ""; position: absolute; inset: 0; z-index: -1; border: var(--sav-border-width) solid var(--sav-color-border); border-radius: inherit; background: var(--sav-color-surface);
                      background-image: var(--sav-sheen, none); box-shadow: var(--sav-panel-shadow, var(--sav-shadow-lg)); -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); transform: rotate(${PANEL_TILT}); }
@@ -6775,6 +7425,92 @@
   props(SavKbd, { size: String });
   define('sav-kbd', SavKbd);
 
+
+  /* ================================================================== sav-zoom */
+
+  /** A zoom control: "−", the percentage, "+". A click on the percentage goes back to 100%.
+      With for="id" it zooms that element itself (CSS zoom); otherwise the page listens to change (detail.value). */
+  class SavZoom extends SavElement {
+    static styles = [SIZES, `
+      :host { display: inline-flex; vertical-align: middle; }
+      .z { position: relative; isolation: isolate; display: inline-flex; align-items: center; height: var(--_h); font-size: var(--_fs); color: var(--sav-color-text); }
+      .z::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius); background: var(--sav-color-input-bg); background-image: var(--sav-sheen, none);
+                   border: var(--sav-border-width) solid var(--sav-color-border-strong); box-shadow: var(--sav-control-shadow, none); transform: rotate(${TILT});
+                   -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); }
+      button { position: relative; display: inline-grid; place-items: center; height: calc(100% - 6px); min-width: calc(var(--_h) - 6px); margin: 3px; padding: 0 .4rem; border: 0;
+               border-radius: calc(var(--sav-radius) - 2px); background: none; color: inherit; font: inherit; cursor: pointer;
+               transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), color calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      button:hover:not(:disabled) { background: var(--sav-color-surface-2); }
+      button:active:not(:disabled) { background: color-mix(in oklab, var(--sav-color-text) 12%, transparent); }
+      button:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 0; }
+      button:disabled { opacity: .4; cursor: not-allowed; }
+      .v { min-width: 4.4em; margin-inline: 0; font-weight: var(--sav-font-weight-semibold); font-variant-numeric: tabular-nums; }
+      /* not at 100%: the percentage is tinted, a hint that a click brings it back */
+      :host(:not([data-at-reset])) .v { color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); }
+      .s { flex: none; width: 1px; align-self: stretch; margin: .55em 0; background: var(--sav-color-border); }
+      :host([appearance="plain"]) .z::before { display: none; }
+      :host([appearance="plain"]) .s { display: none; }
+      svg { width: 1em; height: 1em; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    `];
+    static get observedAttributes() { return ['value', 'min', 'max', 'step', 'reset', 'for', 'label', 'reset-label', 'decrease-label', 'increase-label']; }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = `<div class="z" part="base" role="group"><button type="button" class="m" part="decrease">${svgIcon('minus')}</button><span class="s"></span>`
+          + `<button type="button" class="v" part="value"></button><span class="s"></span><button type="button" class="p" part="increase">${svgIcon('plus')}</button></div><span class="sr" aria-live="polite"></span>`;
+        this.$('.m').addEventListener('click', () => this.stepBy(-1));
+        this.$('.p').addEventListener('click', () => this.stepBy(1));
+        this.$('.v').addEventListener('click', () => this.reset());
+        // keyboard inside the control: + and − change it, 0 goes back
+        this.$('.z').addEventListener('keydown', (e) => {
+          if (e.key === '+' || e.key === '=') { e.preventDefault(); this.stepBy(1); } else if (e.key === '-' || e.key === '_') { e.preventDefault(); this.stepBy(-1); } else if (e.key === '0') { e.preventDefault(); this.reset(); }
+        });
+        tiltWatch(this.$('.z'));
+      }
+      this.sync();
+    }
+    changed() { this.sync(); }
+    num(name, d) { const v = Number(this.getAttribute(name)); return this.hasAttribute(name) && Number.isFinite(v) ? v : d; }
+    get min() { return this.num('min', 25); }
+    get max() { return Math.max(this.min, this.num('max', 200)); }
+    get step() { return Math.max(1, this.num('step', 10)); }
+    /** the value a click on the percentage goes back to (default 100) */
+    get resetValue() { return this.clamp(this.num('reset', 100)); }
+    clamp(v) { return Math.min(this.max, Math.max(this.min, Math.round(v))); }
+    get value() { return this.clamp(this.num('value', this.num('reset', 100))); }
+    set value(v) { this.setAttribute('value', String(this.clamp(Number(v)))); }
+    /** one step up or down, landing on a multiple of step (from 95: + goes to 100, not 105) */
+    stepBy(dir) {
+      const v = this.value, s = this.step;
+      this.set(dir > 0 ? Math.floor(v / s) * s + s : Math.ceil(v / s) * s - s);
+    }
+    reset() { this.set(this.resetValue); }
+    /** sets the value as the user does: sav-zoom (cancelable), then input and change */
+    set(v) {
+      const n = this.clamp(v); if (n === this.value) return;
+      if (!this.emit('sav-zoom', { value: n }, true)) return;
+      this.value = n;
+      const sr = this.$('.sr'); if (sr) sr.textContent = `${n}%`;
+      this.emit('input', { value: n }); this.emit('change', { value: n });
+    }
+    sync() {
+      if (!this.shadowRoot.firstChild) return;
+      const v = this.value, r = this.resetValue, A = (n, d) => this.getAttribute(n) || d;
+      this.$('.z').setAttribute('aria-label', A('label', 'Zoom'));
+      this.$('.v').textContent = `${v}%`;
+      this.$('.v').setAttribute('aria-label', `${v}%. ${A('reset-label', `Back to ${r}%`)}`);
+      this.$('.v').title = A('reset-label', `Back to ${r}%`);
+      this.$('.m').setAttribute('aria-label', A('decrease-label', 'Zoom out')); this.$('.m').title = A('decrease-label', 'Zoom out');
+      this.$('.p').setAttribute('aria-label', A('increase-label', 'Zoom in')); this.$('.p').title = A('increase-label', 'Zoom in');
+      this.$('.m').disabled = v <= this.min; this.$('.p').disabled = v >= this.max;
+      this.toggleAttribute('data-at-reset', v === r);
+      // for="id": that element is zoomed directly
+      const id = this.getAttribute('for'), el = id && document.getElementById(id);
+      if (el) el.style.zoom = v === 100 ? '' : String(v / 100);
+    }
+  }
+  define('sav-zoom', SavZoom);
+
   /* ================================================================== sav-relative-time */
 
   /** A moment written the way people say it — "3 minutes ago", "in 2 days" — kept up to date; the full date shows on hover.
@@ -6818,19 +7554,22 @@
     static styles = `
       :host { display: block; }
       .end { display: flex; align-items: center; justify-content: center; gap: .6rem; min-height: 3rem; padding: .75rem; color: var(--sav-color-text-muted); font-size: var(--sav-font-size-sm); }
-      .end sav-spinner { font-size: 1.4rem; }
+      /* loading: the spinner and its text side by side, centred on the same line, with room between them */
+      .ld, .err { display: inline-flex; align-items: center; gap: .75rem; line-height: 1.3; }
+      .end sav-spinner { flex: none; font-size: 1.35rem; }
+      .err { flex-wrap: wrap; justify-content: center; text-align: center; }
       .line { display: flex; align-items: center; gap: .75rem; width: 100%; max-width: 26rem; }
       .line::before, .line::after { content: ""; flex: 1; height: 1px; background: var(--sav-color-border); }
       [hidden] { display: none !important; }
       .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     `;
-    static get observedAttributes() { return ['threshold', 'mode', 'end-label', 'more-label', 'loading-label', 'error-label']; }
+    static get observedAttributes() { return ['threshold', 'mode', 'end-label', 'more-label', 'loading-label', 'error-label', 'retry-label']; }
     connectedCallback() {
       if (!this.shadowRoot.firstChild) {
         this.shadowRoot.innerHTML = `<div part="base"><slot></slot></div><div class="end" part="footer">
             <span class="ld" part="loading" hidden><sav-spinner aria-hidden="true"></sav-spinner><span class="ldt"></span></span>
             <sav-button class="more" part="more-button" appearance="outline" variant="neutral" hidden></sav-button>
-            <span class="err" part="error" hidden><span class="errt"></span> <sav-button class="retry" size="sm" appearance="soft">Try again</sav-button></span>
+            <span class="err" part="error" role="alert" hidden><span class="errt"></span><sav-button class="retry" size="sm" appearance="soft" variant="neutral"><sav-icon slot="prefix" name="refresh-cw"></sav-icon><span class="rt">Try again</span></sav-button></span>
             <span class="line" part="end" hidden><span class="endt"></span></span>
           </div><span class="sentinel" aria-hidden="true" style="display:block;height:1px"></span><span class="sr" aria-live="polite"></span>`;
         this.$('.more').addEventListener('click', () => this.load());
@@ -6858,9 +7597,11 @@
       this.$('.ldt').textContent = this.getAttribute('loading-label') || 'Loading…';
       this.$('.more').textContent = this.getAttribute('more-label') || 'Load more';
       this.$('.errt').textContent = this.getAttribute('error-label') || 'It did not load.';
+      this.$('.rt').textContent = this.getAttribute('retry-label') || 'Try again';
       this.$('.endt').textContent = this.getAttribute('end-label') || 'That’s all';
       this.$('.ld').hidden = st !== 'loading';
-      this.$('.more').hidden = !(button && st === 'idle');
+      // the button: mode="button", or a browser that cannot watch the end of the list (no IntersectionObserver)
+      this.$('.more').hidden = !((button || typeof IntersectionObserver === 'undefined') && st === 'idle');
       this.$('.err').hidden = st !== 'error';
       this.$('.line').hidden = st !== 'end';
       this.toggleAttribute('aria-busy', st === 'loading');

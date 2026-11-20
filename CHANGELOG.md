@@ -104,13 +104,67 @@ The first public version.
 - `auto-text` also on Alert, Avatar, Tooltip, Pagination, Tabs, Header, Date and time picker, Select (`multiple`), Checkbox, Radio,
   Video and Audio (the play button), and on groups that pass it to their items: Steps, Timeline, Tree, Menu, Breadcrumb, Button group,
   Chip group and Radio group. The value on the progress bar is now always black or white by the same exact WCAG formula.
+- Animations on every component: `animation="off"` (also on a container: everything inside), `animation="on"`, and
+  `animation-duration="ms"` (50–1000, 200 is the normal pace) that scales all its animations; `--sav-motion` does the same in CSS.
+  Charts now draw themselves in (bars grow, lines are drawn, slices fade in) the first time and when the data changes; timeline items,
+  stat cards and empty states fade in; tags, the audio play button and time options ease their changes. In the builder: an Animation section.
+- Tabs: `orientation="horizontal | vertical"` and, for vertical tabs, `side="start | end"` take the place of `placement`
+  (`placement="start"` / `"end"` still works).
+- Builder and playground: a choice shows its real default by name (for example "Edge", "Underline", "Horizontal") instead of "Default";
+  options that only matter in one case (the side and the fold options of vertical tabs) show only then. When the device is larger
+  than the stage, the stage scrolls to the component itself.
+- New: `sav-chip-input`, a field whose values are chips (Enter, comma or semicolon add one; paste a list; × or Backspace remove), `kind="color"`
+  (each chip with its swatch) or `kind="number"`, `max-terms`, suggestions from options. The builder and the playground use it for lists, such as the
+  suggested colours of the colour picker.
+- New: `sav-zoom`, a zoom control: “−”, the percentage, “+”; a click on the percentage goes back to 100% (`reset`). `min`, `max`,
+  `step`, `for` (zooms an element by itself), sizes, `appearance="plain"`; keyboard + − 0.
+- Component builder: a zoom for the preview (`sav-zoom`, 25–150 %) and "Fit", the zoom that shows the whole width of the device.
+- Portal: every component page has a “Browser support” section: the oldest version of each browser that runs it, then what differs
+  between browsers and systems (eyedropper, picture in picture, iOS volume, pop-ups, shortcuts…).
+- Video and audio: when they end, the video shows an end screen (the last frame dimmed, the big button again with “Replay”) and the audio's
+  play button turns into Replay (with `loop` they start again by themselves instead). `replay-label` names the button. The back and
+  forward buttons are rewind and fast forward with “10” beside them, so they are not mistaken for Replay (round arrow) or Loop (repeat). A Loop button in the controls
+  (pressed when `loop` is on) turns the repeat on and off; like any control it can be left out with `controls`. When the bar is short of room the
+  volume bar leaves it first: the volume button then opens a small panel with the volume bar and a mute switch, instead of muting.
+- Infinite scroll: the spinner and its text are spaced and centred; the error line has a “Try again” button with its icon (`retry-label`).
+- Practical examples: the list at the top uses the library's buttons, so it follows the chosen style.
+- Select: `select-all` (with multiple) adds a row that picks every option or clears them all, also Ctrl/⌘ + A in the list. The Controls
+  field of video and audio in the builder uses it: all chosen at first, none chosen means `controls="none"`.
+- Audio: the controls of the video player — back and forward 10 s, volume bar, speed — and its keys (Space/K, ← →, ↑ ↓, M);
+  `native-controls` uses the browser's player. Audio and video: when the player is small, the controls that do not fit move into a ⋯
+  menu (a panel of the library, with named rows), and come back when there is room; `controls="…"` chooses which ones show (by default play / pause /
+  replay, the progress bar, the time, mute, the volume and, for the video, full screen; the 10 s buttons, speed, loop, captions and picture in
+  picture on request)
+  (`controls="none"`: only the video, no bar and no play button, for a muted autoplay loop). In the builder and the playground it is a
+  multiple choice with "Select all": all chosen at first, none chosen means no controls. Their seek and
+  volume bars are drawn by the library (the same in every browser, the thumb in the style's knob shape).
+- Sortable: `grip` shows the drag handle (six dots) in each item, at the start or with `grip="end"` at the end (sideways when horizontal);
+  `handle="grip"` lets only the handle drag.
+- Search: removing a term (× or Backspace) or emptying the field searches again at once, live or not, so the results follow.
+- Search (and the icon fields): the first suggestion is highlighted as the list opens, so Enter takes it; `no-autoselect` keeps the old way.
+- Radio: `mark` chooses how the chosen option looks: `fill` (the shape filled, now the default), `dot` (filled with a small mark, as
+  before) or `ring` (a coloured border with a mark in the middle); on the group it reaches every radio.
+- Builder and playground: an option that depends on another one is disabled, and says why, until that option allows it (the animation
+  duration with animations off, the side and fold options of horizontal tabs, the multiple-only options of search and select, and others).
+- Colour picker: the eyedropper keeps the panel open while you pick, so the chosen colour is not lost. Where the browser has no eyedropper
+  (Safari, Firefox), on Apple devices the button opens the system colour picker, which has its own pipette. By default (`picker="auto"`) the panel is used where the
+  browser offers all of it (Chrome, Edge) and the system picker elsewhere; `picker="custom"` keeps the panel everywhere; the page says what each browser does.
+- Textarea: the resize handle sits in the corner of the field (the inner space belongs to the text area).
+- Portal: the theme presets in Customise sit in as many columns as fit the panel, so it never scrolls sideways.
+- Portal: every sidebar link has its icon; the sidebar folds to a rail of icons with a round handle on its edge, like vertical tabs (the names become tooltips; on
+  phones the menu button still opens it as a drawer). The builder's options fold the same way, to a rail with one icon per section
+  that opens the options there. Both are remembered.
+- Component builder: desktop (1024 × 640), tablet (600 × 800) and phone (360 × 720) are shown at their real size inside a frame like
+  the device, never shrunk: when the page has less room the stage scrolls. Tablet and phone can be turned to landscape.
 - Search: `multiple` turns every term into a chip inside the field (on comma, semicolon, Enter and Space, or the keys in `separators`),
   with `max-terms`, Backspace and × to remove, pasted lists split into terms, `sav-term-add` / `sav-term-remove`; without it the field works as before.
   `live` fires `sav-search` while typing (from `min-chars`), otherwise only on `search-keys` (Enter by default); `sav-search` now also gives `terms`.
 - Select (and language, country and region choice): when the list opens above the field, the search box moves to its bottom, next to the field;
   while it is open it stays on the side where it opened, also when filtering makes it shorter. The search box blurs the options
   scrolling underneath (readable on the see-through Glass surfaces) and sits right against the edge of the list.
-- New: `sav-color-picker`, a colour field (swatch with the system picker, hex code, suggested colours `swatches`, `clearable`, `compact`), form-associated.
+- New: `sav-color-picker`, a colour field (swatch, hex code, suggested colours `swatches`, `clearable`, `compact`), form-associated. The swatch opens
+  the library's own colour panel, in the style and theme of the page: an area for saturation and brightness, hue, opacity (`alpha`, value `#rrggbbaa`),
+  the code, an eyedropper where the browser has one, and the keyboard for all of it. `picker="native"` uses the system colour picker instead.
 - Button: `aria-expanded`, `aria-pressed`, `aria-controls`, `aria-haspopup` set on `sav-button` reach the real button inside (menu and toggle buttons).
 - Header: it can shrink in a flex or grid row (`min-width: 0`), so when there is no room it folds its links instead of overflowing.
 - Fewer leftovers when components leave the page: Video removes its full-screen listener, Dropdown and the pickers close and remove their outside-press listener, the lean measurer stops watching removed elements.

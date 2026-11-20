@@ -35,16 +35,26 @@
   function renderSide(filter = '') {
     const f = filter.trim().toLowerCase();
     const match = (d) => !f || d.name.toLowerCase().includes(f) || d.tag.toLowerCase().includes(f) || d.group.toLowerCase().includes(f);
+    // each link: an icon (shown when the sidebar is folded to a rail) and its name
+    const link = (href, r, name, ic, extra = '') => `<a href="${href}"${r !== null ? ` data-r="${r}"` : ''}${extra}><span class="si" aria-hidden="true">${ICON(ic)}</span><span class="sl">${esc(name)}</span>`;
+    const START = [['#', '', 'Overview', 'home'], ['#start', 'start', 'Getting started', 'rocket'], ['#theming', 'theming', 'Theming', 'palette'], ['#styles', 'styles', 'Styles', 'shapes'],
+      ['#builder', 'builder', 'Component builder', 'wand-sparkles'], ['#examples', 'examples', 'Practical examples', 'layout-template'], ['#versions', 'versions', 'Versions', 'history']];
     let html = f ? '' : `<div class="side-group"><div class="side-title">Start</div>
-      <a href="#" data-r="">Overview</a><a href="#start" data-r="start">Getting started</a><a href="#theming" data-r="theming">Theming</a><a href="#styles" data-r="styles">Styles</a><a href="#builder" data-r="builder">Component builder</a><a href="#examples" data-r="examples">Practical examples</a><a href="#versions" data-r="versions">Versions</a><a href="demo.html" class="side-ext" target="_blank" rel="noopener">Demo website${ICON('external')}<span class="sr-only"> (opens in a new tab)</span></a></div>`;
+      ${START.map(([h, r, n, i]) => link(h, r, n, i) + '</a>').join('')}${link('demo.html', null, 'Demo website', 'monitor', ' class="side-ext" target="_blank" rel="noopener"')}${ICON('external')}<span class="sr-only"> (opens in a new tab)</span></a></div>`;
     for (const g of groups) {
       const items = DOCS.filter((d) => d.group === g && match(d));
       if (!items.length) continue;
-      html += `<div class="side-group"><div class="side-title">${g}</div>${items.map((d) => `<a href="#${d.id}" data-r="${d.id}">${d.name}</a>`).join('')}</div>`;
+      html += `<div class="side-group"><div class="side-title">${g}</div>${items.map((d) => link('#' + d.id, d.id, d.name, d.icon || 'box') + '</a>').join('')}</div>`;
     }
     if (!html) html = '<p class="side-empty">No component found.</p>';
     $('#side').innerHTML = html;
+    railTitles();
     markActive();
+  }
+  /** folded to a rail, each icon says its name on hover */
+  function railTitles() {
+    const on = document.body.classList.contains('side-collapsed');
+    document.querySelectorAll('#side a').forEach((a) => { if (on) a.title = a.querySelector('.sl')?.textContent || ''; else a.removeAttribute('title'); });
   }
   function markActive() {
     const r = hashParts()[0];
@@ -249,7 +259,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   function pageComponent(d) {
     const table = (title, head, rows) => !rows?.length ? '' : `<h2>${title}</h2><sav-table hover><table><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, i) => `<td>${i === 0 ? `<code>${esc(c)}</code>` : c}</td>`).join('')}</tr>`).join('')}</tbody></table></sav-table>`;
     const idx = DOCS.indexOf(d), prev = DOCS[idx - 1], next = DOCS[idx + 1];
-    return `<div class="doc-head"><sav-label class="eyebrow">${d.group}</sav-label><div class="title-row"><h1>${d.name}</h1><span class="fav-slot" data-fav="${d.id}"></span></div><p class="tagline"><code>${esc(d.tag)}</code></p>${d.builtFrom ? `<p class="built muted small">Built from ${d.builtFrom.map((b) => { const x = DOCS.find((y) => y.id === b); return x ? `<a href="#${b}">${x.name}</a>` : b; }).join(', ')}.</p>` : ''}<p class="lead">${d.desc}</p></div>
+    return `<div class="doc-head"><sav-label class="eyebrow">${d.group}</sav-label><div class="title-row"><h1>${d.name}</h1><span class="fav-slot" data-fav="${d.id}"></span></div><p class="tagline"><code>${esc(d.tag)}</code></p>${d.builtFrom ? `<p class="built muted small">Built from ${d.builtFrom.map((b) => { const x = DOCS.find((y) => y.id === b); return x ? `<a href="#${b}">${x.name}</a>` : b; }).join(', ')}.</p>` : ''}<p class="lead">${d.desc}</p>${d.notice ? `<sav-alert class="doc-notice" variant="${d.notice.variant || 'warning'}" heading="${esc(d.notice.heading || 'Good to know')}">${d.notice.text}</sav-alert>` : ''}</div>
       ${d.demos.map((x) => `<h2 id="s-${slug(x.title)}">${x.title}</h2><div class="demo layered"><div class="demo-view">${x.html}</div>${codeBlock(x.html)}</div>`).join('')}
       ${d.id === 'icon' ? iconExplorerHtml() : ''}
       ${d.play ? playgroundHtml(d) : ''}
@@ -259,6 +269,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       ${table('Methods', ['Name', 'Description'], d.methods)}`}
       ${d.parts ? `<h2>CSS parts</h2><p>${d.parts.map((p) => `<code>${p}</code>`).join(' ')}</p>` : ''}
       ${window.SavA11y?.html(d.id) || ''}
+      ${window.SavCompat?.html(d.id) || ''}
       <nav class="pager">${prev ? `<a class="layered" href="#${prev.id}">${ICON('arrow-left')}<span><small>Previous</small>${prev.name}</span></a>` : '<span></span>'}${next ? `<a href="#${next.id}" class="nx layered"><span><small>Next</small>${next.name}</span>${ICON('arrow-right')}</a>` : ''}</nav>
       ${footer()}`;
   }
@@ -293,6 +304,14 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
 </div>
 <sav-button shape="tilt" appearance="outline">Only this button is tilted</sav-button>`;
 
+  const ANIM_DEMO = `<sav-switch>Normal</sav-switch>
+<sav-switch animation-duration="900">Slow (900 ms)</sav-switch>
+<sav-switch animation="off">No animation</sav-switch>
+
+<!-- a whole section without animations -->
+<section animation="off">…</section>
+<!-- or with CSS -->
+<style> .calm { --sav-motion: .5; } </style>`;
   function pageStyles() {
     const cur = store.get('savc-style', 'tilt');
     const panels = Sav.styles.map((st) => `<section class="style-panel sav-style-${st}">
@@ -306,6 +325,16 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     <h2 id="shapes">Shapes of a single component</h2>
     <p>Any component takes <code>shape="tilt"</code>, <code>shape="squared"</code> or <code>shape="rounded"</code>: it changes only that element, whatever style the page uses. Put it on a container and it applies to everything inside.</p>
     <div class="demo layered"><div class="demo-view">${SHAPES_DEMO}</div>${codeBlock(SHAPES_DEMO)}</div>
+    <h2 id="animations">Animations</h2>
+    <p>Every component animates its changes (opening, choosing, hovering, charts drawing themselves). On any component, or on a container around several:</p>
+    <ul>
+      <li><code>animation="off"</code>: no animation there, nor in what is inside it.</li>
+      <li><code>animation="on"</code>: animated even inside an area where they are off.</li>
+      <li><code>animation-duration="ms"</code> (on a component): how long they last, from 50 to 1000 ms. 200 is the normal pace; every animation of the component keeps its proportions.</li>
+      <li><code>--sav-motion</code> in CSS: the same as a factor, for a whole page or section (<code>0</code> none, <code>1</code> normal, <code>2</code> twice as long).</li>
+    </ul>
+    <p class="muted">The components also follow the system setting “reduce motion”.</p>
+    <div class="demo layered"><div class="demo-view">${ANIM_DEMO}</div>${codeBlock(ANIM_DEMO)}</div>
     <h2>From JavaScript</h2>
     ${codeBlock(`Sav.setStyle('tilt'); // 'soft' · 'tilt' · 'sharp' · 'brutal' · 'glass'`, 'js')}
     ${footer()}`;
@@ -348,7 +377,8 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
 
   function pageExamples() {
     const EX = window.SAVC_EXAMPLES;
-    const toc = EX.map((e) => `<a class="chip tilt" href="#examples" data-jump="ex-${e.id}">${e.title}</a>`).join(' ');
+    // the list of examples: buttons of the library, so they follow the style chosen for the site
+    const toc = EX.map((e) => `<sav-button size="sm" appearance="soft" variant="neutral" href="#ex-${e.id}" data-jump="ex-${e.id}">${e.title}</sav-button>`).join('');
     return `<div class="doc-head"><sav-label class="eyebrow">Start</sav-label><h1>Practical examples</h1><p class="lead">Small, realistic screens built only with SavComponents, with the JavaScript (or TypeScript) that listens to their events. Copy the code and adapt it: names, prices and numbers are made up.</p><div class="ex-toc">${toc}</div></div>
     ${EX.map((e) => `<h2 id="ex-${e.id}">${e.title}</h2><p>${e.desc}</p><p class="uses">Uses: ${e.uses.split(' · ').map((u) => `<code>sav-${u}</code>`).join(' ')}</p>
       <div class="demo layered"><div class="demo-view">${e.html}${e.js ? `<script>${e.js}</script>` : ''}</div>
@@ -364,7 +394,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   /** Friendlier names than the attribute itself (the attribute stays in the tip and in the code). */
   const KNOB_LABELS = {
     'icon-end': 'Icon after the text', noicon: 'No icon', 'no-icon': 'No icon', 'sheet-on-mobile': 'Sheet on phones', 'native-on-mobile': 'Native on phones', native: 'Native control',
-    'show-value': 'Show the value', 'max-chips': 'Chips shown at most', 'min-chars': 'Letters before suggesting or searching', 'max-terms': 'Most terms', 'max-label': 'Text when full', separators: 'Keys that add a term', 'search-keys': 'Keys that search', live: 'Search while typing', 'empty-label': 'Text when nothing is found', 'no-filter': 'Do not filter',
+    'show-value': 'Show the value', 'max-chips': 'Chips shown at most', 'min-chars': 'Letters before suggesting or searching', 'max-terms': 'Most terms', 'replay-label': 'Replay button text', 'max-label': 'Text when full', separators: 'Keys that add a term', 'search-keys': 'Keys that search', live: 'Search while typing', 'empty-label': 'Text when nothing is found', 'no-filter': 'Do not filter',
     'per-view': 'Slides at once', 'no-arrows': 'No arrows', 'touch-arrows': 'Arrows on touch screens', 'no-hint': 'No swipe hint', 'no-dots': 'No dots', 'no-swipe': 'No swipe', 'no-keyboard': 'No arrow keys',
     'native-controls': 'Browser controls', 'no-header': 'No header', 'no-close': 'No close button', 'stay-open': 'Stays open after a choice', 'mobile-only': 'Only on phones',
     'max-items': 'Items before folding', 'no-legend': 'No legend', 'show-values': 'Show the values', 'no-fill': 'No fill', 'week-start': 'Week starts on', 'no-meter': 'No strength bar',
@@ -398,6 +428,86 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     return ok;
   }
 
+  /** which option a description calls the default: "Default underline." or "edge (…, the default)" (the last option named before the word) */
+  function defaultOf(opts, desc) {
+    const t = String(desc || '');
+    const m = t.match(/\bdefault(?: is)?:?\s+["“]?([a-z0-9-]+)/i); if (m && opts.includes(m[1])) return m[1];
+    const at = t.search(/\bdefault\b/i); if (at < 0) return '';
+    let best = '', pos = -1;
+    for (const o of opts) {
+      const re = new RegExp(`(^|[^a-z-])${o.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z-])`, 'gi'); let x;
+      while ((x = re.exec(t)) && x.index < at) if (x.index > pos) { pos = x.index; best = o; }
+    }
+    return best;
+  }
+  /** Options that only matter when another one is set: [when it applies, what the field says otherwise].
+      The field stays in its place but is disabled (and says why) until the option it depends on allows it. */
+  const on = (v) => v === true || v === '' || v === 'true';
+  const DEPENDS = {
+    '*': { 'animation-duration': [(a) => a.animation !== 'off', 'Animations are off'] },
+    tabs: {
+      side: [(a) => a.orientation === 'vertical', 'Only for vertical tabs'], collapsible: [(a) => a.orientation === 'vertical', 'Only for vertical tabs'],
+      collapsed: [(a) => a.orientation === 'vertical' && on(a.collapsible), 'Only for vertical tabs that can fold'],
+      'collapse-button': [(a) => a.orientation === 'vertical' && on(a.collapsible), 'Only for vertical tabs that can fold'],
+      'collapse-label': [(a) => a.orientation === 'vertical' && on(a.collapsible), 'Only for vertical tabs that can fold'],
+      'expand-label': [(a) => a.orientation === 'vertical' && on(a.collapsible), 'Only for vertical tabs that can fold'],
+    },
+    search: {
+      separators: [(a) => on(a.multiple), 'Only with several terms (multiple)'], 'max-terms': [(a) => on(a.multiple), 'Only with several terms (multiple)'],
+      'max-label': [(a) => on(a.multiple) && !!a['max-terms'], 'Only with multiple and a most terms'],
+    },
+    'chip-input': { 'max-label': [(a) => !!a['max-terms'], 'Only with a most terms'] },
+    select: {
+      'max-chips': [(a) => on(a.multiple) && !on(a.native), 'Only with multiple, in the library’s list'], 'auto-text': [(a) => on(a.multiple), 'Only with multiple'],
+      searchable: [(a) => !on(a.native), 'Not with the native control'], clearable: [(a) => !on(a.native), 'Not with the native control'],
+      'sheet-on-mobile': [(a) => !on(a.native), 'Not with the native control'], 'native-on-mobile': [(a) => !on(a.native), 'Not with the native control'],
+    },
+    'date-picker': {
+      'sheet-on-mobile': [(a) => !on(a.native), 'Not with the native control'], 'native-on-mobile': [(a) => !on(a.native), 'Not with the native control'],
+      'first-day': [(a) => !a.mode || a.mode === 'date', 'Only when choosing a day'],
+    },
+    'time-picker': { 'sheet-on-mobile': [(a) => !on(a.native), 'Not with the native control'], 'native-on-mobile': [(a) => !on(a.native), 'Not with the native control'] },
+    carousel: { 'touch-arrows': [(a) => !on(a['no-arrows']), 'The arrows are off'], controls: [(a) => !on(a['no-arrows']) || !on(a['no-dots']), 'No arrows and no dots'] },
+    password: { 'min-strength': [(a) => !on(a['no-meter']), 'The strength meter is off'], labels: [(a) => !on(a['no-meter']), 'The strength meter is off'] },
+    pagination: { siblings: [(a) => a.appearance !== 'simple', 'Not with the simple pagination'] },
+    'infinite-scroll': { 'more-label': [(a) => a.mode === 'button', 'Only with the button'], threshold: [(a) => a.mode !== 'button', 'Not with the button'] },
+    progress: { 'show-value': [(a) => !on(a.indeterminate), 'Not while indeterminate'] },
+    image: { 'zoom-src': [(a) => on(a.zoom), 'Only with zoom'] },
+    menu: {
+      collapsible: [(a) => a.orientation !== 'horizontal', 'Not for a horizontal bar'],
+      collapsed: [(a) => a.orientation !== 'horizontal', 'Not for a horizontal bar'],
+    },
+    'color-picker': { alpha: [(a) => a.picker !== 'native', 'The system picker has no opacity'] },
+  };
+  /** a field that depends on another option: disabled (with the reason) until that option allows it */
+  function applyDeps(root, attrs, id) {
+    if (!root) return;
+    for (const [name, [ok, why]] of Object.entries({ ...DEPENDS['*'], ...(DEPENDS[id] || {}) })) {
+      root.querySelectorAll(`[data-a="${name}"], [data-k="${name}"]`).forEach((el) => {
+        const off = !ok(attrs || {});
+        el.toggleAttribute('disabled', off);
+        el.toggleAttribute('data-dep-off', off);
+        if (off) el.setAttribute('title', why); else el.removeAttribute('title');
+      });
+    }
+  }
+  /** several choices (the controls of the players): the default ones chosen when the attribute is not set (k.defaults); none chosen is emptyIs ("none") */
+  function multiValue(k, v) {
+    const list = String(v ?? '').split(/[\s,]+/).filter(Boolean);
+    if (k.defaults && !list.length) return k.defaults.join(',');
+    if (k.emptyIs && list.length === 1 && list[0] === k.emptyIs) return '';
+    return list.join(',');
+  }
+  const multiAttrs = (k) => `data-multi="${k.options.join(' ')}"${k.defaults ? ` data-default="${k.defaults.join(' ')}"` : ''}${k.emptyIs ? ` data-empty="${k.emptyIs}"` : ''}`;
+  /** the attribute a multiple choice writes: nothing when the choice is the default one, emptyIs when none, else the names with spaces (in the order of the list) */
+  function multiAttr(el, v) {
+    if (!el.dataset.multi) return v.join(el.localName === 'sav-select' ? ' ' : ',');
+    if (!v.length) return el.dataset.empty ?? '';
+    const order = el.dataset.multi.split(' '), list = order.filter((o) => v.includes(o));
+    const def = (el.dataset.default || '').split(' ').filter(Boolean);
+    if (def.length && list.length === def.length && def.every((d) => list.includes(d))) return '';
+    return list.join(' ');
+  }
   function knobsFor(d, keep = []) {
     const skip = new Set(['href', 'target', 'download', 'type', 'name', 'value', 'id', 'from', 'for', ...(d.play?.skip || [])].filter((n) => !keep.includes(n)));
     const main = d.play?.tag || (String(d.tag).match(/sav-[a-z-]+/) || [''])[0];
@@ -435,12 +545,26 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         if (k.name === 'level') k.max = 6; if (k.name === 'first-day') k.max = 6;
       }
       if (k.unit) k.label += ` (${k.unit})`;
+      // the choice that applies when nothing is set: shown by its name instead of "Default"
+      if (k.type === 'enum') k.def = defaultOf(k.options, k.desc);
+      // several choices from a fixed set (the controls of the players): a select with multiple
+      if (k.type === 'text' && k.name === 'controls' && /^(video|audio)$/.test(d.id)) { k.kind = 'multi'; k.options = d.id === 'video' ? ['play', 'skip', 'seek', 'time', 'mute', 'volume', 'speed', 'loop', 'captions', 'pip', 'fullscreen'] : ['play', 'skip', 'seek', 'time', 'mute', 'volume', 'speed', 'loop']; k.optionLabels = { play: 'Play / pause', skip: 'Back / forward 10 s', seek: 'Progress bar', time: 'Time', mute: 'Mute', volume: 'Volume', speed: 'Speed', loop: 'Loop (play again at the end)', captions: 'Captions', pip: 'Picture in picture', fullscreen: 'Full screen' }; if (k.name === 'controls') { k.defaults = d.id === 'video' ? ['play', 'seek', 'time', 'mute', 'volume', 'fullscreen'] : ['play', 'seek', 'time', 'mute', 'volume']; k.emptyIs = 'none'; } }
+      // a list of values separated by commas: a chip field (colours with their swatch, numbers)
+      if (k.type === 'text' && k.name !== 'value' && /separated by commas|comma-separated/i.test(k.desc || '')) { k.kind = 'chips'; k.chips = k.name === 'swatches' ? 'color' : /numbers/i.test(k.desc) ? 'number' : ''; }
+      // options for vertical tabs only show once the tabs are vertical
     }
     const own = knobs.find((k) => k.name === 'shape'); // the avatar has its own shapes: merge them
     if (own) own.options = [...new Set([...own.options, 'tilt', 'squared', 'rounded'])];
     else knobs.push({ name: 'shape', type: 'enum', options: ['tilt', 'squared', 'rounded'], label: 'Shape' });
     const shape = knobs.find((k) => k.name === 'shape');
     shape.desc = (shape.desc ? shape.desc + ' ' : '') + 'Tilt leans the background (the text stays upright), Squared has no rounded corners, Rounded has softer ones. It changes this component only, whatever the style of the page.';
+    // every component: its animations on or off, and how long they last (they also reach the components inside it)
+    if (!knobs.some((k) => k.name === 'animation')) {
+      knobs.push({ name: 'animation', type: 'enum', options: ['on', 'off'], values: 'on · off', label: 'Animations', advanced: false,
+        desc: 'Off: this component (and what is inside it) does not animate. On: it animates even inside an area where they are off. Default: like the page.' });
+      knobs.push({ name: 'animation-duration', type: 'text', kind: 'number', unit: 'ms', min: 50, max: 1000, values: 'ms', label: 'Animation duration (ms)', advanced: false,
+        desc: 'How long its animations last, from 50 to 1000 ms: 200 is the normal pace, less is quicker, more is slower. Every animation of the component keeps its proportions.' });
+    }
     // stable order: content first, then the look; within the same rank, the order of the table
     return knobs.map((k, i) => [k, i]).sort((a, b) => orderOf(a[0].name) - orderOf(b[0].name) || a[1] - b[1]).map(([k]) => k);
   }
@@ -530,12 +654,15 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     // every field: a Title Case name and a help tip with what it does
     const tip = (text) => (text ? ` <sav-info-tip size="sm" placement="right" sheet-on-mobile content="${esc(text)}"></sav-info-tip>` : '');
     const lbl = (name, text) => `<span slot="label" class="knob-l">${esc(name)}${tip(text)}</span>`;
-    const field = (k) => {
+    const field = (k) => fieldHtml(k);
+    const fieldHtml = (k) => {
       const v = playState.attrs[k.name];
       const L = k.label || titleCase(k.name);
       if (k.type === 'bool') return `<sav-switch size="sm" data-k="${k.name}" ${v ? 'checked' : ''}>${esc(L)}${tip(k.desc)}</sav-switch>`;
-      if (k.type === 'enum') return `<sav-select size="sm" data-k="${k.name}" value="${esc(v || '')}" sheet-on-mobile aria-label="${esc(L)}" placeholder="Default">${lbl(L, k.desc)}<option value="">Default</option>${k.options.map((o) => `<option value="${o}">${titleCase(o)}</option>`).join('')}</sav-select>`;
+      if (k.type === 'enum') return `<sav-select size="sm" data-k="${k.name}" value="${esc(v || '')}" sheet-on-mobile aria-label="${esc(L)}" placeholder="${k.def ? titleCase(k.def) : 'Default'}">${lbl(L, k.desc)}<option value="">${k.def ? titleCase(k.def) : 'Default'}</option>${k.options.filter((o) => o !== k.def).map((o) => `<option value="${o}">${titleCase(o)}</option>`).join('')}</sav-select>`;
       // icons: a search among the whole icon set (drawing, name, words); the chosen icon shows next to the label
+      if (k.kind === 'multi') return `<sav-select size="sm" multiple select-all data-k="${k.name}" ${multiAttrs(k)} value="${esc(multiValue(k, v))}" placeholder="None" sheet-on-mobile>${lbl(L, k.desc)}${k.options.map((o) => `<option value="${o}">${esc(k.optionLabels?.[o] || titleCase(o))}</option>`).join('')}</sav-select>`;
+      if (k.kind === 'chips') return `<sav-chip-input size="sm" data-k="${k.name}"${k.chips ? ` kind="${k.chips}"` : ''} value="${esc(v || '')}">${lbl(L, k.desc)}</sav-chip-input>`;
       if (k.kind === 'icon') return `<sav-search size="sm" data-k="${k.name}" data-icons no-filter max="12" value="${esc(v || '')}" placeholder="Search icons: star, heart, bell…">`
         + `<span slot="label" class="knob-l">${esc(L)}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${v ? '' : 'hidden'}></sav-icon></span></sav-search>`;
       if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-k="${k.name}"${k.min !== undefined ? ` min="${k.min}"` : ''}${k.max !== undefined ? ` max="${k.max}"` : ''} value="${esc(v || '')}" placeholder="Default">${lbl(L, k.desc)}</sav-number-input>`;
@@ -549,6 +676,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       + ((d.attrs || []).some((r) => r[0] === '--text-color') ? `<sav-color-picker size="sm" clearable data-token="--text-color" value="${esc(playState.tokens['--text-color'] || '')}" placeholder="Fits the background">${lbl('Text colour', 'The colour of the text (the --text-color property), whatever the background. Empty: the colour that fits the background.')}</sav-color-picker>` : '')
       + `<div class="play-bools">${knobs.filter((k) => k.type === 'bool').map(field).join('')}</div>`;
     const update = () => {
+      applyDeps(document.querySelector('.play'), playState.attrs, d.id);
       const html = playMarkup(d, playState);
       $('#playPreview').innerHTML = html;
       $('#playCode').innerHTML = codeBlock(html);
@@ -571,8 +699,10 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         // data (JSON) changes the component only once it reads well; until then the field says what is wrong
         if (el.classList.contains('mono') && !jsonOk(el, v)) return;
         if (typeof v === 'number') v = String(v);
+        if (Array.isArray(v)) v = multiAttr(el, v); // a chip field: its list, as the attribute writes it
         v = clampKnob(el, v);
         playState.attrs[el.dataset.k] = v;
+        applyDeps(el.closest('.play'), playState.attrs, d.id);
         const ic = el.querySelector(`[data-icon-of="${el.dataset.k}"]`); if (ic) { if (v) ic.setAttribute('name', v); ic.hidden = !v; }
       }
       else if (el.hasAttribute('data-text')) playState.text = el.value;
@@ -601,7 +731,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   window.SavDocs = {
     clampKnob,
     docs: DOCS, icon: ICON, esc, codeBlock, footer: () => footer(), route: () => route(),
-    playMarkup, knobsFor, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
+    playMarkup, knobsFor, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
     themeConfig: () => ({ style: store.get('savc-style', 'tilt'), mode: store.get('savc-mode', 'auto'), tokens: themeTokens(), settings: { ...theme } }),
     applyThemeConfig(cfg) {
       theme = { ...(cfg.settings || {}) };
@@ -900,6 +1030,16 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   const menuBtn = $('#menuBtn'), side = $('#side');
   const setNav = (open) => { document.body.classList.toggle('nav-open', open); menuBtn.setAttribute('aria-expanded', String(open)); menuBtn.setAttribute('aria-label', open ? 'Close the menu' : 'Open the menu'); };
   menuBtn.addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
+  // wide screens: the round handle on the edge of the sidebar folds it to a rail of icons and back (remembered)
+  const fold = $('#sideFold');
+  const setRail = (on, keep = true) => {
+    document.body.classList.toggle('side-collapsed', on); if (keep) store.set('savc-side-collapsed', on);
+    const say = on ? 'Expand the menu' : 'Collapse the menu';
+    fold?.setAttribute('aria-expanded', String(!on)); fold?.setAttribute('aria-label', say); if (fold) fold.title = say;
+    railTitles();
+  };
+  setRail(!!store.get('savc-side-collapsed', false), false);
+  fold?.addEventListener('click', () => setRail(!document.body.classList.contains('side-collapsed')));
   side.addEventListener('click', (e) => { if (e.target.closest('a')) setNav(false); });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('nav-open')) { setNav(false); menuBtn.focus(); } });
   document.addEventListener('click', (e) => { if (document.body.classList.contains('nav-open') && !e.composedPath().some((n) => n.id === 'side' || n.id === 'menuBtn')) setNav(false); });

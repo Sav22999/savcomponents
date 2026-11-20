@@ -8,8 +8,11 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const STYLES = { soft: 'Soft', tilt: 'Tilt', sharp: 'Sharp', brutal: 'Brutal', glass: 'Glass' };
   const DEVICES = [['desktop', 'monitor', 'Desktop'], ['tablet', 'tablet', 'Tablet'], ['phone', 'smartphone', 'Phone']];
-  /** the width of each device: the preview is drawn at this width and scaled down when the screen has less room */
-  const DEVICE_W = { desktop: 1280, tablet: 768, phone: 390 };
+  /** the screen of each device (width × height, upright): the preview is drawn at this real size, inside a frame like the device;
+      when the page has less room the stage scrolls instead of shrinking it. Tablet and phone can be turned (landscape). */
+  // compact screens, still at real size: a small laptop, a small tablet, a common phone
+  const DEVICE_SIZE = { desktop: [1024, 640], tablet: [600, 800], phone: [360, 720] };
+  const TURNS = new Set(['tablet', 'phone']);
   const BGS = { page: 'Page', surface: 'Surface', dots: 'Dots', colour: 'Colourful' };
   const VARIANTS = ['primary', 'neutral', 'success', 'warning', 'danger'];
   const SIZES = { sm: 'S', md: 'M', lg: 'L' };
@@ -134,6 +137,8 @@
     if (STYLES[st.style]) out.style = st.style;
     if (['light', 'dark'].includes(st.mode)) out.mode = st.mode;
     if (DEVICES.some(([v]) => v === st.device)) out.device = st.device;
+    if (st.turned === true) out.turned = true;
+    if (Number.isFinite(st.zoom) && st.zoom >= 25 && st.zoom <= 150) out.zoom = Math.round(st.zoom);
     if (BGS[st.bg]) out.bg = st.bg;
     return out;
   }
@@ -229,6 +234,8 @@
           </div>
           <div class="bld-bar">
             <sav-radio-group appearance="buttons" size="sm" id="bldDevice" aria-label="Screen size">${DEVICES.map(([v, ic, l]) => `<sav-radio value="${v}" title="${l}"><sav-icon name="${ic}"></sav-icon><span class="bld-hide-sm">${l}</span></sav-radio>`).join('')}</sav-radio-group>
+            <sav-tooltip content="Turn the device (portrait or landscape)" id="bldRotateTip"><sav-button size="sm" square appearance="soft" variant="neutral" id="bldRotate" label="Turn the device" aria-pressed="false"><sav-icon name="rotate-ccw-square"></sav-icon></sav-button></sav-tooltip>
+            <span class="bld-zoomer"><sav-zoom size="sm" id="bldZoomR" min="25" max="150" step="10" label="Zoom of the preview"></sav-zoom><sav-tooltip content="The zoom that shows the whole width of the device"><sav-button size="sm" appearance="ghost" variant="neutral" id="bldZoomFit">Fit</sav-button></sav-tooltip></span>
             <sav-select size="sm" id="bldStyle" aria-label="Style of the preview" sheet-on-mobile>${Object.entries(STYLES).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</sav-select>
             <sav-radio-group appearance="buttons" size="sm" id="bldMode" aria-label="Colour mode"><sav-radio value="light" title="Light"><sav-icon name="sun"></sav-icon></sav-radio><sav-radio value="dark" title="Dark"><sav-icon name="moon"></sav-icon></sav-radio></sav-radio-group>
             <sav-select size="sm" id="bldBg" aria-label="Background of the preview" sheet-on-mobile>${Object.entries(BGS).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</sav-select>
@@ -239,13 +246,13 @@
         </div>
         <div class="bld-cols">
         <section class="bld-main">
-          <div class="bld-stage" id="bldStage"><div class="bld-fit" id="bldFit"><div class="bld-frame" id="bldFrame"><div class="bld-preview" id="bldPreview"></div></div></div><span class="bld-zoom muted small" id="bldZoom"></span></div>
+          <div class="bld-stage" id="bldStage"><div class="bld-device" id="bldFit"><div class="bld-frame" id="bldFrame"><div class="bld-preview" id="bldPreview"></div></div></div><span class="bld-zoom muted small" id="bldZoom"></span></div>
           <div class="bld-log layered" aria-live="polite">
             <div class="bld-log-head"><span class="bld-log-t"><sav-icon name="activity"></sav-icon><b>Events</b><span class="muted small" id="bldLogHint"></span></span><sav-button size="sm" appearance="ghost" variant="neutral" id="bldLogClear" hidden>Clear</sav-button></div>
             <ol class="bld-log-list" id="bldLogList"></ol>
           </div>
         </section>
-        <aside class="bld-panel layered" aria-label="Options"><div class="bld-scroll" id="bldPanel"></div></aside>
+        <aside class="bld-panel layered" id="bldOptions" aria-label="Options"><button type="button" class="edge-fold" id="bldFold" aria-controls="bldPanel" aria-expanded="true" aria-label="Collapse the options" title="Collapse the options"><sav-icon name="chevrons-left"></sav-icon></button><nav class="bld-rail" id="bldRail" aria-label="Sections of the options"></nav><div class="bld-scroll" id="bldPanel"></div></aside>
         </div>
         <div class="bld-code layered">
           <div class="bld-code-head"><b id="bldTitle"></b><span class="row"><a class="muted small" id="bldDocs" href="#">Documentation</a><sav-button size="sm" appearance="ghost" variant="neutral" id="bldSaveNew" hidden>Save as new</sav-button><sav-button size="sm" appearance="soft" icon="save" id="playSave" hidden>Save to my components</sav-button><sav-button size="sm" appearance="outline" variant="neutral" id="bldDownload"><sav-icon slot="prefix" name="download"></sav-icon>Download page</sav-button></span></div>
@@ -265,7 +272,8 @@
     rounded: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="4.5"/></svg>',
   };
 
-  function field(k) {
+  function field(k) { return fieldHtml(k); }
+  function fieldHtml(k) {
     const v = S.attrs[k.name];
     const name = k.label || T(k.name);
     if (k.type === 'bool') return `<sav-switch size="sm" data-a="${k.name}" ${isOn(v) ? 'checked' : ''}>${esc(name)}${tip(k.desc)}</sav-switch>`;
@@ -274,13 +282,17 @@
       if (k.name === 'variant') return `<sav-radio-group class="bld-swatches" appearance="buttons" size="sm" data-a="variant" value="${esc(val)}">${lbl('Colour', k.desc || 'The colour of the component, from the theme.')}<sav-radio value="_" title="Default">Auto</sav-radio>${(k.options.includes('protected') ? [...VARIANTS, 'protected'] : VARIANTS).map((o) => `<sav-radio value="${o}" title="${T(o)}"><span class="bld-sw" style="--c: var(--sav-color-${o})"></span><span class="sr-only">${T(o)}</span></sav-radio>`).join('')}</sav-radio-group>`;
       if (k.name === 'shape') return `<sav-radio-group class="bld-shapes" appearance="buttons" size="sm" data-a="shape" value="${esc(val)}">${lbl('Shape', k.desc)}${['_', ...k.options].map((o) => `<sav-radio value="${o}" title="${o === '_' ? 'Like the page style' : T(o)}">${SHAPE_SVG[o] || ''}<span>${o === '_' ? 'Page' : T(o)}</span></sav-radio>`).join('')}</sav-radio-group>`;
       if (k.name === 'size' && k.options.every((o) => SIZES[o])) return `<sav-radio-group appearance="buttons" size="sm" data-a="size" value="${esc(val)}">${lbl('Size', k.desc)}<sav-radio value="_">Auto</sav-radio>${k.options.map((o) => `<sav-radio value="${o}" title="${T(o)}">${SIZES[o]}</sav-radio>`).join('')}</sav-radio-group>`;
-      if (k.options.length <= 3) return `<sav-radio-group appearance="buttons" size="sm" data-a="${k.name}" value="${esc(val)}">${lbl(name, k.desc)}<sav-radio value="_">Default</sav-radio>${k.options.map((o) => `<sav-radio value="${o}">${esc(T(o))}</sav-radio>`).join('')}</sav-radio-group>`;
-      return `<sav-select size="sm" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}" sheet-on-mobile placeholder="Default">${lbl(name, k.desc)}<option value="">Default</option>${k.options.map((o) => `<option value="${o}">${esc(T(o))}</option>`).join('')}</sav-select>`;
+      // the default choice is shown by its name (choosing it again leaves the attribute out of the code)
+      const dn = k.def ? T(k.def) : 'Default', rest = k.options.filter((o) => o !== k.def);
+      if (k.options.length <= 3) return `<sav-radio-group appearance="buttons" size="sm" data-a="${k.name}" value="${esc(val)}">${lbl(name, k.desc)}<sav-radio value="_">${esc(dn)}</sav-radio>${rest.map((o) => `<sav-radio value="${o}">${esc(T(o))}</sav-radio>`).join('')}</sav-radio-group>`;
+      return `<sav-select size="sm" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}" sheet-on-mobile placeholder="${esc(dn)}">${lbl(name, k.desc)}<option value="">${esc(dn)}</option>${rest.map((o) => `<option value="${o}">${esc(T(o))}</option>`).join('')}</sav-select>`;
     }
     if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-a="${k.name}"${k.min !== undefined ? ` min="${k.min}"` : ''}${k.max !== undefined ? ` max="${k.max}"` : ''} value="${esc(isOn(v) ? v : '')}" placeholder="Default">${lbl(name, k.desc)}</sav-number-input>`;
     // data (JSON): a box with several lines; the component changes only once the text reads well
     if (k.kind === 'json') return `<sav-textarea size="sm" rows="5" class="mono" data-a="${k.name}" data-json value="${esc(isOn(v) ? v : '')}">${lbl(name, (k.desc ? k.desc + ' ' : '') + 'Written as JSON: the preview follows once brackets, quotes and commas are right.')}</sav-textarea>`;
     // icons: a search among the whole icon set, each suggestion with its drawing and name; the chosen one shows next to the label
+    if (k.kind === 'multi') return `<sav-select size="sm" multiple select-all data-a="${k.name}" ${D().multiAttrs(k)} value="${esc(D().multiValue(k, isOn(v) ? v : ''))}" placeholder="None" sheet-on-mobile>${lbl(name, k.desc)}${k.options.map((o) => `<option value="${o}">${esc(k.optionLabels?.[o] || T(o))}</option>`).join('')}</sav-select>`;
+    if (k.kind === 'chips') return `<sav-chip-input size="sm" data-a="${k.name}"${k.chips ? ` kind="${k.chips}"` : ''} value="${esc(isOn(v) ? v : '')}">${lbl(name, k.desc)}</sav-chip-input>`;
     if (k.kind === 'icon') return `<sav-search size="sm" data-a="${k.name}" data-icons no-filter max="12" value="${esc(isOn(v) ? v : '')}" placeholder="Search icons: star, heart, bell…">`
       + `<span slot="label" class="knob-l">${esc(name)}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${isOn(v) ? '' : 'hidden'}></sav-icon></span></sav-search>`;
     return `<sav-input size="sm" data-a="${k.name}" value="${esc(isOn(v) ? v : '')}">${lbl(name, k.desc)}</sav-input>`;
@@ -303,7 +315,8 @@
   }
   function renderPanel() {
     const d = cur, ks = knobs(d);
-    const main = ks.filter((k) => !k.advanced), adv = ks.filter((k) => k.advanced);
+    const mot = ks.filter((k) => /^animation(-duration)?$/.test(k.name)); // in their own section
+    const main = ks.filter((k) => !k.advanced && !mot.includes(k)), adv = ks.filter((k) => k.advanced && !mot.includes(k));
     // choices about what it holds (its value, its type, its mode) belong with the content, not with the look
     const CONTENT_CHOICES = /^(value|type|mode|kind|code|level)$/;
     const texts = main.filter((k) => k.type === 'text' || (k.type === 'enum' && CONTENT_CHOICES.test(k.name))), enums = main.filter((k) => k.type === 'enum' && !CONTENT_CHOICES.test(k.name)), bools = main.filter((k) => k.type === 'bool');
@@ -318,6 +331,7 @@
         + (baseOf(d).children ? `<sav-textarea size="sm" class="mono" data-children rows="5" value="${esc(S.children)}">${lbl('What is inside (HTML)', 'The elements inside the component: options, items, tabs, slides… Change, add or remove them; the preview follows.')}</sav-textarea>` : ''))}
       ${section('Look', 'palette', enums.map(field).join(''))}
       ${section('Behaviour', 'toggle-right', bools.length ? `<div class="bld-bools">${bools.map(field).join('')}</div>` : '')}
+      ${section('Animation', 'sparkles', mot.map(field).join(''), false)}
       ${section('Events', 'activity', evs.length
         ? `<p class="muted small">Tick the events your code should listen to: the code below gets a listener for each. Use the component in the preview to see them fire.</p><div class="bld-evs">${evs.map((e) => `<sav-checkbox size="sm" data-ev="${e.name}" ${S.events.includes(e.name) ? 'checked' : ''}><code>${esc(e.name)}</code>${tip(e.desc)}</sav-checkbox>`).join('')}</div>`
         : '<p class="muted small">This component fires no events of its own: it only shows something.</p>')}
@@ -326,6 +340,8 @@
         + adv.filter((k) => k.type !== 'bool').map(field).join('')
         + (adv.some((k) => k.type === 'bool') ? `<div class="bld-bools">${adv.filter((k) => k.type === 'bool').map(field).join('')}</div>` : ''), false)}
       </sav-accordion>`;
+    // the folded rail: one icon per section; a click opens the options at that section
+    $('#bldRail').innerHTML = [...$('#bldPanel').querySelectorAll('.bld-acc > sav-details')].map((x, n) => `<button type="button" data-sec="${n}" title="${esc(x.getAttribute('summary'))}" aria-label="${esc(x.getAttribute('summary'))}"><sav-icon name="${esc(x.querySelector('sav-icon')?.getAttribute('name') || 'circle')}"></sav-icon></button>`).join('');
     logReset();
   }
 
@@ -369,7 +385,8 @@
     const st = $('#bldStage');
     if (!st) return;
     $('#bldPreview').innerHTML = markup(false);
-    st.className = `bld-stage bg-${S.bg} dev-${S.device}`;
+    D().applyDeps($('#bldPanel'), S.attrs, cur.id); // options that depend on another one: disabled until it allows them
+    st.className = `bld-stage bg-${S.bg} dev-${S.device}${TURNS.has(S.device) && S.turned ? ' turned' : ''}`;
     fit(); requestAnimationFrame(fit); // now, and again once the new content has its height
     const fr = $('#bldFrame');
     fr.className = `bld-frame sav-theme-${S.mode}${S.style !== 'soft' ? ' sav-style-' + S.style : ' sav-style-soft'}${S.bg === 'colour' ? ' bg-colour' : ''}`;
@@ -382,23 +399,43 @@
     if (save) history.replaceState(null, '', `#builder?c=${cur.id}&cfg=${enc(S)}`);
   }
 
-  /** draws the preview at the real width of the device and scales it down to the room there is (never up) */
+  /** the screen gets the real size of the device (turned: width and height swap); what does not fit scrolls, in the screen or in the stage */
   function fit() {
-    const st = $('#bldStage'), box = $('#bldFit'), fr = $('#bldFrame'); if (!st || !box || !fr) return;
-    const w = DEVICE_W[S.device] || 1280;
-    const cs = getComputedStyle(st), room = st.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    const k = Math.min(1, room / w);
-    fr.style.width = w + 'px';
-    fr.style.setProperty('--k', k);
-    box.style.width = Math.floor(w * k) + 'px';
-    box.style.height = Math.ceil(fr.offsetHeight * k) + 'px';
+    const fr = $('#bldFrame'); if (!fr) return;
+    const turn = TURNS.has(S.device) && S.turned;
+    let [w, h] = DEVICE_SIZE[S.device] || DEVICE_SIZE.desktop;
+    if (turn) [w, h] = [h, w];
+    fr.style.width = w + 'px'; fr.style.height = h + 'px';
+    // zoom: the whole device (frame and component) larger or smaller; the sizes the component sees stay those of the device
+    const z = S.zoom || 100;
+    $('#bldFit').style.zoom = z === 100 ? '' : String(z / 100);
+    const zr = $('#bldZoomR'); if (zr && Number(zr.value) !== z) zr.value = z;
     const dev = DEVICES.find(([v]) => v === S.device)?.[2] || '';
-    $('#bldZoom').textContent = `${dev} · ${w} px${k < 1 ? ` · shown at ${Math.round(k * 100)}%` : ''}`;
+    $('#bldZoom').textContent = `${dev}${TURNS.has(S.device) ? (turn ? ' · landscape' : ' · portrait') : ''} · ${w} × ${h} px${z !== 100 ? ` · shown at ${z}%` : ''}`;
+    const tip = $('#bldRotateTip'), rb = $('#bldRotate');
+    if (tip) tip.hidden = !TURNS.has(S.device);
+    rb?.setAttribute('aria-pressed', String(!!turn));
+    // a new device (or turned): the stage starts on the middle of the screen, where the component is
+    const key = `${S.device}${turn ? '-t' : ''}@${z}`, st = $('#bldStage');
+    if (st && st._dev !== key && st.clientWidth) {
+      st._dev = key;
+      fr.scrollTop = (fr.scrollHeight - fr.clientHeight) / 2;
+      // the stage shows the component itself: centred when it fits, from its start when it is wider or taller than the stage
+      const kids = [...$('#bldPreview').children].map((c) => c.getBoundingClientRect()).filter((r) => r.width || r.height);
+      if (kids.length) {
+        const sr = st.getBoundingClientRect();
+        const l = Math.min(...kids.map((r) => r.left)), t = Math.min(...kids.map((r) => r.top)), w = Math.max(...kids.map((r) => r.right)) - l, h = Math.max(...kids.map((r) => r.bottom)) - t;
+        const x = l - sr.left + st.scrollLeft, y = t - sr.top + st.scrollTop;
+        st.scrollLeft = w > st.clientWidth - 32 ? x - 16 : x + w / 2 - st.clientWidth / 2;
+        st.scrollTop = h > st.clientHeight - 32 ? y - 16 : y + h / 2 - st.clientHeight / 2;
+      } else { st.scrollLeft = (st.scrollWidth - st.clientWidth) / 2; st.scrollTop = (st.scrollHeight - st.clientHeight) / 2; }
+    }
   }
   let fitObs = null;
 
   function choose(d, state) {
     cur = d;
+    const st0 = $('#bldStage'); if (st0) st0._dev = null; // a new component: the stage finds it again
     S = { ...fresh(d), ...(state && state.c === d.id ? clean(state, d) : {}) };
     if (!state || state.c !== d.id) saved = null;
     renderPanel();
@@ -414,6 +451,7 @@
       const k = el.dataset.a;
       let v = el.localName === 'sav-switch' ? el.checked : el.value;
       if (v === '_' || v === null) v = '';
+      if (Array.isArray(v)) v = D().multiAttr(el, v); // a chip field: its list, as the attribute writes it
       v = D().clampKnob(el, v);
       // an icon field changes the component only with a real icon name (or when emptied): while typing, the last good icon stays
       if (el.hasAttribute('data-icons') && v) { iconIndex(); if (!iconNames || !iconNames.has(String(v).trim())) return; v = String(v).trim(); }
@@ -476,6 +514,31 @@
     });
     const bar = (id, key) => $(id).addEventListener('change', (e) => { if (e.target !== $(id)) return; S[key] = $(id).value; update(); });
     bar('#bldDevice', 'device'); bar('#bldStyle', 'style'); bar('#bldMode', 'mode'); bar('#bldBg', 'bg');
+    $('#bldRotate').addEventListener('click', () => { S.turned = !S.turned; update(); });
+    // zoom of the preview: the range (25–150 %) or "Fit", the zoom that shows the whole width of the device in the stage
+    const setZoom = (z) => { S.zoom = Math.max(25, Math.min(150, Math.round(z))); if (S.zoom === 100) delete S.zoom; fit(); history.replaceState(null, '', `#builder?c=${cur.id}&cfg=${enc(S)}`); };
+    $('#bldZoomR').addEventListener('change', (e) => { if (e.target === $('#bldZoomR')) setZoom(Number($('#bldZoomR').value) || 100); });
+    $('#bldZoomFit').addEventListener('click', () => {
+      const st = $('#bldStage'), dv = $('#bldFit'); if (!st || !dv) return;
+      const k = 100 / (S.zoom || 100), w = dv.getBoundingClientRect().width * k; // the width of the device at 100 %
+      setZoom(Math.floor(((st.clientWidth - 40) / w) * 20) * 5);
+    });
+    // the options column folds to a rail (remembered) with the handle on its left border; the preview then takes the width
+    const panelOff = (off, keep = true) => {
+      $('.bld-cols')?.classList.toggle('panel-off', off); if (keep) D().store.set('savc-bld-panel-off', off);
+      const b = $('#bldFold'); const say = off ? 'Expand the options' : 'Collapse the options';
+      b.setAttribute('aria-expanded', String(!off)); b.setAttribute('aria-label', say); b.title = say;
+      const st = $('#bldStage'); if (st) st._dev = null; // the stage is wider or narrower now: find the component again
+      fit();
+    };
+    panelOff(!!D().store.get('savc-bld-panel-off', false), false);
+    $('#bldFold').addEventListener('click', () => panelOff(!$('.bld-cols').classList.contains('panel-off')));
+    $('#bldRail').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-sec]'); if (!b) return;
+      panelOff(false);
+      const sec = $('#bldPanel').querySelectorAll('.bld-acc > sav-details')[Number(b.dataset.sec)];
+      if (sec) { sec.open = true; sec.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    });
     $('#bldReset').addEventListener('click', () => choose(cur, { c: cur.id })); // back to the defaults; a saved item stays the one Save updates
     $('#bldLogClear').addEventListener('click', () => { $('#bldLogList').innerHTML = ''; $('#bldLogClear').hidden = true; });
     $('#bldShare').addEventListener('click', () => {

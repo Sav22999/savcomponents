@@ -321,12 +321,37 @@ window.SAVC_DOCS = [
     parts: ['form-control', 'label', 'base', 'input', 'button', 'decrease-button', 'increase-button', 'unit', 'help-text'],
   },
   {
+    id: 'zoom', name: 'Zoom', play: { tag: 'sav-zoom', attrs: {} }, tag: 'sav-zoom', group: 'Forms', icon: 'zoom-in',
+    desc: 'A zoom control: “−”, the percentage, “+”. A click on the percentage goes back to 100%. With <code>for</code> it zooms an element of the page by itself; otherwise listen to <code>change</code>.',
+    demos: [
+      { title: 'Zooming a picture', html: `<sav-zoom for="zoom-pic" min="50" max="200" step="25"></sav-zoom>
+<div style="margin-top: .8rem; overflow: auto; max-height: 14rem; border: 1px solid var(--sav-color-border); border-radius: var(--sav-radius)">
+  <img id="zoom-pic" src="docs/sample.svg" alt="A sample picture" style="display: block; width: 20rem">
+</div>` },
+      { title: 'Sizes, plain and listening', html: `<sav-zoom size="sm"></sav-zoom> <sav-zoom></sav-zoom> <sav-zoom size="lg" appearance="plain"></sav-zoom>
+<p id="zoom-out" style="color: var(--sav-color-text-muted)">Change the zoom.</p>
+<script>
+  document.querySelectorAll('sav-zoom').forEach((z) => z.addEventListener('change', (e) => {
+    document.getElementById('zoom-out').textContent = 'Zoom: ' + e.detail.value + '%';
+  }));
+</script>` },
+    ],
+    attrs: [['value', 'number', 'The zoom in % (default 100).'], ['min · max', 'number', 'The lowest and highest zoom (default 25 and 200).'], ['step', 'number', 'How much “−” and “+” change it; the value lands on its multiples (default 10).'],
+      ['reset', 'number', 'Where a click on the percentage goes back to (default 100).'], ['for', 'string', 'The id of an element to zoom by itself (CSS zoom).'], ['size', 'sm · md · lg', ''], ['appearance', 'default · plain', 'plain: no box around it.'],
+      ['label · reset-label · decrease-label · increase-label', 'string', 'Names for screen readers (default "Zoom", "Back to 100%", "Zoom out", "Zoom in").']],
+    events: [['input · change', 'The zoom changed. detail.value'], ['sav-zoom', 'Before it changes, cancelable. detail.value']],
+    methods: [['value', 'Property: the zoom in %.'], ['stepBy(1 | -1) · reset()', 'One step up or down; back to 100%.']],
+  },
+  {
     builtFrom: ['input'],
-    id: 'color-picker', name: 'Color picker', play: { tag: 'sav-color-picker', attrs: { label: 'Brand colour', value: '#3b82f6', swatches: '#ef4444,#f59e0b,#22c55e,#3b82f6,#8b5cf6' } }, tag: 'sav-color-picker', group: 'Forms', icon: 'palette',
-    desc: 'A colour field: a swatch that opens the system colour picker, the hex code you can type, and suggested colours. The value is "#rrggbb" (#abc becomes #aabbcc); with clearable it can be empty. compact keeps only the swatch.',
+    id: 'color-picker', name: 'Colour picker', play: { tag: 'sav-color-picker', attrs: { label: 'Brand colour', value: '#3b82f6', swatches: '#ef4444,#f59e0b,#22c55e,#3b82f6,#8b5cf6' } }, tag: 'sav-color-picker', group: 'Forms', icon: 'palette',
+    desc: 'A colour field: a swatch, the hex code you can type, and suggested colours. The swatch opens the library’s own colour panel, in the style and theme of the page (saturation and brightness, hue, opacity with <code>alpha</code>, the code, an eyedropper); where the browser cannot offer all of it (Safari, Firefox) the system colour picker opens instead; <code>picker="custom"</code> always uses the panel, <code>picker="native"</code> always the system picker. The value is "#rrggbb" ("#rrggbbaa" with alpha); with clearable it can be empty. compact keeps only the swatch.',
+    notice: { heading: 'Browser support', variant: 'warning', text: 'The panel works in every browser; picking a colour from the screen does not. Chrome and Edge have their own eyedropper. Safari and Firefox have none: on Apple devices the button opens the system colour picker, whose pipette picks from the screen; on Windows and Linux there is no button. So by default (<code>picker="auto"</code>) those browsers get the system colour picker; <code>picker="custom"</code> keeps the panel there too (the eyedropper button then opens the system picker on Apple devices), <code>picker="native"</code> uses the system picker everywhere.' },
     demos: [
       { title: 'Field, with suggested colours', html: `<sav-color-picker label="Brand colour" value="#3b82f6" swatches="#ef4444,#f59e0b,#22c55e,#3b82f6,#8b5cf6" help="Click the square, type a code or pick one below." style="max-width: 18rem"></sav-color-picker>
 <sav-color-picker label="Highlight (optional)" clearable style="max-width: 18rem"></sav-color-picker>` },
+      { title: 'With opacity, and the system picker', html: `<sav-color-picker label="Overlay (with opacity)" alpha value="#3b82f680" style="max-width: 18rem"></sav-color-picker>
+<sav-color-picker label="The system colour picker" picker="native" value="#22c55e" style="max-width: 18rem; margin-top: 1rem"></sav-color-picker>` },
       { title: 'Compact, only the swatch', html: `<sav-color-picker compact label="Text colour" value="#1f2937"></sav-color-picker>
 <sav-color-picker compact label="Background" value="#fde68a"></sav-color-picker>
 <sav-color-picker compact label="Border" value="#8b5cf6"></sav-color-picker>` },
@@ -335,11 +360,11 @@ window.SAVC_DOCS = [
   <sav-button type="submit">Save</sav-button>
 </form>` },
     ],
-    attrs: [['value', 'string', 'A colour in hex: #rrggbb or #rgb.'], ['label · help · placeholder', 'string', ''], ['swatches', 'string', 'Suggested colours, separated by commas: #ef4444,#22c55e…'],
+    attrs: [['value', 'string', 'A colour in hex: #rrggbb or #rgb (with alpha also #rrggbbaa or #rgba).'], ['picker', 'auto · custom · native', 'auto: the library’s colour panel where the browser offers all of it, eyedropper included (Chrome, Edge), the system picker elsewhere (Safari, Firefox) — the default; custom: always the panel, in the style of the page; native: always the system colour picker of the browser or the operating system.'], ['alpha', 'boolean', 'An opacity slider in the panel; the value then ends with two more digits when the colour is see-through (#3b82f680).'], ['label · help · placeholder', 'string', ''], ['swatches', 'string', 'Suggested colours, separated by commas: #ef4444,#22c55e…'],
       ['clearable', 'boolean', 'A button to leave it empty (no colour).'], ['compact', 'boolean', 'Only the swatch: a small square that opens the picker.'],
       ['size', 'sm · md · lg', ''], ['name · disabled · readonly · required', '', 'Like any form field.']],
-    events: [['input', 'While the colour changes (dragging in the picker, typing a valid code): detail.value.'], ['change', 'The colour is chosen: detail.value ("" when cleared).']],
-    methods: [['value', 'The colour, "#rrggbb" or "".'], ['open()', 'Opens the system colour picker (only from a click or a key, as browsers require).'], ['focus()', '']],
+    events: [['input', 'While the colour changes (dragging in the panel or the picker, typing a valid code): detail.value.'], ['change', 'The colour is chosen (a drag or a key in the panel ends, the panel closes, a code is typed): detail.value ("" when cleared).'], ['sav-show · sav-hide', 'The panel opened (cancelable) or closed.']],
+    methods: [['value', 'The colour, "#rrggbb" or "".'], ['open() · close()', 'Opens or closes the colour panel (with picker="native", open() opens the system picker, and only from a click or a key, as browsers require).'], ['focus()', '']],
     parts: ['form-control', 'label', 'base', 'swatch', 'input', 'clear-button', 'swatches', 'help-text'],
   },
   {
@@ -383,7 +408,7 @@ window.SAVC_DOCS = [
     ],
     attrs: [['label · help · placeholder · value', 'string', 'With multiple, value is a comma-separated list.'], ['multiple', 'boolean', 'Choose more than one: the choices show as chips.'], ['searchable', 'boolean', 'A search field at the top of the list.'],
       ['clearable', 'boolean', 'A button that empties the field.'], ['sheet-on-mobile', 'boolean', 'On screens up to 640px the list rises from the bottom.'], ['native-on-mobile · native', 'boolean', 'Use the operating system picker on phones, or always.'],
-      ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['pill', 'boolean', ''], ['max-chips', 'number', 'Chips shown before “+N”, default 3.'], ['name · required · disabled · readonly', '', 'Form behaviour.'],
+      ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['pill', 'boolean', ''], ['select-all', 'boolean', 'With multiple: a row on top of the list picks every option, or clears them all (also Ctrl/⌘ + A in the list). select-all-label and clear-all-label name it.'], ['max-chips', 'number', 'Chips shown before “+N”, default 3.'], ['name · required · disabled · readonly', '', 'Form behaviour.'],
       ['data-description', 'string', 'On an option: a second line under its label.'], ['auto-text', 'boolean', 'With multiple: the tick of the chosen options is black or white, whichever is readable on the box (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['input · change', 'When the value changes.'], ['sav-show · sav-hide', 'The list opens or closes.']],
     methods: [['value', 'A string, or an array with multiple.'], ['show() · hide() · focus()', '']],
@@ -442,6 +467,9 @@ window.SAVC_DOCS = [
   <sav-radio value="express">Express (1 day)</sav-radio>
   <sav-radio value="pickup" disabled>Pick up in store</sav-radio>
 </sav-radio-group>` },
+      { title: 'Marks: fill, dot, ring', html: `<sav-radio-group label="Fill (the default)" value="a" orientation="horizontal"><sav-radio value="a">Chosen</sav-radio><sav-radio value="b">Other</sav-radio></sav-radio-group>
+<sav-radio-group label="Dot" mark="dot" value="a" orientation="horizontal" style="margin-top: 1rem"><sav-radio value="a">Chosen</sav-radio><sav-radio value="b">Other</sav-radio></sav-radio-group>
+<sav-radio-group label="Ring" mark="ring" value="a" orientation="horizontal" style="margin-top: 1rem"><sav-radio value="a">Chosen</sav-radio><sav-radio value="b">Other</sav-radio></sav-radio-group>` },
       { title: 'Horizontal and buttons', html: `<sav-radio-group label="Size" orientation="horizontal" value="m">
   <sav-radio value="s">S</sav-radio><sav-radio value="m">M</sav-radio><sav-radio value="l">L</sav-radio>
 </sav-radio-group>
@@ -451,7 +479,7 @@ window.SAVC_DOCS = [
   <sav-radio value="month">Month</sav-radio>
 </sav-radio-group>` },
     ],
-    attrs: [['label · help · value · name', 'string', 'On the group.'], ['orientation', 'vertical · horizontal', ''], ['appearance', 'buttons', 'Segmented control.'], ['size', 'sm · md · lg', ''], ['required · disabled', '', ''], ['value · disabled', '', 'On each sav-radio.'], ['auto-text', 'boolean', 'The dot of the chosen option is black or white, whichever is readable on the filled circle (WCAG AA, at least 4.5:1), also with your own colours. On the group it reaches every sav-radio.']],
+    attrs: [['label · help · value · name', 'string', 'On the group.'], ['orientation', 'vertical · horizontal', ''], ['appearance', 'buttons', 'Segmented control.'], ['size', 'sm · md · lg', ''], ['mark', 'fill · dot · ring', 'How the chosen option looks: fill fills the shape (the default); dot fills it with a small mark inside; ring keeps it light, with a coloured border and a mark in the middle (the clearest difference from a ticked checkbox in the square styles). On the group it reaches every radio; a radio can have its own.'], ['required · disabled', '', ''], ['value · disabled', '', 'On each sav-radio.'], ['auto-text', 'boolean', 'The dot of the chosen option is black or white, whichever is readable on the filled circle (WCAG AA, at least 4.5:1), also with your own colours. On the group it reaches every sav-radio.']],
     events: [['change', 'On the group.'], ['input', 'Another option chosen (as it happens).']],
   },
   {
@@ -538,9 +566,26 @@ window.SAVC_DOCS = [
       ['live', 'boolean', 'sav-search fires while you type (after min-chars and debounce) and when the field is emptied; off: only on the search keys.'],
       ['search-keys', 'list', 'Keys that fire sav-search, separated by spaces (default enter). With multiple, Enter also adds the term first.'],
       ['min-chars', 'number', 'Characters before suggesting, and before the live search (default 1).'], ['debounce', 'ms', 'Wait after typing before asking for suggestions (default 120) or, with live, before searching (default 250).'],
-      ['max', 'number', 'Suggestions shown (default 8).'], ['no-filter', 'boolean', 'Do not filter here: the page sends already-filtered suggestions.'], ['empty-label', 'string', 'Text when nothing matches.']],
-    events: [['sav-query', 'While typing (debounced): set .suggestions here. detail.query'], ['sav-pick', 'A suggestion was chosen, cancelable. detail.value, detail.label, detail.item'], ['sav-search', 'Search now: on the search keys (Enter) or, with live, while typing. detail.query (the text), detail.terms (the chips and the text)'], ['sav-term-add · sav-term-remove', 'multiple: a term is about to be added or removed, cancelable. detail.term'], ['input · change · sav-clear', 'change with multiple: detail.value is the list of terms.']],
+      ['max', 'number', 'Suggestions shown (default 8).'], ['no-autoselect', 'boolean', 'The first suggestion is not highlighted: Enter then searches the text as typed until an arrow picks one. By default the first one is ready and Enter takes it (Escape closes the list to search the text).'], ['no-filter', 'boolean', 'Do not filter here: the page sends already-filtered suggestions.'], ['empty-label', 'string', 'Text when nothing matches.']],
+    events: [['sav-query', 'While typing (debounced): set .suggestions here. detail.query'], ['sav-pick', 'A suggestion was chosen, cancelable. detail.value, detail.label, detail.item'], ['sav-search', 'Search now: on the search keys (Enter), when a term is removed or the field is emptied, and with live while typing. detail.query (the text), detail.terms (the chips and the text)'], ['sav-term-add · sav-term-remove', 'multiple: a term is about to be added or removed, cancelable. detail.term'], ['input · change · sav-clear', 'change with multiple: detail.value is the list of terms.']],
     methods: [['suggestions', 'Property: strings or { label, value, description, icon, group, href }.'], ['terms', 'Property (multiple): the list of terms; set it to replace them.'], ['text', 'Property: what is typed right now.'], ['search()', 'Fires sav-search now.']],
+  },
+  {
+    builtFrom: ['search'],
+    id: 'chip-input', name: 'Chip input', play: { tag: 'sav-chip-input', attrs: { label: 'Tags', value: 'design, accessibility' } }, tag: 'sav-chip-input', group: 'Forms', icon: 'tags',
+    desc: 'A field whose values are chips: type one and press Enter, a comma or a semicolon, or paste a list; × or Backspace removes them. With <code>kind="color"</code> each chip is a colour with its swatch; with <code>kind="number"</code> only numbers go in. The value is the list.',
+    demos: [
+      { title: 'Words', html: `<sav-chip-input label="Tags" value="design, accessibility" max-terms="6" style="max-width: 26rem">
+  <option>colour</option><option>contrast</option><option>forms</option><option>keyboard</option>
+</sav-chip-input>` },
+      { title: 'Colours', html: `<sav-chip-input label="Palette" kind="color" value="#ef4444,#f59e0b,#22c55e,#3b82f6" help="Type a code (#abc or #aabbcc) and press Enter." style="max-width: 26rem"></sav-chip-input>` },
+      { title: 'Numbers', html: `<sav-chip-input label="Monthly sales" kind="number" value="12,18,9,24" size="sm" style="max-width: 22rem"></sav-chip-input>` },
+    ],
+    attrs: [['value', 'list', 'The chips, separated by commas (in JS a list).'], ['kind', 'text · color · number', 'What a chip may be: any text (the default), a colour code (shown with its swatch, #ABC becomes #aabbcc) or a number. A wrong value shakes the field and is not added.'],
+      ['separators', 'list', 'Keys that turn the text into a chip, separated by spaces: enter, comma, semicolon, space, tab or any character (default ", ; enter").'], ['max-terms', 'number', 'Most chips (default no limit).'],
+      ['label · help · placeholder · name · required · disabled', '', 'Like any field; the form gets one entry per chip.'], ['size', 'sm · md · lg', '']],
+    events: [['change', 'A chip was added or removed: detail.value (the list).'], ['sav-term-add · sav-term-remove', 'Before a chip is added or removed, cancelable. detail.term'], ['input', 'While typing: detail.text.']],
+    methods: [['value · terms', 'Property: the list of chips; set it to replace them.']],
   },
   {
     builtFrom: ['select'],
@@ -718,7 +763,19 @@ window.SAVC_DOCS = [
   {
     id: 'sortable', name: 'Sortable (drag and drop)', tag: 'sav-sortable', group: 'Layout', icon: 'grip-vertical',
     desc: 'Reorder things by dragging them (mouse, touch, pen) — or with the keyboard: Space picks up, arrows move, Space drops, Escape cancels. Any element can be an item.',
-    demos: [ { title: 'Reorder the list', html: `<sav-sortable id="sort-demo" style="max-width: 20rem">
+    demos: [ { title: 'With the drag handle', html: `<sav-sortable grip handle="grip" style="max-width: 20rem">
+  <div class="sort-row">Write the brief</div>
+  <div class="sort-row">Pick the colours</div>
+  <div class="sort-row">Send it for review</div>
+</sav-sortable>
+<sav-sortable grip="end" direction="horizontal" style="margin-top: 1rem">
+  <span class="sort-chip">Red</span><span class="sort-chip">Green</span><span class="sort-chip">Blue</span>
+</sav-sortable>
+<style>
+  .sort-row { display: flex; align-items: center; padding: .65rem .9rem; border: 1px solid var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface); }
+  .sort-chip { display: inline-flex; align-items: center; padding: .35rem .7rem; border-radius: var(--sav-radius-sm); background: var(--sav-color-surface-2); }
+</style>` },
+      { title: 'Reorder the list', html: `<sav-sortable id="sort-demo" style="max-width: 20rem">
   <sav-card data-id="design">1 · Design</sav-card>
   <sav-card data-id="build">2 · Build</sav-card>
   <sav-card data-id="test">3 · Test</sav-card>
@@ -727,7 +784,7 @@ window.SAVC_DOCS = [
 <script>
   document.getElementById('sort-demo').addEventListener('sav-sort', (e) => Sav.toast('New order: ' + e.detail.order.join(', '), { duration: 2500 }));
 </script>` } ],
-    attrs: [['direction', 'vertical · horizontal', ''], ['handle', 'selector', 'Drag only from this part of each item.'], ['data-no-drag', 'item attribute', 'This child does not move.'], ['data-id', 'item attribute', 'Name used in detail.order.']],
+    attrs: [['direction', 'vertical · horizontal', ''], ['grip', 'boolean · end', 'Shows the drag handle (six dots) in each item: at the start, or at the end with grip=\"end\". It turns sideways with direction=\"horizontal\".'], ['handle', 'grip · selector', 'Drag only from this part of each item: grip for the handle above, or a CSS selector of your own (the rest of the item can then be clicked or selected).'], ['data-no-drag', 'item attribute', 'This child does not move.'], ['data-id', 'item attribute', 'Name used in detail.order.']],
     events: [['sav-sort', 'After a move. detail.from, detail.to, detail.item, detail.order']],
   },
   {
@@ -942,21 +999,28 @@ window.SAVC_DOCS = [
   },
   {
     id: 'video', name: 'Video', play: { tag: 'sav-video', attrs: { src: 'docs/media/sample.mp4', poster: 'docs/media/poster.jpg', ratio: '16:9' } }, tag: 'sav-video', group: 'Media', icon: 'video',
-    desc: 'A video in a frame with the corners of the style, a fixed ratio and a poster with a big play button, then its own control bar: play, back and forward 10 seconds, seek, time, volume, speed, captions, picture-in-picture and full screen. The bar hides while playing; keys: Space, arrows, M, F, C.',
+    desc: 'A video in a frame with the corners of the style, a fixed ratio and a poster with a big play button, then its own control bar: play, the progress bar and the time, mute and volume, full screen — and on request back and forward 10 seconds, speed, loop, captions and picture in picture. The bar hides while playing; keys: Space, arrows, M, F, C. When the player is small, the controls that do not fit move into a ⋯ menu; <code>controls</code> chooses which ones show, <code>native-controls</code> uses the browser’s bar.',
     demos: [
       { title: 'Large', html: `<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" label="Gradient demo" caption="A 4-second sample made for this page: try the controls, the keys and full screen." style="max-width: 46rem"></sav-video>` },
       { title: 'Small, square, with the browser controls', html: `<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" ratio="1:1" style="max-width: 16rem"></sav-video>
-<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" native-controls style="max-width: 22rem"></sav-video>` } ],
-    attrs: [['src', 'url', 'Or <source> elements inside.'], ['poster', 'url', 'Image before playing.'], ['ratio', '16:9 · 4:3 · 1:1 · 9:16', ''], ['caption · label', 'string', 'Line below; name of the play button.'], ['native-controls', 'boolean', 'The browser\u2019s own control bar instead of this one.'], ['autoplay · muted · loop', 'boolean', ''], ['<track kind="captions">', 'child', 'Captions: the CC button appears.'], ['auto-text', 'boolean', 'The play icon is black or white, whichever is readable on the play button (WCAG AA, at least 4.5:1), also with your own colours.']],
+<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" native-controls style="max-width: 22rem"></sav-video>` },
+      { title: 'Every control', html: `<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" controls="play skip seek time mute volume speed loop captions pip fullscreen" style="max-width: 34rem"></sav-video>` },
+      { title: 'Fewer controls, or none', html: `<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" controls="play seek time mute volume fullscreen" style="max-width: 26rem"></sav-video>
+<sav-video src="docs/media/sample.mp4" controls="none" autoplay muted loop style="max-width: 26rem; margin-top: 1rem" label="Background loop"></sav-video>` } ],
+    attrs: [['src', 'url', 'Or <source> elements inside.'], ['poster', 'url', 'Image before playing.'], ['ratio', '16:9 · 4:3 · 1:1 · 9:16', ''], ['caption · label', 'string', 'Line below; name of the play button.'], ['controls', 'list', 'Which controls show, separated by spaces: play skip seek time mute volume speed loop captions pip fullscreen (default: play seek time mute volume fullscreen; captions and pip also need the video to allow them). none: no controls at all, not even the big play button — only the video (with autoplay muted loop for a background video).'], ['native-controls', 'boolean', 'The browser\u2019s own control bar instead of this one.'], ['autoplay · muted · loop', 'boolean', 'loop starts the video again at the end; the Loop button in the bar turns it on and off (and sets the attribute).'], ['replay-label', 'string', 'At the end (without loop) the last frame dims and a big Replay button shows: its text (default "Replay").'], ['<track kind="captions">', 'child', 'Captions: the CC button appears.'], ['auto-text', 'boolean', 'The play icon is black or white, whichever is readable on the play button (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['play · pause · ended', '']], methods: [['play() · pause()', ''], ['video', 'Property: the <video> element.']],
   },
   {
     builtFrom: ['range', 'button'],
     id: 'audio', name: 'Audio', play: { tag: 'sav-audio', attrs: { src: 'docs/media/sample.wav', title: 'Little melody', artist: 'SavComponents' } }, tag: 'sav-audio', group: 'Media', icon: 'music',
-    desc: 'A small player in the style: play/pause, a seek bar, time, mute, with title, artist and cover.',
-    demos: [ { title: 'Player', html: `<sav-audio src="docs/media/sample.wav" title="Little melody" artist="SavComponents" cover="docs/media/poster.jpg" style="max-width: 26rem"></sav-audio>` } ],
-    attrs: [['src', 'url', 'Or <source> elements inside.'], ['title · artist', 'string', ''], ['cover', 'url', 'A small picture.'], ['auto-text', 'boolean', 'The play icon is black or white, whichever is readable on the play button (WCAG AA, at least 4.5:1), also with your own colours.']],
-    events: [['play · pause · ended', '']], methods: [['play() · pause()', ''], ['audio', 'Property: the <audio> element.']],
+    desc: 'A player in the style with the controls of the video player: play/pause, the progress bar and the time, mute and volume — and on request back and forward 10 seconds, speed and loop; title, artist and cover. Keys: Space or K play, ← → 5 seconds, ↑ ↓ volume, M mute. When the player is small, the controls that do not fit move into a ⋯ menu (and in a very small one the cover steps aside); <code>controls</code> chooses which ones show, <code>native-controls</code> uses the browser’s own player.',
+    demos: [ { title: 'Player', html: `<sav-audio src="docs/media/sample.wav" title="Little melody" artist="SavComponents" cover="docs/media/poster.jpg" style="max-width: 34rem"></sav-audio>` },
+      { title: 'Narrow (the ⋯ menu), chosen controls, the browser’s player', html: `<sav-audio src="docs/media/sample.wav" title="Little melody" style="max-width: 20rem"></sav-audio>
+<sav-audio src="docs/media/sample.wav" title="Only play, seek and time" controls="play seek time" style="max-width: 26rem; margin-top: 1rem"></sav-audio>
+<sav-audio src="docs/media/sample.wav" native-controls style="max-width: 26rem; margin-top: 1rem"></sav-audio>` } ],
+    attrs: [['src', 'url', 'Or <source> elements inside.'], ['title · artist', 'string', ''], ['cover', 'url', 'A small picture.'], ['loop · autoplay · muted', 'boolean', 'loop starts again by itself at the end (the Loop button turns it on and off); autoplay starts on its own (browsers allow sound only after the person has used the page).'], ['replay-label', 'string', 'At the end (without loop) the play button turns into Replay: its name (default "Replay").'], ['controls', 'list', 'Which controls show, separated by spaces: play skip seek time mute volume speed loop (default: play seek time mute volume). none: no controls, only title, artist and cover (it plays with autoplay or from code).'], ['native-controls', 'boolean', 'The browser’s own player instead of the library’s.'], ['auto-text', 'boolean', 'The play icon is black or white, whichever is readable on the play button (WCAG AA, at least 4.5:1), also with your own colours.']],
+    events: [['play · pause · ended', '']], methods: [['play() · pause()', ''], ['audio', 'Property: the <audio> element (volume, playbackRate, currentTime…).']],
+    parts: ['base', 'cover', 'play-button', 'title', 'artist', 'controls', 'mute-button', 'audio'],
   },
   /* ------------------------------------------------------------ Overlays */
   {
@@ -1143,53 +1207,53 @@ window.SAVC_DOCS = [
   <sav-tab label="Board">Board view.</sav-tab>
   <sav-tab label="Calendar">Calendar view.</sav-tab>
 </sav-tabs>` },
-      { title: 'Vertical', html: `<sav-tabs placement="start">
+      { title: 'Vertical', html: `<sav-tabs orientation="vertical">
   <sav-tab label="Account">Account settings.</sav-tab>
   <sav-tab label="Security">Password and two-step login.</sav-tab>
   <sav-tab label="Billing">Invoices and payment methods.</sav-tab>
 </sav-tabs>` },
       { title: 'Icons: start, after the text, end', html: `<div class="demo-grid">
-  <sav-tabs placement="start">
+  <sav-tabs orientation="vertical">
     <sav-tab label="Inbox" icon="mail">Icons at the start (the default).</sav-tab>
     <sav-tab label="Starred" icon="star">Icons at the start (the default).</sav-tab>
     <sav-tab label="Settings" icon="settings">Icons at the start (the default).</sav-tab>
   </sav-tabs>
-  <sav-tabs placement="start" icon-placement="after">
+  <sav-tabs orientation="vertical" icon-placement="after">
     <sav-tab label="Inbox" icon="mail">Icons right after the text.</sav-tab>
     <sav-tab label="Starred" icon="star">Icons right after the text.</sav-tab>
     <sav-tab label="Settings" icon="settings">Icons right after the text.</sav-tab>
   </sav-tabs>
-  <sav-tabs placement="start" icon-placement="end">
+  <sav-tabs orientation="vertical" icon-placement="end">
     <sav-tab label="Inbox" icon="mail">Icons at the end, with space in between.</sav-tab>
     <sav-tab label="Starred" icon="star">Icons at the end, with space in between.</sav-tab>
     <sav-tab label="Help centre" icon="external" icon-placement="after">One tab can choose its own placement.</sav-tab>
   </sav-tabs>
 </div>` },
-      { title: 'Vertical, collapsible', html: `<sav-tabs placement="start" collapsible>
+      { title: 'Vertical, collapsible', html: `<sav-tabs orientation="vertical" collapsible>
   <sav-tab label="Inbox" icon="mail">The handle on the border, next to the first tab, folds the tabs: only the icons stay, and each name shows in a tooltip.</sav-tab>
   <sav-tab label="Starred" icon="star">Starred messages.</sav-tab>
   <sav-tab label="Archive" icon="folder">Archived messages.</sav-tab>
   <sav-tab label="Settings">Without an icon, a collapsed tab shows its first letter.</sav-tab>
 </sav-tabs>
-<sav-tabs placement="start" collapsible collapsed collapse-label="Hide" expand-label="Show">
+<sav-tabs orientation="vertical" collapsible collapsed collapse-label="Hide" expand-label="Show">
   <sav-tab label="Overview" icon="home">This one starts collapsed, with its own button texts.</sav-tab>
   <sav-tab label="Activity" icon="bell">Recent activity.</sav-tab>
 </sav-tabs>
-<sav-tabs placement="start" collapsible collapse-button="row">
+<sav-tabs orientation="vertical" collapsible collapse-button="row">
   <sav-tab label="Projects" icon="folder">collapse-button="row": the button is a row at the bottom of the tabs.</sav-tab>
   <sav-tab label="Team" icon="users">The people of the team.</sav-tab>
   <sav-tab label="Reports" icon="chart-column">Monthly reports.</sav-tab>
 </sav-tabs>` },
-      { title: 'Vertical on the right', html: `<sav-tabs placement="end" collapsible>
-  <sav-tab label="Details" icon="info">placement="end": the tabs on the right, the content on the left. The fold handle sits on the left border of the tabs and folds them towards the right.</sav-tab>
+      { title: 'Vertical on the right', html: `<sav-tabs orientation="vertical" side="end" collapsible>
+  <sav-tab label="Details" icon="info">side="end": the tabs on the right, the content on the left. The fold handle sits on the left border of the tabs and folds them towards the right.</sav-tab>
   <sav-tab label="Comments" icon="message-circle">Comments on this item.</sav-tab>
   <sav-tab label="History" icon="history">Who changed what, and when.</sav-tab>
 </sav-tabs>
-<sav-tabs placement="end" collapsible collapse-button="row">
+<sav-tabs orientation="vertical" side="end" collapsible collapse-button="row">
   <sav-tab label="Layers" icon="layers">With collapse-button="row" the button is a row at the bottom, as on the left.</sav-tab>
   <sav-tab label="Assets" icon="image">Pictures and files.</sav-tab>
 </sav-tabs>` },
-      { title: 'Vertical with sub tabs', html: `<sav-tabs placement="start" active="profile" collapsible>
+      { title: 'Vertical with sub tabs', html: `<sav-tabs orientation="vertical" active="profile" collapsible>
   <sav-tab label="Account" icon="user" name="account">Your account in short.</sav-tab>
   <sav-tab label="Profile" level="sub" name="profile">Name, picture and bio.</sav-tab>
   <sav-tab label="Security" level="sub" name="security">Password and two-step sign-in.</sav-tab>
@@ -1199,7 +1263,7 @@ window.SAVC_DOCS = [
   <sav-tab label="Billing" icon="credit-card" name="billing">Plan and invoices.</sav-tab>
 </sav-tabs>` },
     ],
-    attrs: [['appearance', 'underline · pills · segmented', 'Default underline.'], ['placement', 'top · start · end', 'top: a bar above the panels (default); start: a vertical column on the left; end: a vertical column on the right (the fold handle and the tooltips then sit on its left side).'], ['active', 'tab name', 'Tab to open first.'], ['label · name · icon · active · disabled', '', 'On sav-tab.'], ['collapsible', 'boolean', 'Vertical tabs: a button under the tabs folds them to icons only (collapsed) and opens them again (expanded).'], ['collapsed', 'boolean', 'Vertical tabs: only the icons show (or the first letter of a tab without icon); the names become tooltips. Set it to start collapsed; the button changes it.'], ['collapse-label · expand-label', 'string', 'Text of the fold button. Default "Collapse" and "Expand".'], ['collapse-button', 'edge · row', 'Where the fold button goes: edge (a small handle on the outer border of the rail — right with start, left with end — next to the first tab, the default) or row (a row with text at the bottom of the rail).'], ['icon-placement', 'start · after · end', 'Where the icon of a tab goes: start (before the text, the default), after (right after the text) or end (at the far end of the tab, with space in between; clearest in vertical tabs). On sav-tabs it applies to every tab; on one sav-tab it applies to that tab only.'], ['level', 'normal · sub', 'On sav-tab: sub sits under the tab before it, smaller and indented (two levels; clearest with vertical tabs).'], ['--sav-tab-sub-indent', 'CSS', 'How far sub tabs are indented (default .9rem).'], ['--sav-tab-padding', 'CSS', 'Panel padding.'], ['auto-text', 'boolean', 'The text of the selected tab is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
+    attrs: [['appearance', 'underline · pills · segmented', 'Default underline.'], ['orientation', 'horizontal · vertical', 'horizontal: a bar above the panels (the default); vertical: a column of tabs beside them.'], ['side', 'start · end', 'Vertical tabs: start puts the column on the left (the default), end on the right (the fold handle and the tooltips then sit on its left side).'], ['active', 'tab name', 'Tab to open first.'], ['label · name · icon · active · disabled', '', 'On sav-tab.'], ['collapsible', 'boolean', 'Vertical tabs: a button under the tabs folds them to icons only (collapsed) and opens them again (expanded).'], ['collapsed', 'boolean', 'Vertical tabs: only the icons show (or the first letter of a tab without icon); the names become tooltips. Set it to start collapsed; the button changes it.'], ['collapse-label · expand-label', 'string', 'Text of the fold button. Default "Collapse" and "Expand".'], ['collapse-button', 'edge · row', 'Where the fold button goes: edge (a small handle on the outer border of the rail — right with start, left with end — next to the first tab, the default) or row (a row with text at the bottom of the rail).'], ['icon-placement', 'start · after · end', 'Where the icon of a tab goes: start (before the text, the default), after (right after the text) or end (at the far end of the tab, with space in between; clearest in vertical tabs). On sav-tabs it applies to every tab; on one sav-tab it applies to that tab only.'], ['level', 'normal · sub', 'On sav-tab: sub sits under the tab before it, smaller and indented (two levels; clearest with vertical tabs).'], ['--sav-tab-sub-indent', 'CSS', 'How far sub tabs are indented (default .9rem).'], ['--sav-tab-padding', 'CSS', 'Panel padding.'], ['auto-text', 'boolean', 'The text of the selected tab is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.']],
     events: [['sav-tab-show', 'detail.name, detail.index'], ['sav-collapse', 'Vertical tabs folded or opened: detail.collapsed.']],
     methods: [['show(nameOrIndex)', 'Opens a tab by its name or position.'], ['collapse() · expand()', 'Vertical tabs: only the icons, or icons and names again.']],
     parts: ['nav', 'tab', 'sub-tab', 'tab-icon', 'tab-label', 'indicator', 'panels', 'rail', 'collapse-button'],
@@ -2088,7 +2152,7 @@ apply();` },
     <option value="billing">Refund</option><option value="billing">Invoice</option>
     <option value="account">Password</option><option value="account">Two-step sign-in</option><option value="shipping">Tracking</option>
   </sav-search>
-  <sav-tabs id="hc-tabs" placement="start" icon-placement="end">
+  <sav-tabs id="hc-tabs" orientation="vertical" icon-placement="end">
     <sav-tab label="Account" name="account" icon="user">
       <sav-accordion>
         <sav-details summary="How do I change my password?">Open Settings, then Security, then Change password.</sav-details>
