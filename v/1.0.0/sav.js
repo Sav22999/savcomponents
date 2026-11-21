@@ -2600,9 +2600,11 @@
       :host([disabled]) .row { opacity: .55; cursor: not-allowed; }
       .ctl { position: relative; flex: none; width: var(--_w); height: var(--_th); margin-top: calc((1.4em - var(--_th)) / 2); }
       input { appearance: none; -webkit-appearance: none; margin: 0; width: 100%; height: 100%; cursor: inherit; border-radius: var(--sav-radius-pill);
-              background: var(--sav-switch-track, var(--sav-color-border-strong)); background-image: var(--sav-sheen, none); box-shadow: var(--sav-track-shadow, none); border: 0; transition: background calc(var(--sav-duration) * var(--sav-motion, 1)); }
-      input:checked { background-color: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); }
-      .thumb { position: absolute; top: 3px; left: 3px; width: calc(var(--_th) - 6px); height: calc(var(--_th) - 6px); border-radius: var(--sav-knob-radius, 50%); background: var(--sav-switch-thumb-bg, #fff);
+              background: var(--sav-switch-track, var(--sav-color-border-strong)); background-image: var(--sav-sheen, none); box-shadow: var(--sav-switch-track-shadow, var(--sav-track-shadow, none)); border: 0;
+              -webkit-backdrop-filter: var(--sav-switch-backdrop, none); backdrop-filter: var(--sav-switch-backdrop, none);
+              transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      input:checked { background-color: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); box-shadow: var(--sav-switch-on-shadow, var(--sav-switch-track-shadow, var(--sav-track-shadow, none))); }
+      .thumb { position: absolute; top: 3px; left: 3px; box-sizing: border-box; width: calc(var(--_th) - 6px); height: calc(var(--_th) - 6px); border-radius: var(--sav-knob-radius, 50%); background: var(--sav-switch-thumb-bg, #fff); border: var(--sav-switch-thumb-border, 0);
                box-shadow: var(--sav-switch-thumb-shadow, 0 1px 3px rgb(0 0 0 / .25)); pointer-events: none; transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
       input:checked + .thumb { transform: translateX(calc(var(--_w) - var(--_th))) rotate(calc(var(--sav-knob-tilt, 0deg) * -1)); }
       .help { display: block; font-size: var(--sav-font-size-sm); color: var(--sav-color-text-muted); margin: .15rem 0 0 calc(var(--_w) + .6rem); }
@@ -6153,16 +6155,30 @@
       const donut = this.getAttribute('type') === 'donut', th = donut ? Math.min(R * 0.9, Number(this.getAttribute('thickness')) || R * 0.38) : R;
       const gapDeg = Number(this.getAttribute('gap') ?? 1.2), r0 = R - th;
       const pt = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
+      const slices = vals.filter(Boolean).length;
+      /* The gap is a strip of constant width (the width "gap" degrees take at the edge), so it runs
+         straight to the centre: each slice's sides are its two radii moved inwards by half the strip. */
+      const halfGap = slices > 1 ? R * Math.sin(((Math.max(0, gapDeg) * Math.PI) / 180) / 2) : 0;
       let a0 = 0, g = '';
       vals.forEach((v, i) => {
         const sweep = (v / tot) * Math.PI * 2; if (!sweep) return;
-        const gp = vals.filter(Boolean).length > 1 ? Math.min(sweep / 3, (gapDeg * Math.PI) / 180) : 0;
-        const s = a0 + gp / 2, e = a0 + sweep - gp / 2, big = e - s > Math.PI ? 1 : 0;
+        // a thin slice keeps at least a third of its angle at the edge
+        const h = Math.min(halfGap, R * Math.sin(Math.min(sweep, Math.PI) / 6));
+        const at = (r) => Math.asin(Math.min(1, h / r)); // angle the half strip takes at radius r
+        const dR = at(R), s = a0 + dR, e = a0 + sweep - dR, big = e - s > Math.PI ? 1 : 0;
         const [x1, y1] = pt(R, s), [x2, y2] = pt(R, e);
+        // where the two moved sides meet, on the slice's middle line
+        const apex = h > 0 ? pt(h / Math.sin(sweep / 2), a0 + sweep / 2) : [cx, cy];
         let path;
-        if (vals.filter(Boolean).length === 1) path = donut ? `M${cx} ${cy - R}A${R} ${R} 0 1 1 ${cx - 0.01} ${cy - R}ZM${cx} ${cy - r0}A${r0} ${r0} 0 1 0 ${cx + 0.01} ${cy - r0}Z` : `M${cx} ${cy - R}A${R} ${R} 0 1 1 ${cx - 0.01} ${cy - R}Z`;
-        else if (r0 > 0) { const [x3, y3] = pt(r0, e), [x4, y4] = pt(r0, s); path = `M${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}L${x3} ${y3}A${r0} ${r0} 0 ${big} 0 ${x4} ${y4}Z`; }
-        else path = `M${cx} ${cy}L${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}Z`;
+        if (slices === 1) path = donut ? `M${cx} ${cy - R}A${R} ${R} 0 1 1 ${cx - 0.01} ${cy - R}ZM${cx} ${cy - r0}A${r0} ${r0} 0 1 0 ${cx + 0.01} ${cy - r0}Z` : `M${cx} ${cy - R}A${R} ${R} 0 1 1 ${cx - 0.01} ${cy - R}Z`;
+        else if (r0 > 0 && h < r0 * Math.sin(Math.min(sweep / 2, Math.PI / 2))) {
+          const d0 = at(r0), [x3, y3] = pt(r0, a0 + sweep - d0), [x4, y4] = pt(r0, a0 + d0), bigIn = sweep - 2 * d0 > Math.PI ? 1 : 0;
+          path = `M${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}L${x3} ${y3}A${r0} ${r0} 0 ${bigIn} 0 ${x4} ${y4}Z`;
+        } else if (sweep > Math.PI && h > 0) {
+          // over half the pie the moved sides do not meet: near the centre the slice ends on a small arc around it
+          const [fx, fy] = pt(h, a0 + Math.PI / 2), [gx, gy] = pt(h, a0 + sweep - Math.PI / 2);
+          path = `M${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}L${gx} ${gy}A${h} ${h} 0 0 0 ${fx} ${fy}Z`;
+        } else path = `M${apex[0]} ${apex[1]}L${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}Z`;
         const pct = Math.round((v / tot) * 100);
         g += `<path data-t="${esc(d.labels?.[i] ?? '')}: ${nfmt(v)} (${pct}%)" d="${path}" style="fill:${col(i)}" fill-rule="evenodd"/>`;
         if (this.hasAttribute('show-values') && pct >= 5) { const [tx, ty] = pt(r0 + th / 2 || R * 0.62, a0 + sweep / 2); g += `<text x="${tx}" y="${ty + 4}" text-anchor="middle" style="fill:#fff;font-weight:700;paint-order:stroke;stroke:rgb(0 0 0 / .25);stroke-width:2px">${pct}%</text>`; }

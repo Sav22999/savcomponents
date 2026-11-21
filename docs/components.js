@@ -1569,7 +1569,7 @@ window.SAVC_DOCS = [
       { title: 'Pie and donut', html: `<sav-chart-pie label="Traffic sources" show-values style="width: 16rem" data='{"labels":["Search","Social","Direct","Email"],"values":[48,22,18,12]}'></sav-chart-pie>
 <sav-chart-pie label="Storage" type="donut" center="72%" gap="2" style="width: 16rem" data='{"labels":["Photos","Videos","Free"],"values":[40,32,28]}'></sav-chart-pie>` },
     ],
-    attrs: [['data', 'JSON', '{ labels: [...], values: [...] }'], ['type', 'pie · donut', ''], ['thickness', 'px', 'Width of the donut ring.'], ['gap', 'degrees', 'Space between slices (default 1.2).'], ['show-values', 'boolean', 'Percentages on the slices.'], ['center', 'string', 'Text in the middle of the donut.'], ['height', 'px', 'Size (default 260).'], ['label', 'string', 'The name of the chart (screen readers, and the table under it).']],
+    attrs: [['data', 'JSON', '{ labels: [...], values: [...] }'], ['type', 'pie · donut', ''], ['thickness', 'px', 'Width of the donut ring.'], ['gap', 'degrees', 'Space between slices, as the angle it takes at the edge (default 1.2; 0 for none). The space is equally wide all the way to the centre.'], ['show-values', 'boolean', 'Percentages on the slices.'], ['center', 'string', 'Text in the middle of the donut.'], ['height', 'px', 'Size (default 260).'], ['label', 'string', 'The name of the chart (screen readers, and the table under it).']],
   },
   {
     id: 'chart-radar', name: 'Radar chart', tag: 'sav-chart-radar', group: 'Charts', icon: 'radar',

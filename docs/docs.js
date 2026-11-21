@@ -751,7 +751,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       if (k.kind === 'icon') return `<sav-search size="sm" data-k="${k.name}" data-icons no-filter max="12" value="${esc(v || '')}" placeholder="Search icons: star, heart, bell…">`
         + `<span slot="label" class="knob-l">${esc(L)}${tip((k.desc ? k.desc + ' ' : '') + 'Type a name or a word (arrow, user, money…) and pick one of the suggestions.')}<sav-icon class="bld-ic-now" name="${esc(v || 'shapes')}" data-icon-of="${k.name}" ${v ? '' : 'hidden'}></sav-icon></span></sav-search>`;
       if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-k="${k.name}"${k.min !== undefined ? ` min="${k.min}"` : ''}${k.max !== undefined ? ` max="${k.max}"` : ''} value="${esc(v || '')}" placeholder="Default">${lbl(L, k.desc)}</sav-number-input>`;
-      if (k.kind === 'json') return `<sav-textarea size="sm" rows="4" class="mono" data-k="${k.name}" value="${esc(v || '')}">${lbl(L, k.desc)}</sav-textarea>`;
+      if (k.kind === 'json') return dataEditor(d.id, k, 'data-k', v || '', lbl(L, k.desc), playState.attrs.by);
       return `<sav-input size="sm" data-k="${k.name}" value="${esc(v || '')}">${lbl(L, k.desc)}</sav-input>`;
     };
     box.innerHTML = (d.play.tags ? `<sav-radio-group appearance="buttons" size="sm" data-tag value="${playState.tag || d.play.tag}">${lbl('Component', 'Which version of the component to show.')}${d.play.tags.map((t) => `<sav-radio value="${t.tag}">${t.label}</sav-radio>`).join('')}</sav-radio-group>` : '')
@@ -768,6 +768,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     };
     loadIconIndex(); // ready before the first letter in an icon field
     box.addEventListener('sav-query', (e) => iconSuggest(e.target.closest?.('[data-icons]'), e.detail.query));
+    wireData(box); // data fields: the table writes their JSON
     box.addEventListener('input', (e) => onKnob(e.target));
     box.addEventListener('change', (e) => onKnob(e.target));
     function onKnob(t) {
@@ -782,7 +783,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         // an icon field changes the component only with a real icon name (or when emptied): while typing, the last good icon stays
         if (el.hasAttribute('data-icons') && v) { if (!iconNames?.has(String(v).trim())) return; v = String(v).trim(); }
         // data (JSON) changes the component only once it reads well; until then the field says what is wrong
-        if (el.classList.contains('mono') && !jsonOk(el, v)) return;
+        if (el.hasAttribute('data-json') && !jsonOk(el, v)) return;
         if (typeof v === 'number') v = String(v);
         if (Array.isArray(v)) v = multiAttr(el, v); // a chip field: its list, as the attribute writes it
         v = clampKnob(el, v);
@@ -813,10 +814,155 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     if (n !== Number(v)) { el.value = String(n); return String(n); }
     return v;
   }
+
+  /* ---- data fields (charts): filled in as a table (UI) or written as JSON; the textarea always holds the JSON, the table writes into it */
+  const DATA_SHAPE = { 'chart-bar': 'series', 'chart-line': 'series', 'chart-radar': 'series', 'chart-pie': 'pairs', 'chart-activity': 'dates', 'chart-map': 'map' };
+  const CONTINENT_KEYS = ['europe', 'africa', 'asia', 'north-america', 'south-america', 'oceania', 'antarctica'];
+  const deNum = (v) => { const t = String(v ?? '').trim().replace(',', '.'); return t === '' ? 0 : Number(t); };
+  /** the JSON as rows of a table; null when it does not fit one (then it is edited as JSON only) */
+  function dataModel(shape, text) {
+    let j = null;
+    if (text && String(text).trim()) try { j = JSON.parse(text); } catch { return null; }
+    if (shape === 'series') {
+      if (!j) return { extra: {}, labels: [''], series: [{ name: 'Series 1', values: [0] }] };
+      if (typeof j !== 'object' || !Array.isArray(j.labels) || !Array.isArray(j.series) || !j.series.every((x) => x && typeof x === 'object')) return null;
+      const { labels, series, ...extra } = j;
+      return { extra, labels: labels.map(String), series: series.map((x) => ({ ...x, name: String(x.name ?? ''), values: labels.map((_, i) => x.values?.[i] ?? 0) })) };
+    }
+    if (shape === 'pairs') {
+      if (!j) return { extra: {}, rows: [['', 0]] };
+      if (typeof j !== 'object' || !Array.isArray(j.labels) || !Array.isArray(j.values)) return null;
+      const { labels, values, ...extra } = j;
+      return { extra, rows: labels.map((l, i) => [String(l), values[i] ?? 0]) };
+    }
+    // dates and map: { key: value } (the activity chart also takes [{ date, value }])
+    if (!j) return { rows: [['', 0]] };
+    if (Array.isArray(j)) return shape === 'dates' && j.every((x) => x && x.date) ? { rows: j.map((x) => [String(x.date), x.value ?? 0]) } : null;
+    if (typeof j !== 'object' || Object.values(j).some((v) => typeof v === 'object')) return null;
+    return { rows: Object.entries(j) };
+  }
+  function dataJson(shape, m) {
+    if (shape === 'series') return JSON.stringify({ labels: m.labels, series: m.series, ...m.extra });
+    if (shape === 'pairs') return JSON.stringify({ labels: m.rows.map((x) => x[0]), values: m.rows.map((x) => x[1]), ...m.extra });
+    return JSON.stringify(Object.fromEntries(m.rows.filter((x) => x[0] !== '')));
+  }
+  /** the table of one data field */
+  function dataTable(shape, m, by) {
+    if (!m) return '<p class="de-note">This data does not fit a table: edit it as JSON.</p>';
+    const x = (what, i, label) => `<sav-button size="sm" appearance="ghost" variant="neutral" icon="x" label="${esc(label)}" data-de-del="${what}" data-i="${i}"></sav-button>`;
+    const inp = (attr, v, label, more = '') => `<sav-input size="sm" ${attr} value="${esc(String(v ?? ''))}" aria-label="${esc(label)}"${more}></sav-input>`;
+    const val = (v, label) => inp('data-de-val', v, label, ' inputmode="decimal" placeholder="0"');
+    const add = (what, text) => `<sav-button size="sm" appearance="soft" variant="neutral" icon="plus" data-de-add="${what}">${text}</sav-button>`;
+    let head, rows, cols = 1, series = '';
+    if (shape === 'series') {
+      cols = m.series.length;
+      const many = m.series.length > 1;
+      // the series (the columns) are listed above the table, each name at full width; the table heads repeat their names
+      series = `<div class="de-series"><span class="de-h">Series</span>${m.series.map((sr, c) => { const { name, values, ...keep } = sr; return `<div class="de-srow" data-keep="${esc(JSON.stringify(keep))}">${inp('data-de-name', name, `Name of series ${c + 1}`, ` placeholder="Series ${c + 1}" data-c="${c}"`)}${many ? x('series', c, `Remove the series ${name || c + 1}`) : '<span></span>'}</div>`; }).join('')}<div class="de-adds">${add('series', 'Add series')}</div></div>`;
+      head = '<span class="de-h">Label</span>' + m.series.map((sr, c) => `<span class="de-h de-hn" data-c="${c}">${esc(sr.name || `Series ${c + 1}`)}</span>`).join('') + '<span></span>';
+      rows = m.labels.map((l, i) => `<div class="de-row">${inp('data-de-key', l, `Label of row ${i + 1}`, ' placeholder="Label"')}${m.series.map((sr, c) => val(sr.values[i], `${sr.name || 'Series ' + (c + 1)}, ${l || 'row ' + (i + 1)}`)).join('')}${x('row', i, `Remove the row ${l || i + 1}`)}</div>`).join('');
+    } else {
+      const cont = shape === 'map' && by === 'continent';
+      const keyName = shape === 'dates' ? 'Date' : shape === 'map' ? (cont ? 'Continent' : 'Country') : 'Label';
+      const key = (k, i) => {
+        const al = `${keyName} of row ${i + 1}`;
+        if (shape === 'dates') return `<sav-date-picker size="sm" data-de-key value="${esc(k)}" aria-label="${esc(al)}" placeholder="Pick a date"></sav-date-picker>`;
+        // a key that does not fit the kind of area (a country after by="continent", or the other way) is left empty, to choose again
+        if (cont) { const c = String(k).trim().toLowerCase().replace(/[\s_]+/g, '-'); k = CONTINENT_KEYS.includes(c) ? c : ''; }
+        else if (shape === 'map') k = /^[a-z]{2}$/i.test(String(k).trim()) ? String(k).trim().toUpperCase() : '';
+        if (cont) return `<sav-select size="sm" data-de-key value="${esc(k)}" aria-label="${esc(al)}" placeholder="Continent">${CONTINENT_KEYS.map((c) => `<option value="${c}">${titleCase(c)}</option>`).join('')}</sav-select>`;
+        if (shape === 'map') return `<sav-country-choice size="sm" data-de-key value="${esc(k)}" aria-label="${esc(al)}" placeholder="Country"></sav-country-choice>`;
+        return inp('data-de-key', k, al, ' placeholder="Label"');
+      };
+      head = `<span class="de-h">${keyName}</span><span class="de-h">Value</span><span></span>`;
+      rows = m.rows.map(([k, v], i) => `<div class="de-row">${key(k, i)}${val(v, `Value of row ${i + 1}`)}${x('row', i, `Remove the row ${i + 1}`)}</div>`).join('');
+    }
+    return series + `<div class="de-scroll"><div class="de-grid de-${shape}" style="--de-cols: ${cols}">${head}${rows}</div></div>`
+      + `<div class="de-adds">${add('row', 'Add row')}</div>`;
+  }
+  /** a data field: a choice UI / JSON over a table and the JSON box (only one shows) */
+  function dataEditor(comp, k, attr, value, labelHtml, by) {
+    const shape = DATA_SHAPE[comp];
+    const ta = `<sav-textarea size="sm" rows="6" class="mono" ${attr}="${k.name}" data-json value="${esc(value || '')}" aria-label="${esc(k.label || titleCase(k.name))} (JSON)"></sav-textarea>`;
+    if (!shape) return `<div class="data-ed" data-mode="json"><div class="de-top">${labelHtml.replace('slot="label" ', '')}</div>${ta}</div>`;
+    const m = dataModel(shape, value), mode = m ? store.get('savc-data-mode', 'ui') : 'json';
+    return `<div class="data-ed" data-shape="${shape}" data-mode="${mode}" data-by="${esc(by || '')}">`
+      + `<div class="de-top">${labelHtml.replace('slot="label" ', '')}<sav-radio-group class="de-mode" appearance="buttons" size="sm" value="${mode}" aria-label="Edit the data as"><sav-radio value="ui">UI</sav-radio><sav-radio value="json">JSON</sav-radio></sav-radio-group></div>`
+      + `<div class="de-ui" data-extra="${esc(JSON.stringify(m?.extra || {}))}">${dataTable(shape, m, by)}</div>${ta}</div>`;
+  }
+  /** the table as it is now, back to rows; null while a value is not a number */
+  function dataRead(box) {
+    const shape = box.dataset.shape, ui = box.querySelector('.de-ui');
+    let extra = {}; try { extra = JSON.parse(ui.dataset.extra || '{}'); } catch {}
+    const rows = [...ui.querySelectorAll('.de-row')];
+    const key = (r) => String(r.querySelector('[data-de-key]').value ?? '');
+    let bad = false;
+    const nums = (els) => els.map((e) => { const n = deNum(e.value); const no = Number.isNaN(n); e.toggleAttribute('data-user-invalid', no); e.setCustomValidity?.(no ? 'A number' : ''); bad ||= no; return n; });
+    let m;
+    if (shape === 'series') {
+      const names = [...ui.querySelectorAll('.de-srow')];
+      const vals = rows.map((r) => nums([...r.querySelectorAll('[data-de-val]')]));
+      m = { extra, labels: rows.map(key), series: names.map((h, c) => { let keep = {}; try { keep = JSON.parse(h.dataset.keep || '{}'); } catch {} return { name: String(h.querySelector('[data-de-name]').value ?? ''), values: vals.map((v) => v[c]), ...keep }; }) };
+    } else m = { extra, rows: rows.map((r) => [key(r), nums([r.querySelector('[data-de-val]')])[0]]) };
+    return bad ? null : m;
+  }
+  const dataWrite = (box, m) => { const ta = box.querySelector('sav-textarea[data-json]'); ta.value = dataJson(box.dataset.shape, m); ta.dispatchEvent(new Event('input', { bubbles: true })); };
+  const dataRender = (box, m) => { box.querySelector('.de-ui').innerHTML = dataTable(box.dataset.shape, m, box.dataset.by); };
+  /** listens once on the box that holds the fields (the builder options, the playground) */
+  function wireData(root) {
+    if (!root || root.dataset.deWired) return;
+    root.dataset.deWired = '1';
+    const onEdit = (e) => {
+      const box = e.target.closest?.('.data-ed');
+      if (!box) {
+        // the map: "by" changes what the first column names (countries or continents)
+        const by = e.target.closest?.('[data-a="by"], [data-k="by"]');
+        if (by && e.type === 'change') root.querySelectorAll('.data-ed[data-shape="map"]').forEach((b) => { b.dataset.by = by.value === '_' ? '' : by.value || ''; if (b.dataset.mode === 'ui') dataRender(b, dataModel('map', b.querySelector('sav-textarea').value)); });
+        return;
+      }
+      if (e.target.closest('.de-mode')) {
+        if (e.type !== 'change') return;
+        const mode = e.target.closest('.de-mode').value;
+        if (mode === 'ui') {
+          const m = dataModel(box.dataset.shape, box.querySelector('sav-textarea').value);
+          box.querySelector('.de-ui').dataset.extra = JSON.stringify(m?.extra || {});
+          dataRender(box, m);
+        }
+        box.dataset.mode = mode;
+        store.set('savc-data-mode', mode);
+        return;
+      }
+      if (!e.target.closest('.de-ui')) return; // the JSON box itself: the page handles it
+      const nm = e.target.closest('[data-de-name]'); // a series renamed: its column head follows
+      if (nm) { const h = box.querySelector(`.de-hn[data-c="${nm.dataset.c}"]`); if (h) h.textContent = nm.value || `Series ${Number(nm.dataset.c) + 1}`; }
+      const m = dataRead(box);
+      if (m) dataWrite(box, m);
+    };
+    root.addEventListener('input', onEdit);
+    root.addEventListener('change', onEdit);
+    root.addEventListener('click', (e) => {
+      const b = e.target.closest?.('.data-ed [data-de-add], .data-ed [data-de-del]');
+      if (!b) return;
+      const box = b.closest('.data-ed'), m = dataRead(box) || dataModel(box.dataset.shape, box.querySelector('sav-textarea').value);
+      if (!m) return;
+      const i = Number(b.dataset.i), sh = box.dataset.shape;
+      if (b.dataset.deAdd === 'row') { if (sh === 'series') { m.labels.push(''); m.series.forEach((x) => x.values.push(0)); } else m.rows.push(['', 0]); }
+      else if (b.dataset.deAdd === 'series') m.series.push({ name: `Series ${m.series.length + 1}`, values: m.labels.map(() => 0) });
+      else if (b.dataset.deDel === 'series') m.series.splice(i, 1);
+      else if (sh === 'series') { m.labels.splice(i, 1); m.series.forEach((x) => x.values.splice(i, 1)); }
+      else m.rows.splice(i, 1);
+      dataRender(box, m);
+      dataWrite(box, m);
+      // the focus stays in the table: on the new row, or on the row that took the place of the removed one
+      const rows = box.querySelectorAll('.de-row');
+      const go = b.dataset.deAdd === 'row' ? rows[rows.length - 1]?.querySelector('[data-de-key]') : b.dataset.deAdd === 'series' ? [...box.querySelectorAll('[data-de-name]')].pop() : (rows[Math.min(i, rows.length - 1)]?.querySelector('[data-de-key]'));
+      requestAnimationFrame(() => go?.focus?.());
+    });
+  }
   window.SavDocs = {
     clampKnob,
     docs: DOCS, icon: ICON, esc, codeBlock, footer: () => footer(), route: () => route(),
-    playMarkup, knobsFor, richField, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
+    playMarkup, knobsFor, richField, dataEditor, wireData, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
     themeConfig: () => ({ style: store.get('savc-style', 'tilt'), mode: store.get('savc-mode', 'auto'), tokens: themeTokens(), settings: { ...theme } }),
     applyThemeConfig(cfg) {
       theme = { ...(cfg.settings || {}) };

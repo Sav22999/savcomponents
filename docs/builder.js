@@ -272,6 +272,238 @@
     rounded: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="4.5"/></svg>',
   };
 
+
+  /* ---- what is inside a list-like component (tabs, steps, tree items…): a form per item (UI) or the HTML itself.
+     The HTML stays the truth: the form changes the elements in place, so anything it does not show is kept. */
+  // fields: text (the words inside), @attr, ?attr (on or off), ?attr=value, icon@attr, enum@attr:a|b, pre-icon (a sav-icon in the prefix slot)
+  const KF = (spec, label, only = false) => ({ spec, label, only }); // only: on for one item at a time (the current page, the open tab)
+  const KK = (sel, name, fields, more = {}) => ({ sel, name, fields, ...more });
+  const OPTS = [KK('option', 'Option', [KF('text', 'Text'), KF('@value', 'Value'), KF('?disabled', 'Disabled')]), KK('optgroup', 'Group', [KF('@label', 'Name')], { kids: ['option'] })];
+  const MENU = [KK('sav-button[slot="trigger"]', 'Button', [KF('text', 'Text')], { fixed: true }), KK('sav-menu-item', 'Item', [KF('text', 'Text'), KF('pre-icon', 'Icon'), KF('@value', 'Value'), KF('?disabled', 'Disabled')]), KK('sav-menu-label', 'Label', [KF('text', 'Text')]), KK('sav-divider', 'Divider', [])];
+  const ITEMS = {
+    'button-group': [KK('sav-button', 'Button', [KF('text', 'Text'), KF('icon@icon', 'Icon'), KF('?disabled', 'Disabled')])],
+    'empty-state': [KK('sav-button', 'Button', [KF('text', 'Text'), KF('icon@icon', 'Icon'), KF('@href', 'Link')])],
+    showcase: [KK('sav-button[slot="actions"]', 'Button', [KF('text', 'Text'), KF('@href', 'Link')])],
+    select: OPTS, search: OPTS,
+    'chip-input': [KK('option', 'Suggestion', [KF('text', 'Text')])],
+    radio: [KK('sav-radio', 'Choice', [KF('text', 'Text'), KF('@value', 'Value'), KF('?disabled', 'Disabled')])],
+    chip: [KK('sav-chip', 'Chip', [KF('text', 'Text'), KF('@value', 'Value'), KF('?selected', 'Selected'), KF('?removable', 'Removable'), KF('?disabled', 'Disabled')])],
+    grid: [KK('sav-card', 'Card', [KF('text', 'Text')])],
+    sortable: [KK('*', 'Item', [KF('text', 'Text'), KF('?data-no-drag', 'Stays in place')])],
+    timeline: [KK('sav-timeline-item', 'Event', [KF('@heading', 'Heading'), KF('@time', 'Time'), KF('text', 'Text'), KF('icon@icon', 'Icon'), KF('enum@variant:primary|neutral|success|warning|danger', 'Colour')])],
+    list: [KK('sav-list-item', 'Item', [KF('text', 'Text'), KF('@description', 'Description'), KF('pre-icon', 'Icon'), KF('@href', 'Link')])],
+    carousel: [KK('sav-slide', 'Slide', [KF('@alt', 'Description of the image'), KF('@src', 'Image address'), KF('@heading', 'Heading'), KF('@text', 'Text')])],
+    dropdown: MENU, menu: MENU,
+    tabs: [KK('sav-tab', 'Tab', [KF('@label', 'Label'), KF('icon@icon', 'Icon'), KF('text', 'Content'), KF('?active', 'Open at first', true), KF('?disabled', 'Disabled')])],
+    accordion: [KK('sav-details', 'Section', [KF('@summary', 'Title'), KF('text', 'Content'), KF('?open', 'Open'), KF('?disabled', 'Disabled')])],
+    'bottom-nav': [KK('sav-bottom-nav-item', 'Item', [KF('@label', 'Label'), KF('icon@icon', 'Icon'), KF('@href', 'Link'), KF('@badge', 'Badge'), KF('?current', 'Current page', true)])],
+    breadcrumb: [KK('sav-breadcrumb-item', 'Item', [KF('text', 'Text'), KF('@href', 'Link'), KF('pre-icon', 'Icon')])],
+    steps: [KK('sav-step', 'Step', [KF('@label', 'Label'), KF('@description', 'Description'), KF('icon@icon', 'Icon'), KF('?status=error', 'Went wrong')])],
+    tree: [KK('sav-tree-item', 'Item', [KF('@label', 'Label'), KF('icon@icon', 'Icon'), KF('icon@icon-open', 'Icon when open'), KF('?expanded', 'Open'), KF('?selected', 'Selected'), KF('?disabled', 'Disabled')], { kids: ['sav-tree-item'] })],
+    command: [KK('optgroup', 'Group', [KF('@label', 'Name')], { kids: ['option'] }), KK('option', 'Command', [KF('text', 'Text'), KF('@value', 'Value'), KF('icon@data-icon', 'Icon'), KF('@data-description', 'Description'), KF('@data-shortcut', 'Shortcut')])],
+    'infinite-scroll': [KK('*', 'Item', [KF('text', 'Text')])],
+    // header: the logo, the links (one is the current page), the search, and the actions on the right (avatar, buttons)
+    header: [KK('a[slot="logo"]', 'Logo', [KF('text', 'Name'), KF('@href', 'Link')], { fixed: true }),
+      KK('a:not([slot])', 'Link', [KF('text', 'Text'), KF('@href', 'Link'), KF('?aria-current=page', 'Current page', true)]),
+      KK('sav-search[slot="search"]', 'Search', [KF('@placeholder', 'Placeholder')], { single: true }),
+      KK('sav-button[slot="actions"]', 'Button', [KF('text', 'Text'), KF('icon@icon', 'Icon'), KF('@href', 'Link')]),
+      KK('sav-avatar[slot="actions"]', 'Avatar', [KF('@label', 'Name'), KF('@initials', 'Initials'), KF('@src', 'Photo address')], { single: true })],
+    dialog: null, drawer: null,
+  };
+  const FIELDS_IN = [KK('sav-checkbox', 'Checkbox', [KF('text', 'Label'), KF('?checked', 'Ticked')], { inner: true }), KK('sav-switch', 'Switch', [KF('text', 'Label'), KF('?checked', 'On')], { inner: true }),
+    KK('sav-input', 'Field', [KF('@label', 'Label'), KF('@placeholder', 'Placeholder'), KF('enum@type:text|email|password|number|tel|url|search|date', 'Type')], { inner: true }),
+    KK('sav-range', 'Range', [KF('@label', 'Label'), KF('@value', 'Value'), KF('@min', 'Min'), KF('@max', 'Max'), KF('@unit', 'Unit')], { inner: true })];
+  const MODAL = (what) => [KK(':self', 'Message', [KF('text', 'Text')], { fixed: true }),
+    KK('div:not([slot])', 'Group', [], { kids: FIELDS_IN.map((k) => k.sel) }), ...FIELDS_IN,
+    KK('sav-button[slot="footer"]', 'Button', [KF('text', 'Text'), KF('enum@variant:primary|neutral|success|warning|danger', 'Colour'), KF('enum@appearance:solid|outline|soft|ghost', 'Appearance'), KF('?data-sav-close', `Closes the ${what}`), KF('?block', 'Full width')]),
+    KK('sav-button[slot="header-actions"]', 'Header button', [KF('@label', 'Name'), KF('icon@icon', 'Icon')], { init: { icon: 'ellipsis', appearance: 'ghost', variant: 'neutral', size: 'sm' } })];
+  ITEMS.dialog = MODAL('dialog'); ITEMS.drawer = MODAL('drawer');
+  const ONE_OF = ['aria-current', 'current', 'active', 'selected', 'open', 'checked', 'expanded', 'disabled', 'data-no-drag', 'status', 'badge'];
+  const fType = (spec) => (spec === 'text' ? 'text' : spec === 'pre-icon' ? 'icon' : spec[0] === '?' ? 'bool' : spec.startsWith('icon@') ? 'icon' : spec.startsWith('enum@') ? 'enum' : 'text');
+  const fAttr = (spec) => spec.replace(/^(\?|@|icon@|enum@)/, '').replace(/[:=].*$/, '');
+  const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.data).join('').replace(/\s+/g, ' ').trim();
+  const preIcon = (el) => el.querySelector(':scope > sav-icon[slot="prefix"]');
+  function getF(el, spec) {
+    if (spec === 'text') return ownText(el);
+    if (spec === 'pre-icon') return preIcon(el)?.getAttribute('name') || '';
+    if (spec[0] === '?') { const [a, v] = spec.slice(1).split('='); return v ? el.getAttribute(a) === v : el.hasAttribute(a); }
+    return el.getAttribute(fAttr(spec)) || '';
+  }
+  function setF(el, spec, v) {
+    if (spec === 'text') {
+      const ts = [...el.childNodes].filter((n) => n.nodeType === 3 && n.data.trim());
+      if (ts.length) { ts[0].data = v; ts.slice(1).forEach((n) => n.remove()); }
+      else if (v) el.nodeType === 11 ? el.prepend(document.createTextNode(v)) : el.insertBefore(document.createTextNode(v), el.querySelector(':scope > [slot="suffix"]'));
+    } else if (spec === 'pre-icon') {
+      const ic = preIcon(el);
+      if (!v) ic?.remove();
+      else if (ic) ic.setAttribute('name', v);
+      else { const n = document.createElement('sav-icon'); n.setAttribute('slot', 'prefix'); n.setAttribute('name', v); el.prepend(n); }
+    } else if (spec[0] === '?') { const [a, x] = spec.slice(1).split('='); v ? el.setAttribute(a, x || '') : el.removeAttribute(a); }
+    else v === '' ? el.removeAttribute(fAttr(spec)) : el.setAttribute(fAttr(spec), v);
+  }
+  /** the items of the HTML, in order, with their depth (the tree) */
+  function kidRows(root, kinds, all, lvl = 0, out = { rows: [], other: 0 }) {
+    const self = !lvl && kinds.find((x) => x.sel === ':self'); // the text right inside the component (the message of a dialog)
+    if (self) out.rows.push({ el: root, k: self, lvl });
+    for (const el of root.children) {
+      const k = kinds.find((x) => x.sel !== ':self' && el.matches(x.sel));
+      if (!k) { out.other++; continue; }
+      out.rows.push({ el, k, lvl });
+      if (k.kids) kidRows(el, all.filter((x) => k.kids.includes(x.sel)), all, lvl + 1, out);
+    }
+    return out;
+  }
+  function kidsField(d) {
+    const ta = (vis) => `<sav-textarea size="sm" class="mono" data-children rows="${vis ? 8 : 5}" value="${esc(S.children)}"${vis ? ' aria-label="What is inside (HTML)"' : ''}>${vis ? '' : lbl('What is inside (HTML)', 'The elements inside the component: options, items, tabs, slides… Change, add or remove them; the preview follows.')}</sav-textarea>`;
+    if (!ITEMS[d.id]) return ta(false);
+    const mode = D().store.get('savc-kids-mode', 'ui') === 'html' ? 'html' : 'ui';
+    return `<div class="kid-ed" data-mode="${mode}"><div class="de-top">${lbl('What is inside', 'The items of the component: change their text and options, add, move or remove them (UI), or write the HTML. The preview follows.').replace('slot="label" ', '')}`
+      + `<sav-radio-group class="ke-mode" appearance="buttons" size="sm" value="${mode}" aria-label="Edit what is inside as"><sav-radio value="ui">UI</sav-radio><sav-radio value="html">HTML</sav-radio></sav-radio-group></div>`
+      + `<div class="ke-ui"></div>${ta(true)}</div>`;
+  }
+  /** the form of the items, from the HTML in the box */
+  function renderKids(box, fromHtml = true) {
+    const kinds = ITEMS[cur.id];
+    // from the HTML (at first, and after it was written by hand), or from the elements the form just changed
+    if (fromHtml || !box._tpl) { const tpl = document.createElement('template'); tpl.innerHTML = box.querySelector('[data-children]').value || ''; box._tpl = tpl; }
+    const tpl = box._tpl; box._open ||= new WeakSet();
+    const { rows, other } = kidRows(tpl.content, kinds, kinds);
+    box._rows = rows;
+    const many = new Set(rows.map((x) => x.k)).size > 1; // the kind is named only when there are several
+    const count = {};
+    const fieldOf = (r, n, f, i, bare) => {
+      const t = fType(f.spec), v = getF(r.el, f.spec), id = `data-f="${i}"`;
+      const al = `${r.k.name} ${count[n]}: ${f.label}`;
+      if (t === 'bool') return `<sav-checkbox size="sm" ${id} ${v ? 'checked' : ''}>${esc(f.label)}</sav-checkbox>`;
+      if (t === 'icon') {
+        if (f.spec === 'pre-icon' && r.el.querySelector(':scope > [slot="prefix"]:not(sav-icon)')) return ''; // an avatar or picture there: only in HTML
+        return `<sav-search size="sm" ${id} class="ke-half" data-icons no-filter max="12" value="${esc(v)}" placeholder="Search icons"${bare ? ` aria-label="${esc(al)}"` : ` label="${esc(f.label)}"`}></sav-search>`;
+      }
+      if (t === 'enum') return `<sav-select size="sm" ${id} class="ke-half" value="${esc(v)}" placeholder="Default" label="${esc(f.label)}"><option value="">Default</option>${f.spec.split(':')[1].split('|').map((o) => `<option value="${o}">${esc(T(o))}</option>`).join('')}</sav-select>`;
+      return `<sav-input size="sm" ${id} value="${esc(v)}"${bare ? ` aria-label="${esc(al)}" placeholder="${esc(f.label)}"` : ` label="${esc(f.label)}"`}></sav-input>`;
+    };
+    const btn = (what, icon, label, text = '') => `<sav-button size="sm" appearance="${text ? 'soft' : 'ghost'}" variant="neutral" icon="${icon}" ${text ? '' : `label="${esc(label)}"`} data-ke="${what}">${esc(text)}</sav-button>`;
+    const html = rows.map((r, n) => {
+      const key = r.k.name + r.lvl; count[n] = (count[key] = (count[key] || 0) + 1);
+      const fs = r.k.fields.map((f, i) => [f, i]);
+      const first = fs[0] && fType(fs[0][0].spec) !== 'bool' && fs[0][0].spec !== 'pre-icon' ? fs[0] : null;
+      const rest = fs.filter((x) => x !== first);
+      const bools = rest.filter(([f]) => fType(f.spec) === 'bool'), others = rest.filter(([f]) => fType(f.spec) !== 'bool');
+      const sibs = r.k.fixed ? [] : [...r.el.parentNode.children].filter((e) => e.matches(r.k.sel));
+      const pos = sibs.indexOf(r.el);
+      const open = box._open.has(r.el);
+      const tools = [pos > 0 ? btn('up', 'arrow-up', '', 'Move up') : '', pos < sibs.length - 1 ? btn('down', 'arrow-down', '', 'Move down') : '',
+        ...(r.k.kids || []).map((kid, j) => btn('in', 'plus', '', `Add ${kinds.find((x) => x.sel === kid).name.toLowerCase()}${r.k.kids.length > 1 ? '' : ' inside'}`).replace('data-ke="in"', `data-ke="in" data-kid="${j}"`))].join('');
+      const more = others.map(([f, i]) => fieldOf(r, n, f, i)).join('') + (bools.length ? `<div class="ke-bools">${bools.map(([f, i]) => fieldOf(r, n, f, i)).join('')}</div>` : '') + (tools ? `<div class="ke-tools">${tools}</div>` : '');
+      return `<div class="ke-item" data-n="${n}" style="--lvl: ${r.lvl}"${open ? ' data-open' : ''}><div class="ke-row">`
+        + (many || r.k.fixed ? `<span class="ke-k">${esc(r.k.name)}</span>` : '')
+        + (first ? fieldOf(r, n, first[0], first[1], true) : `<span class="ke-name">${r.k.fields.length || many ? '' : esc(r.k.name)}</span>`)
+        + (more ? `<sav-button size="sm" appearance="ghost" variant="neutral" icon="chevron-down" class="ke-more-b" label="More about ${esc(r.k.name.toLowerCase())} ${count[n]}" aria-expanded="${open}" data-ke="more"></sav-button>` : '')
+        + (r.k.fixed ? '' : btn('del', 'x', `Remove ${r.k.name.toLowerCase()} ${count[n]}`))
+        + `</div>${more ? `<div class="ke-more"${open ? '' : ' hidden'}>${more}</div>` : ''}</div>`;
+    }).join('');
+    box.querySelector('.ke-ui').innerHTML = html
+      + `<div class="de-adds">${kinds.filter((k) => !k.fixed && !k.inner && !(k.single && rows.some((x) => x.k === k))).map((k) => `<sav-button size="sm" appearance="soft" variant="neutral" icon="plus" data-ke="add" data-kind="${kinds.indexOf(k)}">Add ${esc(k.name.toLowerCase())}</sav-button>`).join('')}</div>`
+      + (other ? `<p class="de-note">${other === 1 ? 'One more element is' : other + ' more elements are'} inside: ${other === 1 ? 'it stays' : 'they stay'} as ${other === 1 ? 'it is' : 'they are'}, change ${other === 1 ? 'it' : 'them'} in HTML.</p>` : '');
+  }
+  const kidsWrite = (box) => { const ta = box.querySelector('[data-children]'); ta.value = box._tpl.innerHTML; ta.dispatchEvent(new Event('input', { bubbles: true })); };
+  /** a new item: like the last one of its kind (its look, its icon), with a new name and nothing on */
+  function newKid(k, parent) {
+    const sibs = [...parent.children].filter((e) => e.matches(k.sel)), last = sibs[sibs.length - 1];
+    let el;
+    if (last) {
+      el = last.cloneNode(false);
+      ONE_OF.forEach((a) => el.removeAttribute(a));
+      const ic = preIcon(last); if (ic) el.append(ic.cloneNode(true));
+    } else {
+      const m = k.sel.match(/^([a-z][\w-]*)/);
+      el = document.createElement(m ? m[1] : 'div');
+      for (const [, a, v] of k.sel.matchAll(/\[([\w-]+)="([^"]*)"\]/g)) el.setAttribute(a, v);
+      for (const [a, v] of Object.entries(k.init || {})) el.setAttribute(a, v); // the first of its kind: a look to start from
+    }
+    const name = k.single ? k.name : `${k.name} ${sibs.length + 1}`;
+    const main = k.fields.find((f) => fType(f.spec) === 'text');
+    if (main) setF(el, main.spec, name);
+    if (el.hasAttribute('value') || k.fields.some((f) => f.spec === '@value' && f !== main && k.sel !== 'option')) el.setAttribute('value', name.toLowerCase().replace(/\s+/g, '-'));
+    // the same space as between the others, so the HTML stays tidy
+    const gap = last?.previousSibling?.nodeType === 3 && !last.previousSibling.data.trim() ? last.previousSibling.data : '';
+    if (last) last.after(...(gap ? [document.createTextNode(gap)] : []), el);
+    else { const tail = parent.lastChild?.nodeType === 3 && !parent.lastChild.data.trim() ? parent.lastChild : null; parent.insertBefore(el, tail); } // before the closing space
+    return el;
+  }
+  /** after an item was added, moved or removed: the same space between all the items of that level, so the HTML stays tidy */
+  function tidyKids(parent) {
+    const ws = [...parent.childNodes].filter((n) => n.nodeType === 3 && !n.data.trim());
+    const gap = ws.find((n) => n.nextSibling?.nodeType === 1 && n.previousSibling?.nodeType === 1)?.data ?? ws.find((n) => n.nextSibling?.nodeType === 1)?.data;
+    if (gap === undefined) return;
+    const end = parent.lastChild?.nodeType === 3 && !parent.lastChild.data.trim() ? parent.lastChild.data : '';
+    ws.forEach((n) => n.remove());
+    [...parent.children].forEach((el, i) => { if (i || gap.includes('\n')) el.before(document.createTextNode(gap)); });
+    if (end) parent.append(document.createTextNode(end));
+  }
+  function wireKids(panel) {
+    const boxOf = (t) => t.closest?.('.kid-ed');
+    const onEdit = (e) => {
+      const box = boxOf(e.target); if (!box) return;
+      const mode = e.target.closest('.ke-mode');
+      if (mode) {
+        if (e.type !== 'change') return;
+        if (mode.value === 'ui') renderKids(box);
+        box.dataset.mode = mode.value; D().store.set('savc-kids-mode', mode.value);
+        return;
+      }
+      const fld = e.target.closest('.ke-ui [data-f]'); if (!fld) return;
+      const r = box._rows[Number(fld.closest('.ke-item').dataset.n)], f = r.k.fields[Number(fld.dataset.f)];
+      let v = fld.localName === 'sav-checkbox' ? fld.checked : String(fld.value ?? '');
+      // an icon changes only with a real icon name (or when emptied): while typing, the last good icon stays
+      if (fType(f.spec) === 'icon' && v) { v = v.trim(); if (!iconNames || !iconNames.has(v)) return; }
+      setF(r.el, f.spec, v);
+      if (f.only && v) {
+        box._rows.filter((x) => x.k === r.k && x.el !== r.el).forEach((x) => setF(x.el, f.spec, false));
+        const n = fld.closest('.ke-item').dataset.n;
+        renderKids(box, false);
+        box.querySelector(`.ke-item[data-n="${n}"] [data-f="${fld.dataset.f}"]`)?.focus?.();
+      }
+      kidsWrite(box);
+    };
+    panel.addEventListener('input', onEdit);
+    panel.addEventListener('change', onEdit);
+    panel.addEventListener('click', (e) => {
+      const b = e.target.closest?.('.kid-ed [data-ke]'); if (!b) return;
+      const box = boxOf(b), item = b.closest('.ke-item'), r = item && box._rows[Number(item.dataset.n)];
+      const what = b.dataset.ke;
+      if (what === 'more') {
+        const open = !box._open.has(r.el);
+        open ? box._open.add(r.el) : box._open.delete(r.el);
+        item.toggleAttribute('data-open', open); item.querySelector('.ke-more').hidden = !open; b.setAttribute('aria-expanded', String(open));
+        return;
+      }
+      let focus = null;
+      const level = what === 'add' ? box._tpl.content : what === 'in' ? r.el : r.el.parentNode;
+      if (what === 'add') { const k = ITEMS[cur.id][Number(b.dataset.kind)]; focus = newKid(k, box._tpl.content); }
+      else if (what === 'in') { const k = ITEMS[cur.id].find((x) => x.sel === r.k.kids[Number(b.dataset.kid) || 0]); focus = newKid(k, r.el); box._open.add(r.el); if (r.k.fields.some((f) => f.spec === '?expanded')) r.el.setAttribute('expanded', ''); } // opened, so the new item shows
+      else if (what === 'del') {
+        const rows = box._rows, n = rows.indexOf(r);
+        const ws = r.el.previousSibling; if (ws?.nodeType === 3 && !ws.data.trim()) ws.remove();
+        r.el.remove();
+        focus = rows.slice(n + 1).find((x) => x.el.isConnected)?.el || rows.slice(0, n).reverse().find((x) => x.el.isConnected)?.el || null;
+      } else {
+        const sibs = [...r.el.parentNode.children].filter((x) => x.matches(r.k.sel)), i = sibs.indexOf(r.el);
+        if (what === 'up' && i > 0) sibs[i - 1].before(r.el);
+        if (what === 'down' && i < sibs.length - 1) sibs[i + 1].after(r.el);
+        focus = r.el;
+      }
+      tidyKids(level);
+      renderKids(box, false); kidsWrite(box);
+      // the focus stays with the item: its first field, or the remove button when it has none
+      const n = box._rows.findIndex((x) => x.el === focus);
+      const it = n >= 0 && box.querySelector(`.ke-item[data-n="${n}"]`);
+      const target = it && (what === 'up' || what === 'down' ? it.querySelector(`[data-ke="${what}"]`) || it.querySelector('[data-ke="more"]') : it.querySelector('[data-f], [data-ke="del"]'));
+      requestAnimationFrame(() => target?.focus?.());
+    });
+  }
+
   function field(k) { return fieldHtml(k); }
   function fieldHtml(k) {
     const v = S.attrs[k.name];
@@ -289,7 +521,7 @@
     }
     if (k.kind === 'number') return `<sav-number-input size="sm" buttons="end" data-a="${k.name}"${k.min !== undefined ? ` min="${k.min}"` : ''}${k.max !== undefined ? ` max="${k.max}"` : ''} value="${esc(isOn(v) ? v : '')}" placeholder="Default">${lbl(name, k.desc)}</sav-number-input>`;
     // data (JSON): a box with several lines; the component changes only once the text reads well
-    if (k.kind === 'json') return `<sav-textarea size="sm" rows="5" class="mono" data-a="${k.name}" data-json value="${esc(isOn(v) ? v : '')}">${lbl(name, (k.desc ? k.desc + ' ' : '') + 'Written as JSON: the preview follows once brackets, quotes and commas are right.')}</sav-textarea>`;
+    if (k.kind === 'json') return D().dataEditor(cur.id, k, 'data-a', isOn(v) ? v : '', lbl(name, (k.desc ? k.desc + ' ' : '') + 'Fill in the table (UI) or write the JSON: the preview follows once brackets, quotes and commas are right.'), S.attrs.by);
     // icons: a search among the whole icon set, each suggestion with its drawing and name; the chosen one shows next to the label
     const rich = D().richField(k, 'data-a', isOn(v) ? v : '', lbl(name, k.desc)); if (rich) return rich;
     if (k.kind === 'multi') return `<sav-select size="sm" multiple select-all data-a="${k.name}" ${D().multiAttrs(k)} value="${esc(D().multiValue(k, isOn(v) ? v : ''))}" placeholder="None" sheet-on-mobile>${lbl(name, k.desc)}${k.options.map((o) => `<option value="${o}">${esc(k.optionLabels?.[o] || T(o))}</option>`).join('')}</sav-select>`;
@@ -329,7 +561,7 @@
       ${baseOf(d).tags ? section('Version', 'layers', `<sav-radio-group appearance="buttons" size="sm" data-tag value="${S.tag}" aria-label="Version">${baseOf(d).tags.map((t) => `<sav-radio value="${t.tag}">${esc(t.label)}</sav-radio>`).join('')}</sav-radio-group>`) : ''}
       ${section('Content', 'text-cursor-input', (baseOf(d).text !== undefined ? `<sav-input size="sm" data-text value="${esc(S.text || '')}" placeholder="What it says">${lbl('Text', 'What is written in the component.')}</sav-input>` : '')
         + texts.map(field).join('')
-        + (baseOf(d).children ? `<sav-textarea size="sm" class="mono" data-children rows="5" value="${esc(S.children)}">${lbl('What is inside (HTML)', 'The elements inside the component: options, items, tabs, slides… Change, add or remove them; the preview follows.')}</sav-textarea>` : ''))}
+        + (baseOf(d).children ? kidsField(d) : ''))}
       ${section('Look', 'palette', enums.map(field).join(''))}
       ${section('Behaviour', 'toggle-right', bools.length ? `<div class="bld-bools">${bools.map(field).join('')}</div>` : '')}
       ${section('Animation', 'sparkles', mot.map(field).join(''), false)}
@@ -341,6 +573,7 @@
         + adv.filter((k) => k.type !== 'bool').map(field).join('')
         + (adv.some((k) => k.type === 'bool') ? `<div class="bld-bools">${adv.filter((k) => k.type === 'bool').map(field).join('')}</div>` : ''), false)}
       </sav-accordion>`;
+    $('#bldPanel').querySelectorAll('.kid-ed').forEach(renderKids); // the form of the items, from their HTML
     // the folded rail: one icon per section; a click opens the options at that section
     $('#bldRail').innerHTML = [...$('#bldPanel').querySelectorAll('.bld-acc > sav-details')].map((x, n) => `<button type="button" data-sec="${n}" title="${esc(x.getAttribute('summary'))}" aria-label="${esc(x.getAttribute('summary'))}"><sav-icon name="${esc(x.querySelector('sav-icon')?.getAttribute('name') || 'circle')}"></sav-icon></button>`).join('');
     logReset();
@@ -507,6 +740,8 @@
         .sort((a, b) => a[1] - b[1] || a[0].length - b[0].length || a[0].localeCompare(b[0])).slice(0, 12)
         .map(([n]) => ({ label: n, value: n, icon: n, description: (all[n] || []).slice(0, 4).join(', ') }));
     });
+    D().wireData(panel); // data fields: the table writes their JSON
+    wireKids(panel); // what is inside: the form of the items writes their HTML
     panel.addEventListener('input', onPanel);
     panel.addEventListener('change', onPanel);
     panel.addEventListener('click', (e) => {

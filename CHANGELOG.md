@@ -61,7 +61,7 @@ The first public version.
 - Breadcrumb: the current page follows the style (tint, leaning tile, underline, inked block, glass), hover on links, `appearance="contained"`,
   `max-items` folds long paths behind “…”. Site: the header uses the Theme choice (Light, Dark, Auto).
 - Theme choice: Auto has its own built-in icon, a circle half filled (dark and light together): `theme-auto`.
-- Charts: `sav-chart-bar` (vertical or horizontal, grouped or stacked, spacing, values), `sav-chart-pie` (pie or donut, gaps, centre text),
+- Charts: `sav-chart-bar` (vertical or horizontal, grouped or stacked, spacing, values), `sav-chart-pie` (pie or donut, gaps of the same width all the way to the centre, centre text),
   `sav-chart-radar`, `sav-chart-line` (area or line, smooth, points, stacked, negative values), `sav-chart-activity` (calendar heatmap).
   Colours from `--sav-chart-1…8`; every chart has a summary and a data table for screen readers.
 - New: `sav-carousel` + `sav-slide` (images or image and text, per-view, loop, autoplay), `sav-video`, `sav-audio`, `sav-menu` (a menu that stays
@@ -125,6 +125,20 @@ The first public version.
   with the right control), and the reference tables list them all. Fields with known values suggest them: countries and continents for the
   map (searchable, by name), languages for locale and include/exclude, countries for the country choice, keys for separators, common values
   for autocomplete, accept and hotkey.
+- Builder and playground: the data of the charts can be filled in as a table (UI) or written as JSON, with a choice over the field that is
+  remembered. Bar, line and radar: the series (named, added, removed) and a row per label with one value per series; pie: label and value;
+  activity: a date picker and a value; map: a country choice, or the continents with `by="continent"`, and a value. Other keys of the data
+  (such as a series colour) are kept.
+- Component builder: what is inside a component (tabs, accordion sections, steps, tree items, bottom navigation, breadcrumb, menu and
+  dropdown items, list items, slides, timeline events, sortable and infinite scroll items, options, buttons…) can be edited as a form (UI)
+  or as HTML, with a choice that is remembered. Each item shows its main text; the arrow opens its other options (icon, link, value, badge,
+  on/off ones) and moves it up or down; items are added like the last one and removed with ×; tree items and command groups take items
+  inside. The HTML stays the source: anything the form does not show (an avatar, a shortcut, a style) is kept.
+  Header: logo, links (one is the current page), search, buttons and avatar. Dialog and drawer: the message, groups of fields (checkbox,
+  switch, field, range), the footer buttons (colour, appearance, "closes it") and buttons in the header. "Current page", the open tab and
+  the current item of the bottom navigation are on for one item at a time.
+- Glass: the switch has a frosted track with a rim of light, a coloured glow when it is on and a glossy thumb, in light and dark
+  (`--sav-switch-track-shadow`, `--sav-switch-on-shadow`, `--sav-switch-backdrop`, `--sav-switch-thumb-border`).
 - Map: `region` frames one continent (Europe, Africa, Asia, North America, South America, Oceania, Antarctica) and dims the rest of the world.
   `by="continent"` makes each continent one area (one colour, one name in the page language, one value; `sav-continent` on a click), and
   `highlight` also takes continents (`highlight="europe"` lights all its countries).

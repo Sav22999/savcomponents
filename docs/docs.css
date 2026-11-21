@@ -621,3 +621,39 @@ sav-textarea.mono { font-family: var(--sav-font-mono, ui-monospace, SFMono-Regul
 .bs-ok .a11y-st { color: color-mix(in oklab, var(--sav-color-success) 70%, var(--sav-color-text)); }
 .bs-differs .a11y-st { color: color-mix(in oklab, var(--sav-color-warning) 70%, var(--sav-color-text)); }
 .bs-fallback .a11y-st { color: color-mix(in oklab, var(--sav-color-primary) 62%, var(--sav-color-text)); }
+
+/* data fields (charts): a table (UI) or the JSON */
+.data-ed { display: grid; gap: .45rem; min-width: 0; }
+.de-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.de-top > .knob-l { font-size: .8125rem; font-weight: 650; color: var(--sav-color-text); }
+.data-ed[data-mode="ui"] > sav-textarea, .data-ed[data-mode="json"] > .de-ui { display: none; }
+.de-ui { display: grid; gap: .5rem; min-width: 0; }
+.de-scroll { overflow-x: auto; min-width: 0; padding-bottom: .1rem; }
+.de-grid { display: grid; grid-template-columns: minmax(4.5rem, 1.2fr) repeat(var(--de-cols, 1), minmax(3.75rem, 1fr)) 2rem; gap: .35rem; align-items: center; }
+.de-map, .de-dates { grid-template-columns: minmax(8rem, 1.8fr) minmax(4rem, 1fr) 2rem; }
+.de-row { display: contents; }
+.de-h { font-size: .75rem; font-weight: 600; color: var(--sav-color-text-muted); padding-inline: .15rem; }
+.de-series { display: grid; gap: .35rem; padding-bottom: .5rem; border-bottom: 1px solid var(--sav-color-border); }
+.de-srow { display: grid; grid-template-columns: minmax(0, 1fr) 2rem; gap: .35rem; align-items: center; }
+.de-hn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.de-grid sav-input, .de-grid sav-select, .de-grid sav-country-choice, .de-grid sav-date-picker { min-width: 0; }
+.de-adds { display: flex; flex-wrap: wrap; gap: .4rem; }
+.de-note { margin: 0; font-size: .8rem; color: var(--sav-color-text-muted); }
+
+/* what is inside (builder): a form per item (UI) or the HTML */
+.kid-ed { display: grid; gap: .45rem; min-width: 0; }
+.kid-ed[data-mode="ui"] > sav-textarea, .kid-ed[data-mode="html"] > .ke-ui { display: none; }
+.ke-ui { display: grid; gap: .4rem; min-width: 0; }
+.ke-item { display: grid; gap: .45rem; min-width: 0; margin-inline-start: calc(var(--lvl, 0) * .9rem); padding: .3rem; border: 1px solid var(--sav-color-border); border-radius: var(--sav-radius-md, .5rem); background: var(--sav-color-surface); }
+.ke-item[data-open] { border-color: var(--sav-color-border-strong); }
+.ke-row { display: flex; align-items: center; gap: .25rem; min-width: 0; }
+.ke-row > sav-input, .ke-row > sav-search { flex: 1; min-width: 0; }
+.ke-k { flex: none; min-width: 4.5rem; box-sizing: border-box; text-align: center; padding: .1rem .4rem; border-radius: var(--sav-radius-sm); background: var(--sav-color-surface-2); color: var(--sav-color-text-muted); font-size: .68rem; font-weight: 650; letter-spacing: .02em; text-transform: uppercase; }
+.ke-name { flex: 1; min-width: 0; padding-inline: .3rem; font-size: .8rem; color: var(--sav-color-text-muted); }
+.ke-more-b::part(base) { transition: transform calc(var(--sav-duration, .2s) * var(--sav-motion, 1)); }
+.ke-item[data-open] .ke-more-b { transform: rotate(180deg); }
+.ke-more { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .5rem; padding: .15rem .2rem .2rem; }
+.ke-more[hidden] { display: none; }
+.ke-more > sav-input, .ke-more > sav-textarea { grid-column: 1 / -1; }
+.ke-bools, .ke-tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .4rem .9rem; }
+.ke-tools { gap: .35rem; }
