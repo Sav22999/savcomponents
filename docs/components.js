@@ -419,12 +419,13 @@ window.SAVC_DOCS = [
     demos: [
       { title: 'Day, month, year', html: `<sav-date-picker label="Day" placeholder="Pick a date" value="2026-11-16"></sav-date-picker>
 <sav-date-picker label="Month" mode="month" placeholder="Pick a month"></sav-date-picker>
-<sav-date-picker label="Year" mode="year" placeholder="Pick a year" value="2026"></sav-date-picker>` },
+<sav-date-picker label="Year" mode="year" placeholder="Pick a year" value="2026"></sav-date-picker>
+<sav-date-picker label="Day and time" mode="datetime" placeholder="Pick a moment" value="2026-11-16T10:30"></sav-date-picker>` },
       { title: 'Limits, language, phones', html: `<sav-date-picker label="Check-in" min="2026-11-16" max="2027-03-31" help="From today to the end of March." clearable sheet-on-mobile></sav-date-picker>
 <sav-date-picker label="Data (italiano)" locale="it-IT" value="2026-12-25" format="full"></sav-date-picker>
 <sav-date-picker label="Native picker on phones" native-on-mobile></sav-date-picker>` },
     ],
-    attrs: [['mode', 'date · month · year', 'What to pick. Values: 2026-11-16, 2026-11, 2026.'], ['value · min · max', 'ISO date', 'Same format as the mode.'], ['label · help · placeholder', 'string', ''],
+    attrs: [['mode', 'date · month · year · datetime', 'What to pick. Values: 2026-11-16, 2026-11, 2026, 2026-11-16T10:30. datetime shows the time (hours and minutes) under the calendar: a day keeps the panel open, Done closes it, Now picks this moment.'], ['value · min · max', 'ISO date', 'Same format as the mode (min and max of a datetime limit the days).'], ['label · help · placeholder', 'string', ''],
       ['locale', 'string', 'Language of names and the first day of the week; default the page language.'], ['first-day', 'number', '0 = Sunday, 1 = Monday…'], ['format', 'short · medium · long · full', 'How the chosen date is written.'],
       ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['auto-text', 'boolean', 'The chosen day and today are black or white, whichever is readable on what is behind them (WCAG AA, at least 4.5:1), also with your own colours.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the calendar opens, when there is room.']],
     events: [['input · change', 'When a date is chosen.'], ['sav-show · sav-hide', 'The list or calendar opened or closed.']],
@@ -719,8 +720,11 @@ window.SAVC_DOCS = [
   <sav-avatar label="Ada Lovelace" variant="primary" style="--ring: 0 0 0 3px var(--sav-color-bg)"></sav-avatar>
   <sav-avatar label="Alan Turing" style="--ring: 0 0 0 3px var(--sav-color-bg); margin-left: -.4rem"></sav-avatar>
   <sav-avatar label="Grace Hopper" variant="primary" style="--ring: 0 0 0 3px var(--sav-color-bg); margin-left: -.4rem"></sav-avatar>
-</div>` }],
-    attrs: [['image', 'url', 'Falls back to initials if it fails.'], ['label', 'string', 'Name: gives the initials and the accessible name.'], ['initials', 'string', 'Overrides the computed initials.'], ['shape', 'circle · rounded · square · tilt', 'Tilt is a square leaning 10°, like the logo.'], ['size', 'sm · md · lg · xl', 'Or --size.'], ['variant', 'neutral · primary', ''], ['--size · --ring', 'CSS', '--size: width and height. --ring: a ring that follows the shape (circle, rounded, leaning square in Tilt), for example 0 0 0 2px white to separate avatars that overlap.'], ['auto-text', 'boolean', 'Black or white initials, whichever is readable on the colour behind them (WCAG AA, at least 4.5:1), also with your own colours.']],
+</div>` },
+      { title: 'A link or a button', html: `<sav-avatar label="Ada Lovelace" variant="primary" href="#avatar"></sav-avatar>
+<sav-avatar label="Alan Turing" shape="tilt" href="#avatar"></sav-avatar>
+<sav-avatar label="Open the menu of Grace Hopper" initials="GH" button size="lg" onclick="Sav.toast('Avatar clicked (example)')"></sav-avatar>` }],
+    attrs: [['image', 'url', 'Falls back to initials if it fails.'], ['label', 'string', 'Name: gives the initials and the accessible name.'], ['initials', 'string', 'Overrides the computed initials.'], ['href · target', 'url · string', 'The avatar is a link (for example to the profile). Hover draws a ring on its own shape, the keyboard the focus ring: no box around it.'], ['button', 'boolean', 'The avatar is a button (for example to open a menu): listen to click.'], ['shape', 'circle · rounded · square · tilt', 'Tilt is a square leaning 10°, like the logo.'], ['size', 'sm · md · lg · xl', 'Or --size.'], ['variant', 'neutral · primary', ''], ['--size · --ring', 'CSS', '--size: width and height. --ring: a ring that follows the shape (circle, rounded, leaning square in Tilt), for example 0 0 0 2px white to separate avatars that overlap.'], ['auto-text', 'boolean', 'Black or white initials, whichever is readable on the colour behind them (WCAG AA, at least 4.5:1), also with your own colours.']],
   },
   {
     id: 'divider', name: 'Divider', tag: 'sav-divider', group: 'Layout', icon: 'separator-horizontal',
@@ -1476,6 +1480,56 @@ window.SAVC_DOCS = [
     events: [['sav-step', 'A done step was clicked: detail.index (cancel it to stay).'], ['change', 'The current step changed: detail.current.']],
     methods: [['next() · previous()', 'One step forward or back.'], ['current', 'The current step (number).']],
     parts: ['base', 'marker', 'label', 'description', 'line'],
+  },
+  {
+    id: 'level-path', name: 'Level path', tag: 'sav-level-path · sav-level', group: 'Navigation', icon: 'route',
+    play: { tag: 'sav-level-path', attrs: { current: '3', label: 'Web basics' }, children: '<sav-level label="Tags" icon="code" stars="3"></sav-level><sav-level label="Links" icon="link" stars="2"></sav-level><sav-level label="Images" icon="image"></sav-level><sav-level label="Lists" icon="list"></sav-level><sav-level label="Final test" icon="trophy" milestone variant="warning"></sav-level>' },
+    desc: 'The map of a course, as in learning apps and games: levels on a winding line. The ones done are coloured, with a tick or their icon and their stars; the current one breathes and says what to do (<i>Start</i>); the next ones are locked. The nodes take the shape of the style: round, square, a leaning tile in Tilt. A heading, a divider or a card inside starts a new stretch, across the whole width.',
+    demos: [
+      { title: 'A course', html: `<sav-level-path current="4" label="HTML basics" style="max-width: 26rem; margin: auto">
+  <sav-level label="Tags" icon="code" stars="3"></sav-level>
+  <sav-level label="Text" icon="type" stars="3"></sav-level>
+  <sav-level label="Links" icon="link" stars="2"></sav-level>
+  <sav-level label="Images" icon="image"></sav-level>
+  <sav-level label="Lists" icon="list"></sav-level>
+  <sav-level label="Tables" icon="table"></sav-level>
+  <sav-level label="Final test" icon="trophy" milestone variant="warning"></sav-level>
+</sav-level-path>` },
+      { title: 'Units, and what a click does', html: `<sav-level-path id="lp-units" current="3" current-label="Continue" label="Spanish for travellers (example)" style="max-width: 26rem; margin: auto">
+  <sav-heading level="3" size="5" eyebrow="Unit 1" marker>At the airport</sav-heading>
+  <sav-level label="Greetings" icon="hand" stars="3"></sav-level>
+  <sav-level label="Check-in" icon="plane" stars="1"></sav-level>
+  <sav-level label="Directions" icon="map-pin"></sav-level>
+  <sav-divider>Unit 2</sav-divider>
+  <sav-level label="At the hotel" icon="hotel"></sav-level>
+  <sav-level label="Ordering food" icon="utensils"></sav-level>
+  <sav-level label="Review" icon="dumbbell" variant="success" milestone></sav-level>
+</sav-level-path>
+<script>
+  const lp = document.getElementById('lp-units');
+  lp.addEventListener('sav-select', (e) => Sav.toast('Open “' + e.detail.level.getAttribute('label') + '” (example)'));
+  lp.addEventListener('sav-locked', () => Sav.toast('Finish the level before it first (example)', { variant: 'warning' }));
+</script>` },
+      { title: 'All open, a gentler wave', html: `<sav-level-path open wave="sm" current="2" label="Practice" style="max-width: 22rem; margin: auto">
+  <sav-level label="Warm-up" icon="flame" stars="2" variant="danger"></sav-level>
+  <sav-level label="Speed" icon="zap" variant="warning"></sav-level>
+  <sav-level label="Memory" icon="brain" variant="success"></sav-level>
+  <sav-level label="Bonus" icon="gift" variant="neutral" status="locked"></sav-level>
+</sav-level-path>` },
+    ],
+    attrs: [
+      ['current', 'number', 'The level the learner is on, from 1: the ones before it are done, the ones after it locked. One past the last: all done.'],
+      ['open', 'boolean', 'The levels after the current one are open (outlined) instead of locked.'],
+      ['wave', 'none · sm · md · lg · px', 'How far the line winds left and right (default md; it never leaves the width of the path).'],
+      ['current-label', 'string', 'The bubble over the current level (default “Start”; empty: no bubble).'],
+      ['no-line', 'boolean', 'No line between the levels.'],
+      ['label', 'string', 'Name of the path for screen readers (default “Levels”).'],
+      ['label · icon · stars · milestone · status · variant · href · target · value', '', 'On sav-level: its name; its icon (otherwise a tick when done, the number when not); stars from 0 to 3 (shown when the attribute is there); milestone makes it bigger; status (done · current · locked · open) overrides what current says; variant its colour; href makes it a link; value goes in the events.'],
+      ['--sav-level-gap · --sav-level-label-bg · --size', 'CSS', 'Space between the levels (default 1.7rem); the colour behind the names (default the page, so the line passes behind them); on sav-level, the size of the node.'],
+    ],
+    events: [['sav-select', 'A level that is not locked was chosen: detail.index (from 1), detail.value, detail.level.'], ['sav-locked', 'A locked level was touched, to say why (finish the one before): detail.index, detail.level.']],
+    methods: [['current', 'The current level (number).']],
+    parts: ['base', 'line', 'node', 'label', 'stars', 'bubble'],
   },
   {
     id: 'tree', name: 'Tree', play: { tag: 'sav-tree', attrs: { label: 'Files' }, children: '<sav-tree-item label="src" icon="folder" icon-open="folder-open" expanded><sav-tree-item label="index.html" icon="file-code"></sav-tree-item><sav-tree-item label="styles.css" icon="file-code" selected></sav-tree-item></sav-tree-item><sav-tree-item label="README.md" icon="file-text"></sav-tree-item>' }, tag: 'sav-tree · sav-tree-item', group: 'Navigation', icon: 'list-tree',

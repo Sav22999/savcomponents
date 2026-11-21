@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SavComponents Academy</title>
+  <meta name="description" content="Learn SavComponents by doing: a lesson for every component, quizzes, hands-on challenges checked live, a daily quiz, badges and streaks.">
+  <link rel="canonical" href="https://savcomponents.com/academy/">
+  <meta name="theme-color" content="#66cbff">
+  <meta property="og:title" content="SavComponents Academy">
+  <meta property="og:description" content="Learn SavComponents by doing: lessons, quizzes, challenges, badges and streaks.">
+  <meta property="og:image" content="https://savcomponents.com/docs/og.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <script>
+    // the look chosen on savcomponents.com (or here), before the first paint
+    try {
+      const m = JSON.parse(localStorage.getItem('savc-mode') || '"auto"');
+      const dark = m === 'dark' || (m === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+      const st = JSON.parse(localStorage.getItem('savc-style') || '"tilt"');
+      document.documentElement.className = (dark ? 'sav-theme-dark' : 'sav-theme-light') + (st && st !== 'soft' ? ' sav-style-' + st : '');
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="../dist/sav.css">
+  <link rel="stylesheet" href="academy.css">
+  <script src="../dist/sav.js" defer></script>
+  <script src="../docs/components.js" defer></script>
+  <script src="../docs/a11y.js" defer></script>
+  <script src="content.js" defer></script>
+  <script src="academy.js" defer></script>
+</head>
+<body class="sav-base">
+  <sav-button class="skip" href="#main" size="sm">Skip to content</sav-button>
+  <sav-header sticky id="top" label="Academy">
+    <a slot="logo" href="#home" class="logo"><img src="icons/icon.svg" width="28" height="28" alt=""><span><span class="hide-sm sc">Sav<b>Components</b> </span><b class="ac">Academy</b></span></a>
+    <a href="#home" data-nav="home">Learn</a>
+    <a href="#challenges" data-nav="challenges">Challenges</a>
+    <a href="#daily" data-nav="daily">Daily</a>
+    <a href="#collection" data-nav="collection">Collection</a>
+    <a href="#board" data-nav="board">Leaderboard</a>
+    <a href="../" title="The library and its documentation">SavComponents</a>
+    <div slot="actions" id="actions" class="actions"></div>
+  </sav-header>
+  <main id="main" tabindex="-1"><sav-container size="lg"><div id="view"><sav-spinner label="Loading the Academy"></sav-spinner></div></sav-container></main>
+  <footer><sav-container size="lg" class="foot"><sav-divider></sav-divider>
+    <sav-button appearance="link" size="sm" href="../">SavComponents</sav-button>
+    <sav-button appearance="link" size="sm" href="../#start">Documentation</sav-button>
+    <sav-button appearance="link" size="sm" href="../privacy.html">Privacy</sav-button>
+    <sav-button appearance="link" size="sm" href="#profile">Profile</sav-button></sav-container></footer>
+  <sav-bottom-nav fixed mobile-only id="bnav" label="Academy"></sav-bottom-nav>
+  <noscript><p>The Academy needs JavaScript.</p></noscript>
+</body>
+</html>

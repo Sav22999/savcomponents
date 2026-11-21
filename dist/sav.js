@@ -244,6 +244,9 @@
   /** auto-text: near-black on light backgrounds, white on dark ones. --_eb is the colour behind the text (the fill, mixed with the
       page where it is see-through); the switch sits where both reach 4.5:1 (WCAG AA). An explicit --text-color still wins. */
   // the WCAG relative luminance (Y) of what is behind, worked out in CSS: white when Y is below 0.179, black above (there both reach 4.58:1)
+  /** Brutal's ink: a ring inside a filled shape in the colour of --sav-ink-border (only Brutal sets it; elsewhere it is transparent) */
+  const INK = (w = '2px') => `inset 0 0 0 ${w} var(--sav-ink-border, transparent)`;
+  const INK_DROP = (d = '2px') => `${d} ${d} 0 var(--sav-ink-border, transparent)`;
   const AUTO_TEXT = 'var(--text-color, color(from var(--_eb) srgb clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) clamp(0, (0.179 - (0.2126 * pow(clamp(0, r, 1), 2.2) + 0.7152 * pow(clamp(0, g, 1), 2.2) + 0.0722 * pow(clamp(0, b, 1), 2.2))) * 10000, 1) / 1))';
   const SOLID_EB = 'color-mix(in oklab, var(--_c) var(--sav-fill-opacity, 100%), var(--sav-color-bg))';
   const SOFT_EB = 'color-mix(in oklab, var(--_c) 13%, var(--sav-color-bg))';
@@ -702,7 +705,7 @@
            color: var(--text-color, var(--_bf)); font-size: .75em; font-weight: var(--sav-font-weight-bold); line-height: 1.25; white-space: nowrap; letter-spacing: .01em; }
       /* background on a layer: the tilt shape rotates it, the text stays upright */
       .b::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_bb); background-image: var(--sav-sheen, none); box-shadow: var(--_bsh); -webkit-backdrop-filter: var(--sav-button-backdrop, none); backdrop-filter: var(--sav-button-backdrop, none); transform: rotate(${TILT}); }
-      :host([dot]) .b::before { transform: none; }
+      :host([dot]) .b::before { transform: none; box-shadow: ${INK('1.5px')}; }
       :host([pill]) .b { border-radius: var(--sav-radius-pill); }
       :host([dot]) .b { width: .6em; height: .6em; padding: 0; border-radius: 50%; font-size: 1em; }
       :host([pulse]) .b { animation: sav-pulse calc(1.6s * var(--sav-motion, 1)) ease-out infinite; }
@@ -1010,10 +1013,19 @@
       .a { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; width: var(--size); height: var(--size);
            color: var(--_c-text); font-size: calc(var(--size) * .38); font-weight: var(--sav-font-weight-bold); user-select: none; flex: none; }
       /* --ring: a ring drawn on the shape itself (leaning square in Tilt, circle, rounded), e.g. to separate stacked avatars */
-      .a::before { content: ""; position: absolute; inset: var(--_ai); z-index: -1; border-radius: var(--_ar); background: var(--_c-soft-hover); transform: rotate(var(--_at)); box-shadow: var(--ring, none); }
+      .a::before { content: ""; position: absolute; inset: var(--_ai); z-index: -1; border-radius: var(--_ar); background: var(--_c-soft-hover); transform: rotate(var(--_at)); box-shadow: ${INK()}, ${INK_DROP()}, var(--ring, 0 0 0 0 transparent); }
+      .ph::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: ${INK()}; pointer-events: none; }
       .ph { position: absolute; inset: var(--_ai); overflow: hidden; border-radius: var(--_ar); transform: rotate(var(--_at)); box-shadow: var(--ring, none); }
       img { width: 100%; height: 100%; object-fit: cover; display: block; transform: rotate(calc(var(--_at) * -1)) scale(var(--_is)); }
       svg { width: 55%; height: 55%; }
+      /* href / button: the avatar is a link or a button. Hover draws a ring on its own shape (leaning square in Tilt, circle…),
+         the keyboard the focus ring, on the same shape: no other box around it */
+      a.a, button.a { margin: 0; padding: 0; border: 0; background: none; font: inherit; font-size: calc(var(--size) * .38); text-decoration: none; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+      a.a::after, button.a::after { content: ""; position: absolute; inset: var(--_ai); border-radius: var(--_ar); transform: rotate(var(--_at)); pointer-events: none;
+        box-shadow: 0 0 0 0 transparent; transition: box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
+      a.a:hover::after, button.a:hover::after { box-shadow: 0 0 0 3px color-mix(in oklab, var(--_c) 45%, transparent); }
+      a.a:focus-visible::after, button.a:focus-visible::after { box-shadow: 0 0 0 var(--sav-focus-width, 2px) var(--sav-color-bg), 0 0 0 calc(var(--sav-focus-width, 2px) * 2) var(--sav-color-focus, var(--sav-color-primary)); }
+      a.a:active, button.a:active { transform: scale(.96); }
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host { --_eb: color-mix(in oklab, var(--_c) 22%, var(--sav-color-bg)); }
       :host([auto-text]) .a { color: ${AUTO_TEXT}; }
@@ -1024,12 +1036,21 @@
       const label = this.label || '';
       const initials = this.initials || label.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
       const fallback = initials ? esc(initials) : svgIcon('user');
-      this.shadowRoot.innerHTML = `<span class="a" part="base" role="img" aria-label="${esc(label || 'Avatar')}">${this.image ? `<span class="ph"><img part="image" alt="" src="${esc(this.image)}"></span>` : `<slot name="icon">${fallback}</slot>`}</span>`;
+      const inner = this.image ? `<span class="ph"><img part="image" alt="" src="${esc(this.image)}"></span>` : `<slot name="icon">${fallback}</slot>`;
+      const name = esc(label || 'Avatar');
+      // a link (href) or a button (button): the name of the person is the name of the control
+      const href = this.getAttribute('href');
+      if (href !== null) {
+        const target = this.getAttribute('target');
+        this.shadowRoot.innerHTML = `<a class="a" part="base" href="${esc(href)}"${target ? ` target="${esc(target)}"${target === '_blank' ? ' rel="noopener"' : ''}` : ''} aria-label="${name}"><span aria-hidden="true" style="display:contents">${inner}</span></a>`;
+      } else if (this.hasAttribute('button')) {
+        this.shadowRoot.innerHTML = `<button type="button" class="a" part="base" aria-label="${name}"><span aria-hidden="true" style="display:contents">${inner}</span></button>`;
+      } else this.shadowRoot.innerHTML = `<span class="a" part="base" role="img" aria-label="${name}">${inner}</span>`;
       const img = this.$('img');
       if (img) img.onerror = () => { this.$('.ph').replaceWith(document.createRange().createContextualFragment(fallback)); };
     }
   }
-  props(SavAvatar, { image: String, label: String, initials: String, shape: String, size: String, variant: String });
+  props(SavAvatar, { image: String, label: String, initials: String, shape: String, size: String, variant: String, href: String, target: String, button: Boolean });
   define('sav-avatar', SavAvatar);
 
   /* ================================================================== sav-spinner */
@@ -2205,7 +2226,7 @@
 
   /** A flag on its own: <sav-flag code="it">. */
   class SavFlag extends SavElement {
-    static styles = `:host { display: inline-flex; vertical-align: -.15em; width: var(--size, 1.33em); aspect-ratio: 4 / 3; } img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--sav-flag-radius, 2px); box-shadow: 0 0 0 1px rgb(0 0 0 / .1); }`;
+    static styles = `:host { display: inline-flex; vertical-align: -.15em; width: var(--size, 1.33em); aspect-ratio: 4 / 3; } img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--sav-flag-radius, 2px); box-shadow: 0 0 0 var(--sav-ink-width, 1px) var(--sav-ink-border, rgb(0 0 0 / .1)); }`;
     static get observedAttributes() { return ['code', 'label']; }
     connectedCallback() { this.render(); } changed() { this.render(); }
     render() {
@@ -2298,23 +2319,46 @@
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host([auto-text]) .cell.sel { --_eb: var(--sav-color-primary); color: ${AUTO_TEXT}; }
       :host([auto-text]) .cell.today:not(.sel) { --_eb: var(--sav-color-bg); color: ${AUTO_TEXT}; }
+      /* mode="datetime": the time under the calendar, hours and minutes typed or moved with the arrows */
+      .tm { display: flex; align-items: center; gap: .35rem; margin-top: .55rem; padding-top: .55rem; border-top: 1px solid var(--sav-color-border); }
+      .tm-l { flex: 1; font-size: .8rem; font-weight: var(--sav-font-weight-bold); color: var(--sav-color-text-muted); }
+      .tm input { box-sizing: border-box; width: 2.9rem; padding: .4rem .2rem; border: 1px solid var(--sav-color-border-strong); border-radius: var(--sav-radius-sm); background: var(--sav-color-surface);
+                  color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: center; transform: rotate(var(--sav-knob-tilt, 0deg)); }
+      .tm input:focus-visible { outline: 2px solid var(--sav-color-focus); outline-offset: 1px; }
+      .tm .colon { font-weight: var(--sav-font-weight-bold); color: var(--sav-color-text-muted); }
+      .lnk.done { margin-inline-start: auto; color: var(--sav-color-primary); font-weight: var(--sav-font-weight-bold); }
     `];
     static get observedAttributes() { return [...SavPicker.observedAttributes, 'mode', 'first-day']; }
-    get mode() { return ['month', 'year'].includes(this.getAttribute('mode')) ? this.getAttribute('mode') : 'date'; }
+    get mode() { return ['month', 'year', 'datetime'].includes(this.getAttribute('mode')) ? this.getAttribute('mode') : 'date'; }
+    /** the day of the value (in datetime mode the value also has the time: 2026-11-19T10:30) */
+    get day() { return this.mode === 'datetime' ? this._v.slice(0, 10) : this._v; }
+    get time() { return this.mode === 'datetime' ? this._v.slice(11, 16) : ''; }
     init() {
       this.parse(this.getAttribute('value') || '');
       this.$('.body').addEventListener('click', (e) => this.bodyClick(e));
-      this.$('.body').addEventListener('keydown', (e) => this.gridKey(e));
+      this.$('.body').addEventListener('keydown', (e) => { this.timeKey(e); this.gridKey(e); });
+      this.$('.body').addEventListener('input', (e) => this.timeInput(e));
+      this.$('.body').addEventListener('focusout', (e) => { const i = e.target.closest?.('.tm input'); if (i && /^\d$/.test(i.value.trim())) i.value = pad(+i.value); });
     }
     parse(v) {
       v = String(v || '').trim();
+      if (this.mode === 'datetime') {
+        // 2026-11-19T10:30, with seconds or a space, or only the day (then midnight)
+        const m = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{1,2}):(\d{2}))?/.exec(v);
+        this._v = m && (m[2] === undefined || (+m[2] < 24 && +m[3] < 60)) ? `${m[1]}T${pad(+(m[2] || 0))}:${m[3] || '00'}` : '';
+        return;
+      }
       const re = { date: /^\d{4}-\d{2}-\d{2}$/, month: /^\d{4}-\d{2}$/, year: /^\d{4}$/ }[this.mode];
       this._v = re.test(v) ? v : '';
     }
     serialize() { return this._v; }
-    parts(v = this._v) { const [y, m, d] = (v || '').split('-').map(Number); return { y, m: m || 1, d: d || 1 }; }
+    parts(v = this._v) { const [y, m, d] = (v || '').slice(0, 10).split('-').map(Number); return { y, m: m || 1, d: d || 1 }; }
     fmt(v) {
       const { y, m, d } = this.parts(v);
+      if (this.mode === 'datetime') {
+        const [hh, mm] = (v.slice(11, 16) || '00:00').split(':').map(Number);
+        try { return new Intl.DateTimeFormat(userLocale(this), { dateStyle: this.getAttribute('format') || 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(Date.UTC(y, m - 1, d, hh, mm)); } catch { return v; }
+      }
       const opts = { date: { dateStyle: this.getAttribute('format') || 'medium' }, month: { month: 'long', year: 'numeric' }, year: { year: 'numeric' } }[this.mode];
       try { return new Intl.DateTimeFormat(userLocale(this), { ...opts, timeZone: 'UTC' }).format(Date.UTC(y, m - 1, d)); } catch { return v; }
     }
@@ -2334,10 +2378,11 @@
     show() {
       const now = new Date(), p = this._v ? this.parts() : { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() };
       this.cur = { ...p };
-      this.view = this.mode === 'date' ? 'days' : this.mode === 'month' ? 'months' : 'years';
+      this.view = this.mode === 'date' || this.mode === 'datetime' ? 'days' : this.mode === 'month' ? 'months' : 'years';
       super.show();
     }
     renderBody() {
+      if (this._typing) { this.$$('.cell.sel').forEach((c) => c.classList.remove('sel')); this.$(`.cell[data-k="${this.day}"]`)?.classList.add('sel'); return; }
       const loc = userLocale(this), { y, m } = this.cur;
       const today = new Date(), tk = this.key(today.getFullYear(), today.getMonth() + 1, today.getDate());
       let title, grid;
@@ -2351,7 +2396,7 @@
           const dt = new Date(Date.UTC(y, m - 1, 1 - start + i));
           const k = this.key(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
           const label = new Intl.DateTimeFormat(loc, { dateStyle: 'full', timeZone: 'UTC' }).format(dt);
-          cells.push(`<button type="button" class="cell${dt.getUTCMonth() + 1 !== m ? ' out' : ''}${k === tk ? ' today' : ''}${k === this._v ? ' sel' : ''}" data-k="${k}" aria-label="${esc(label)}" ${k === this._v ? 'aria-pressed="true"' : ''} ${this.inRange(k) ? '' : 'disabled'} tabindex="-1">${dt.getUTCDate()}</button>`);
+          cells.push(`<button type="button" class="cell${dt.getUTCMonth() + 1 !== m ? ' out' : ''}${k === tk ? ' today' : ''}${k === this.day ? ' sel' : ''}" data-k="${k}" aria-label="${esc(label)}" ${k === this.day ? 'aria-pressed="true"' : ''} ${this.inRange(k) ? '' : 'disabled'} tabindex="-1">${dt.getUTCDate()}</button>`);
         }
         grid = `<div class="grid" role="grid">${wd.map((w) => `<span class="wd" aria-hidden="true">${esc(w)}</span>`).join('')}${cells.join('')}</div>`;
       } else if (this.view === 'months') {
@@ -2368,11 +2413,15 @@
           return `<button type="button" class="cell${sel ? ' sel' : ''}${tk.slice(0, 4) === String(yy) ? ' today' : ''}" data-year="${yy}" ${this.inRange(String(yy)) ? '' : 'disabled'} tabindex="-1">${yy}</button>`;
         }).join('')}</div>`;
       }
-      const todayLabel = { date: 'Today', month: 'This month', year: 'This year' }[this.mode];
+      const dt = this.mode === 'datetime';
+      const todayLabel = { date: 'Today', month: 'This month', year: 'This year', datetime: 'Now' }[this.mode];
+      // datetime: hours and minutes under the calendar; choosing a day keeps the panel open, Done closes it
+      const [hh, mi] = (this.time || this.nowTime()).split(':');
+      const time = dt ? `<div class="tm"><span class="tm-l" id="tm-l">Time</span><input class="hh" inputmode="numeric" maxlength="2" value="${hh}" aria-label="Hours" aria-describedby="tm-l"><span class="colon" aria-hidden="true">:</span><input class="mi" inputmode="numeric" maxlength="2" value="${mi}" aria-label="Minutes" aria-describedby="tm-l"></div>` : '';
       this.$('.body').innerHTML = `<div class="cal-head"><button type="button" class="nav" data-nav="-1" aria-label="Previous">${svgIcon('chevron-left')}</button>
         <button type="button" class="cal-title" ${this.view === 'years' ? 'disabled' : ''} aria-live="polite">${esc(title)}</button>
-        <button type="button" class="nav" data-nav="1" aria-label="Next">${svgIcon('chevron-right')}</button></div>${grid}
-        <div class="foot"><button type="button" class="lnk" data-act="today">${todayLabel}</button>${this.hasAttribute('clearable') || !this.required ? '<button type="button" class="lnk" data-act="clear">Clear</button>' : ''}</div>`;
+        <button type="button" class="nav" data-nav="1" aria-label="Next">${svgIcon('chevron-right')}</button></div>${grid}${time}
+        <div class="foot"><button type="button" class="lnk" data-act="today">${todayLabel}</button>${this.hasAttribute('clearable') || !this.required ? '<button type="button" class="lnk" data-act="clear">Clear</button>' : ''}${dt ? '<button type="button" class="lnk done" data-act="done">Done</button>' : ''}</div>`;
       const focus = this.$('.cell.sel:not(:disabled)') || this.$(`.cell[data-k="${this.key(this.cur.y, this.cur.m, this.cur.d)}"]`) || this.$('.cell:not(.out):not(:disabled)');
       if (focus) focus.tabIndex = 0;
     }
@@ -2399,10 +2448,45 @@
         else { this.cur.y = Number(b.dataset.year); this.view = 'months'; this.renderBody(); this.focusInitial(); }
         return;
       }
-      if (b.dataset.act === 'today') { const t = new Date(); this.choose(this.key(t.getFullYear(), t.getMonth() + 1, t.getDate())); }
+      if (b.dataset.act === 'today') { const t = new Date(); if (this.mode === 'datetime') { this.setValue(`${this.key(t.getFullYear(), t.getMonth() + 1, t.getDate())}T${this.nowTime()}`, true); this.hide(); } else this.choose(this.key(t.getFullYear(), t.getMonth() + 1, t.getDate())); }
       if (b.dataset.act === 'clear') { this.setValue('', true); this.hide(); }
+      if (b.dataset.act === 'done') this.hide();
     }
-    choose(k) { if (!this.inRange(k)) return; this.setValue(k, true); this.hide(); }
+    nowTime() { const t = new Date(); return `${pad(t.getHours())}:${pad(t.getMinutes())}`; }
+    choose(k) {
+      if (!this.inRange(k)) return;
+      if (this.mode !== 'datetime') { this.setValue(k, true); this.hide(); return; }
+      // datetime: the day changes, the time stays (or is the one shown under the calendar); the panel stays open for the time
+      this.setValue(`${k}T${this.time || this.readTime() || this.nowTime()}`, true);
+      this.cur = this.parts(); this.renderBody();
+      this.$(`.cell[data-k="${k}"]`)?.focus();
+    }
+    /** the time typed under the calendar, or '' when it is not a time */
+    readTime() {
+      const h = this.$('.tm .hh')?.value.trim(), m = this.$('.tm .mi')?.value.trim();
+      if (!/^\d{1,2}$/.test(h || '') || !/^\d{1,2}$/.test(m || '') || +h > 23 || +m > 59) return '';
+      return `${pad(+h)}:${pad(+m)}`;
+    }
+    timeInput(e) {
+      const inp = e.target.closest?.('.tm input'); if (!inp) return;
+      const t = this.readTime();
+      inp.toggleAttribute('aria-invalid', !t && inp.value.trim() !== '');
+      if (!t) return;
+      const t0 = new Date();
+      const day = this.day || this.key(this.cur?.y ?? t0.getFullYear(), this.cur?.m ?? t0.getMonth() + 1, this.day ? 1 : t0.getDate());
+      this._typing = true; // the panel is not drawn again while the time is typed: the field keeps the cursor
+      try { this.setValue(`${day}T${t}`, true); } finally { this._typing = false; }
+    }
+    timeKey(e) {
+      const inp = e.target.closest?.('.tm input'); if (!inp) return;
+      const step = { ArrowUp: 1, ArrowDown: -1, PageUp: inp.classList.contains('mi') ? 10 : 6, PageDown: inp.classList.contains('mi') ? -10 : -6 }[e.key];
+      if (step) {
+        e.preventDefault(); e.stopPropagation();
+        const max = inp.classList.contains('hh') ? 24 : 60;
+        inp.value = pad(((Number(inp.value) || 0) + step + max) % max);
+        this.timeInput(e);
+      } else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (this.readTime()) this.hide(); }
+    }
     gridKey(e) {
       const cell = e.target.closest?.('.cell');
       if (!cell) return;
@@ -2431,7 +2515,7 @@
       if (c) { c.tabIndex = 0; c.focus(); }
     }
     nativeHtml() {
-      const type = { date: 'date', month: 'month' }[this.getAttribute('mode') || 'date'];
+      const type = { date: 'date', month: 'month', datetime: 'datetime-local' }[this.getAttribute('mode') || 'date'];
       return type ? `<input class="native" type="${type}" tabindex="-1" aria-hidden="true">` : '';
     }
     syncNative() { if (!this.native) return; ['min', 'max'].forEach((a) => (this.getAttribute(a) ? this.native.setAttribute(a, this.getAttribute(a)) : this.native.removeAttribute(a))); this.toNative(); }
@@ -2524,11 +2608,11 @@
       .ctl { position: relative; flex: none; width: var(--_box); height: var(--_box); margin-top: calc((1.4em - var(--_box)) / 2); }
       input { appearance: none; -webkit-appearance: none; margin: 0; width: 100%; height: 100%; cursor: inherit;
               border: calc(var(--sav-border-width) + .5px) solid var(--sav-color-border-strong); border-radius: calc(var(--sav-radius) * .55); background: var(--sav-color-input-bg);
-              transform: rotate(var(--sav-knob-tilt, 0deg));
+              transform: rotate(var(--sav-knob-tilt, 0deg)); box-shadow: ${INK_DROP()};
               transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       input:checked, input:indeterminate { transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -.5)); }
-      input:hover { border-color: var(--_c); }
-      input:checked, input:indeterminate { background: var(--_c); border-color: var(--_c); }
+      input:hover { border-color: var(--sav-ink-border, var(--_c)); box-shadow: ${INK_DROP('3px')}; }
+      input:checked, input:indeterminate { background: var(--_c); border-color: var(--sav-ink-border, var(--_c)); }
       .mark { position: absolute; inset: 0; margin: auto; width: 75%; height: 75%; color: var(--_on); pointer-events: none; opacity: 0; transform: scale(.6); transition: opacity calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
       .mark * { stroke-width: 3; }
       input:checked ~ .tick, input:indeterminate ~ .dash { opacity: 1; transform: none; }
@@ -2624,10 +2708,10 @@
       .row { display: inline-flex; align-items: flex-start; gap: .55rem; cursor: pointer; font-size: var(--_fs); line-height: 1.4; user-select: none; }
       :host([disabled]) .row { opacity: .55; cursor: not-allowed; }
       .dot { flex: none; position: relative; width: var(--_box); height: var(--_box); margin-top: calc((1.4em - var(--_box)) / 2); border-radius: var(--sav-knob-radius, 50%); transform: rotate(var(--sav-knob-tilt, 0deg));
-             border: calc(var(--sav-border-width) + .5px) solid var(--sav-color-border-strong); background: var(--sav-color-input-bg); transition: border-color calc(var(--sav-duration) * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
+             border: calc(var(--sav-border-width) + .5px) solid var(--sav-color-border-strong); background: var(--sav-color-input-bg); box-shadow: ${INK_DROP()}; transition: box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
       .dot::after { content: ""; position: absolute; inset: 0; margin: auto; width: 42%; height: 42%; border-radius: var(--sav-knob-radius, 50%); background: var(--_on); transform: scale(0); transition: transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
-      .row:hover .dot { border-color: var(--_c); }
-      :host([checked]) .dot { background: var(--_c); border-color: var(--_c); }
+      .row:hover .dot { border-color: var(--sav-ink-border, var(--_c)); box-shadow: ${INK_DROP('3px')}; }
+      :host([checked]) .dot { background: var(--_c); border-color: var(--sav-ink-border, var(--_c)); }
       :host([checked]) .dot::after { transform: scale(1); }
       :host(:focus-visible) .dot { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; }
       /* segmented buttons: drawn like the segmented tabs (background on a layer that leans with the style, text upright) */
@@ -4032,7 +4116,7 @@
       :host { display: block; margin: var(--margin, 0 0 .6em); }
       .h { margin: 0; display: flex; align-items: baseline; gap: .45em; color: var(--sav-color-text); font-family: var(--sav-heading-font, var(--sav-font)); font-weight: var(--sav-font-weight-bold); line-height: 1.15; letter-spacing: -.02em; }
       .s1 { font-size: clamp(2rem, 4.5vw, 3rem); } .s2 { font-size: 1.75rem; } .s3 { font-size: 1.35rem; } .s4 { font-size: 1.12rem; } .s5 { font-size: 1rem; } .s6 { font-size: .9rem; text-transform: uppercase; letter-spacing: .06em; }
-      .mk { flex: none; width: .42em; height: .42em; align-self: center; border-radius: var(--sav-knob-radius, 2px); background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); transform: rotate(var(--sav-knob-tilt, 0deg)); }
+      .mk { flex: none; width: .42em; height: .42em; align-self: center; border-radius: var(--sav-knob-radius, 2px); background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); box-shadow: ${INK('1.5px')}; transform: rotate(var(--sav-knob-tilt, 0deg)); }
       :host(:not([marker])) .mk { display: none; }
       .eb { display: block; margin-bottom: .5em; }
       .eb:empty, :host(:not([eyebrow])) .eb { display: none; }
@@ -4843,7 +4927,7 @@
       :host([controls="outside"]) .prev { left: calc(var(--arrow-size, 2.6rem) / -2); } :host([controls="outside"]) .next { right: calc(var(--arrow-size, 2.6rem) / -2); }
       .dots { display: flex; justify-content: center; gap: .45rem; margin-top: .75rem; }
       .dot { width: .6rem; height: .6rem; padding: 0; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-border-strong); cursor: pointer; transform: rotate(var(--sav-knob-tilt, 0deg)); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
-      .dot[aria-current="true"] { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.25); }
+      .dot[aria-current="true"] { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.25); box-shadow: ${INK('1.5px')}; }
       :host([no-dots]) .dots, :host([no-arrows]) .nav { display: none; }
       :host(:not([no-swipe])) .vp { cursor: grab; } .vp.drag { cursor: grabbing; user-select: none; } .vp.drag ::slotted(*) { pointer-events: none; }
       :host([no-swipe]) .vp { overflow-x: hidden; touch-action: pan-y; }
@@ -5593,7 +5677,7 @@
       .ic { position: relative; isolation: isolate; display: grid; place-items: center; width: 3.2rem; height: 1.85rem; }
       .ic::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-pill); background: transparent; transform: rotate(var(--sav-knob-tilt, 0deg)) scale(.6); opacity: 0; transition: transform calc(.25s * var(--sav-motion, 1)) var(--sav-easing), opacity calc(.2s * var(--sav-motion, 1)); }
       :host([current]) .i { color: var(--sav-color-text); }
-      :host([current]) .ic::before { background: color-mix(in oklab, var(--sav-color-primary) 22%, transparent); transform: rotate(calc(var(--sav-knob-tilt, 0deg) * .5)) scale(1); opacity: 1; }
+      :host([current]) .ic::before { background: color-mix(in oklab, var(--sav-color-primary) 22%, transparent); transform: rotate(calc(var(--sav-knob-tilt, 0deg) * .5)) scale(1); opacity: 1; box-shadow: ${INK()}; }
       ::slotted(sav-icon), .ic sav-icon { font-size: 1.3rem; }
       .b { position: absolute; top: -.15rem; right: .45rem; }
       .l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -6131,8 +6215,8 @@
           const v = Math.max(0, s.values[i] || 0), len = ((horiz ? iw : ih) * v) / max;
           const start = (horiz ? pad.t : pad.l) + band * i + (band - inner) / 2 + (stacked ? 0 : barW * j);
           const t = `${l} · ${s.name}: ${nfmt(v)}`, c = s.color || col(j);
-          if (horiz) { const x = pad.l + ((stacked ? acc : 0) * iw) / max; g += `<rect data-t="${esc(t)}" x="${x}" y="${start}" width="${Math.max(0, len)}" height="${barW - (stacked ? 0 : 2)}" style="fill:${c};rx:${rad}"/>`; if (showV && !stacked) g += `<text class="val" x="${x + len + 5}" y="${start + barW / 2 + 4}">${nfmt(v)}</text>`; }
-          else { const y = pad.t + ih - ((stacked ? acc + v : v) * ih) / max; g += `<rect data-t="${esc(t)}" x="${start}" y="${y}" width="${barW - (stacked ? 0 : 2)}" height="${Math.max(0, len)}" style="fill:${c};rx:${rad}"/>`; if (showV && !stacked) g += `<text class="val" x="${start + barW / 2}" y="${y - 5}" text-anchor="middle">${nfmt(v)}</text>`; }
+          if (horiz) { const x = pad.l + ((stacked ? acc : 0) * iw) / max; g += `<rect data-t="${esc(t)}" x="${x}" y="${start}" width="${Math.max(0, len)}" height="${barW - (stacked ? 0 : 2)}" style="fill:${c};rx:${rad};stroke:var(--sav-ink-border, none);stroke-width:1.5;vector-effect:non-scaling-stroke"/>`; if (showV && !stacked) g += `<text class="val" x="${x + len + 5}" y="${start + barW / 2 + 4}">${nfmt(v)}</text>`; }
+          else { const y = pad.t + ih - ((stacked ? acc + v : v) * ih) / max; g += `<rect data-t="${esc(t)}" x="${start}" y="${y}" width="${barW - (stacked ? 0 : 2)}" height="${Math.max(0, len)}" style="fill:${c};rx:${rad};stroke:var(--sav-ink-border, none);stroke-width:1.5;vector-effect:non-scaling-stroke"/>`; if (showV && !stacked) g += `<text class="val" x="${start + barW / 2}" y="${y - 5}" text-anchor="middle">${nfmt(v)}</text>`; }
           acc += v;
         });
         if (showV && stacked) { const tot = totals[i]; const c = (horiz ? pad.t : pad.l) + band * i + band / 2; g += horiz ? `<text class="val" x="${pad.l + (tot * iw) / max + 5}" y="${c + 4}">${nfmt(tot)}</text>` : `<text class="val" x="${c}" y="${pad.t + ih - (tot * ih) / max - 5}" text-anchor="middle">${nfmt(tot)}</text>`; }
@@ -6180,7 +6264,7 @@
           path = `M${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}L${gx} ${gy}A${h} ${h} 0 0 0 ${fx} ${fy}Z`;
         } else path = `M${apex[0]} ${apex[1]}L${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}Z`;
         const pct = Math.round((v / tot) * 100);
-        g += `<path data-t="${esc(d.labels?.[i] ?? '')}: ${nfmt(v)} (${pct}%)" d="${path}" style="fill:${col(i)}" fill-rule="evenodd"/>`;
+        g += `<path data-t="${esc(d.labels?.[i] ?? '')}: ${nfmt(v)} (${pct}%)" d="${path}" style="fill:${col(i)};stroke:var(--sav-ink-border, none);stroke-width:1.5;vector-effect:non-scaling-stroke" fill-rule="evenodd"/>`;
         if (this.hasAttribute('show-values') && pct >= 5) { const [tx, ty] = pt(r0 + th / 2 || R * 0.62, a0 + sweep / 2); g += `<text x="${tx}" y="${ty + 4}" text-anchor="middle" style="fill:#fff;font-weight:700;paint-order:stroke;stroke:rgb(0 0 0 / .25);stroke-width:2px">${pct}%</text>`; }
         a0 += sweep;
       });
@@ -6208,7 +6292,7 @@
       ss.forEach((s, j) => {
         const c = s.color || col(j), pts = labels.map((_, i) => pt(i, (R * Math.max(0, s.values[i] || 0)) / max));
         g += `<polygon points="${pts.map((p) => p.join(',')).join(' ')}" style="fill:${this.hasAttribute('no-fill') ? 'none' : `color-mix(in oklab, ${c} 22%, transparent)`};stroke:${c};stroke-width:2;stroke-linejoin:round"/>`;
-        pts.forEach((p, i) => (g += `<circle data-t="${esc(labels[i])} · ${esc(s.name)}: ${nfmt(s.values[i] || 0)}" cx="${p[0]}" cy="${p[1]}" r="4" style="fill:${c};stroke:var(--sav-color-surface);stroke-width:2"/>`));
+        pts.forEach((p, i) => (g += `<circle data-t="${esc(labels[i])} · ${esc(s.name)}: ${nfmt(s.values[i] || 0)}" cx="${p[0]}" cy="${p[1]}" r="4" style="fill:${c};stroke:var(--sav-ink-border, var(--sav-color-surface));stroke-width:2"/>`));
       });
       return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" style="max-width:${S}px;margin:0 auto">${g}</svg>`;
     }
@@ -6946,8 +7030,8 @@
       :host([data-state="current"]) .m { color: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); }
       :host([data-state="current"]) .m::before { box-shadow: inset 0 0 0 2px oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h), 0 0 0 4px color-mix(in oklab, var(--sav-color-primary) 18%, transparent); }
       :host([data-state="done"]) .m { color: var(--sav-color-on-primary); }
-      :host([data-state="done"]) .m::before { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); box-shadow: none; }
-      :host([status="error"]) .m { color: var(--sav-color-on-danger); } :host([status="error"]) .m::before { background: var(--sav-color-danger); box-shadow: none; }
+      :host([data-state="done"]) .m::before { background: oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h); box-shadow: ${INK()}; }
+      :host([status="error"]) .m { color: var(--sav-color-on-danger); } :host([status="error"]) .m::before { background: var(--sav-color-danger); box-shadow: ${INK()}; }
       /* the line to the next step: coloured once this step is done */
       .ln { position: absolute; top: calc(1rem - 1px); left: calc(50% + 1.35rem); right: calc(-50% + 1.35rem); height: 2px; border-radius: 2px; background: var(--sav-color-border-strong); }
       :host([data-vertical]) .ln { top: 2.35rem; bottom: .35rem; left: calc(1rem - 1px); right: auto; width: 2px; height: auto; }
@@ -6981,6 +7065,186 @@
   }
   define('sav-step', SavStep);
 
+  /* ================================================================== sav-level-path */
+
+  /** The map of a course, like in learning apps: levels on a winding line, the done ones coloured (with their stars), the current
+      one ready to start, the next ones locked. current="3" (from 1) says where the learner is; open makes every level open.
+      Any other element inside (a heading, a divider, a card) starts a new stretch of the path, across the whole width. */
+  class SavLevelPath extends SavElement {
+    static styles = `
+      :host { display: block; width: 100%; --sav-level-gap: 1.7rem; }
+      .w { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--sav-level-gap); padding: 2.4rem 0 .5rem; }
+      svg.line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+      .line path { fill: none; stroke-linecap: var(--sav-ring-cap, round); stroke-linejoin: round; }
+      /* the way ahead is dotted (round dots, or little squares where the style has square ends), the way walked is a full line */
+      .line .way { stroke: var(--sav-ink-border, var(--sav-color-border-strong)); stroke-width: 9; stroke-dasharray: .1 17; opacity: .6; stroke-linecap: var(--sav-level-dot-cap, round); }
+      .line .walked { stroke: var(--sav-ink-border, color-mix(in oklab, var(--sav-color-primary) 55%, transparent)); stroke-width: 9; }
+      ::slotted(*) { position: relative; z-index: 1; }
+      ::slotted(:not(sav-level)) { align-self: stretch; }
+      :host([no-line]) svg.line { display: none; }
+    `;
+    static get observedAttributes() { return ['current', 'open', 'wave', 'label', 'current-label', 'no-line']; }
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = '<div class="w" part="base"><svg class="line" part="line" aria-hidden="true"><path class="way"/><path class="walked"/></svg><slot></slot></div>';
+        this.$('slot').addEventListener('slotchange', () => this.sync());
+        this.addEventListener('click', (e) => {
+          const lv = e.target.closest?.('sav-level'); if (!lv || lv.parentElement !== this) return;
+          const index = this.levels.indexOf(lv) + 1;
+          if (lv.getAttribute('data-state') === 'locked') { e.preventDefault(); this.emit('sav-locked', { index, level: lv, value: lv.getAttribute('value') }); return; }
+          this.emit('sav-select', { index, level: lv, value: lv.getAttribute('value') ?? String(index) });
+        });
+        if (typeof ResizeObserver === 'function') { this._ro = new ResizeObserver(() => this.layout()); this._ro.observe(this); }
+      }
+      this.setAttribute('role', 'group');
+      this.sync();
+    }
+    disconnectedCallback() { this._ro?.disconnect(); this._ro = null; }
+    changed() { this.sync(); }
+    get levels() { return [...this.querySelectorAll(':scope > sav-level')]; }
+    get current() { return Math.max(1, Number(this.getAttribute('current')) || 1); }
+    set current(v) { this.setAttribute('current', String(v)); }
+    sync() {
+      const all = this.levels, cur = this.current, open = this.hasAttribute('open'), go = this.getAttribute('current-label') ?? 'Start';
+      this.setAttribute('aria-label', this.getAttribute('label') || 'Levels');
+      all.forEach((lv, i) => {
+        // a level may say its own state (status); otherwise it comes from current
+        const own = lv.getAttribute('status');
+        const st = own && /^(done|current|locked|open)$/.test(own) ? own : i + 1 < cur ? 'done' : i + 1 === cur ? 'current' : open ? 'open' : 'locked';
+        lv.setAttribute('data-state', st);
+        lv.setAttribute('data-n', String(i + 1));
+        lv.setAttribute('data-of', String(all.length));
+        st === 'current' ? lv.setAttribute('data-go', go) : lv.removeAttribute('data-go');
+      });
+      // the levels may be defined after the path: lay out once they are, and again on the next frame (fonts, icons)
+      customElements.whenDefined('sav-level').then(() => { this.layout(); cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.layout()); });
+    }
+    /** the winding: each level moves sideways along a wave (it starts again after a heading or a divider); then the line is drawn */
+    layout() {
+      const w = this.getBoundingClientRect().width; if (!w) return;
+      const node = this.levels[0]?.nodeSize?.() || 70;
+      const want = { none: 0, sm: 40, md: 72, lg: 110 }[this.getAttribute('wave') || 'md'] ?? (parseFloat(this.getAttribute('wave')) || 72);
+      const amp = Math.max(0, Math.min(want, (w - node) / 2 - 12));
+      let k = 0;
+      for (const el of this.children) {
+        if (el.localName !== 'sav-level') { k = 0; continue; }
+        el.style.setProperty('--_x', (amp * Math.sin((k * Math.PI) / 4)).toFixed(1) + 'px');
+        k++;
+      }
+      this.draw(); // reading the positions lays the page out first, so the line follows the new places at once
+    }
+    draw() {
+      const box = this.$('.w')?.getBoundingClientRect(); if (!box) return;
+      const cur = this.current;
+      let way = '', walked = '', prev = null, idx = 0;
+      const curve = (a, b) => { const dy = (b.y - a.y) / 2; return ` C ${a.x.toFixed(1)} ${(a.y + dy).toFixed(1)}, ${b.x.toFixed(1)} ${(b.y - dy).toFixed(1)}, ${b.x.toFixed(1)} ${b.y.toFixed(1)}`; };
+      for (const el of this.children) {
+        if (el.localName !== 'sav-level') { prev = null; continue; }
+        idx++;
+        const r = el.nodeRect?.(); if (!r || !r.width) continue;
+        const p = { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top };
+        if (prev) {
+          way += curve(prev.p, p).replace(/^ C/, ` M ${prev.p.x.toFixed(1)} ${prev.p.y.toFixed(1)} C`);
+          // walked: up to the current level, between levels of the same stretch
+          if (idx <= cur || this.levels[idx - 1]?.getAttribute('data-state') === 'done') walked += curve(prev.p, p).replace(/^ C/, ` M ${prev.p.x.toFixed(1)} ${prev.p.y.toFixed(1)} C`);
+        }
+        prev = { p };
+      }
+      this.$('.way')?.setAttribute('d', way.trim());
+      this.$('.walked')?.setAttribute('d', walked.trim());
+    }
+  }
+  define('sav-level-path', SavLevelPath);
+
+  /** One level of sav-level-path: a node (icon, tick, lock), its name and its stars. href makes it a link. */
+  class SavLevel extends SavElement {
+    static styles = [VARIANTS, `
+      :host { display: block; translate: var(--_x, 0) 0; --size: 4.4rem; text-align: center;
+              /* the node is drawn like a solid button of the style: its fill, border, shadows, press and sheen come from the button tokens */
+              --_bg: color-mix(in oklab, var(--_c) var(--sav-fill-opacity, 100%), transparent); --_bg-h: color-mix(in oklab, var(--_c-hover) var(--sav-fill-opacity, 100%), transparent);
+              --_fg: var(--_on); --_bd: var(--sav-button-border-color, transparent);
+              --_sh: var(--sav-button-shadow, var(--sav-shadow-sm)); --_sh-h: var(--sav-button-shadow-hover, var(--sav-button-shadow, var(--sav-shadow))); --_sh-a: var(--sav-button-shadow-active, var(--sav-button-shadow, none)); }
+      :host([milestone]) { --size: 5.4rem; }
+      /* room above the current level for its bubble */
+      :host([data-state="current"][data-go]:not([data-go=""])) { margin-top: 1.6rem; }
+      .c { position: relative; display: inline-flex; flex-direction: column; align-items: center; gap: .5rem; margin: 0; padding: 0; border: 0; background: none;
+           font: inherit; color: inherit; text-decoration: none; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+      /* the node: the shape and lean of the style's knobs (round; square in Sharp; a leaning tile in Tilt), like the markers of sav-steps */
+      .n { position: relative; isolation: isolate; display: grid; place-items: center; width: var(--size); height: var(--size); color: var(--text-color, var(--_fg));
+           font-weight: var(--sav-font-weight-bold); font-size: calc(var(--size) * .34); font-variant-numeric: tabular-nums;
+           transition: transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
+      .n::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-knob-radius, 50%); transform: rotate(var(--sav-knob-tilt, 0deg));
+           background: var(--_bg); background-image: var(--sav-sheen, none); border: var(--sav-border-width) solid var(--_bd); box-shadow: var(--_sh), var(--_ring, 0 0 0 0 transparent);
+           -webkit-backdrop-filter: var(--sav-button-backdrop, none); backdrop-filter: var(--sav-button-backdrop, none);
+           transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      .n svg { width: 42%; height: 42%; }
+      .n sav-icon { font-size: calc(var(--size) * .42); }
+      .c:hover .n { transform: var(--sav-button-hover-transform, none); }
+      .c:hover .n::before { background: var(--_bg-h); background-image: var(--sav-sheen, none); box-shadow: var(--_sh-h), var(--_ring, 0 0 0 0 transparent); }
+      .c:active .n { transform: var(--sav-button-active-transform, translateY(1px)); }
+      .c:active .n::before { box-shadow: var(--_sh-a), var(--_ring, 0 0 0 0 transparent); }
+      .c:focus-visible { --_ring: 0 0 0 3px var(--sav-color-bg), 0 0 0 calc(3px + var(--sav-focus-width, 2px)) var(--sav-color-focus, var(--sav-color-primary)); }
+      /* locked: like a quiet neutral button, with a lock; it says so when touched (sav-locked on the path) */
+      :host([data-state="locked"]) { --_bg: var(--sav-color-surface-2); --_bg-h: var(--sav-color-surface-2); --_fg: var(--sav-color-text-muted); --_bd: var(--sav-button-border-color, var(--sav-color-border)); --_sh-h: var(--_sh); --_sh-a: var(--_sh); }
+      :host([data-state="locked"]) .c { cursor: not-allowed; }
+      :host([data-state="locked"]) .c:hover .n, :host([data-state="locked"]) .c:active .n { transform: none; }
+      /* open (not done yet, not locked): like an outline button */
+      :host([data-state="open"]) { --_bg: var(--sav-color-surface); --_bg-h: var(--_c-soft); --_fg: var(--_c-text); --_bd: var(--sav-button-border-color, var(--_c-line)); }
+      :host([data-state="open"]) .n::before { border-width: max(2px, var(--sav-border-width)); }
+      /* the current level: a ring that breathes around it (ink in Brutal) and a bubble that says what to do */
+      .n::after { content: ""; position: absolute; inset: -8px; z-index: -2; border-radius: var(--sav-knob-radius, 50%); transform: rotate(var(--sav-knob-tilt, 0deg));
+           border: 4px solid var(--sav-ink-border, color-mix(in oklab, var(--_c) 32%, transparent)); opacity: 0; }
+      :host([data-state="current"]) .n::after { opacity: 1; animation: sav-level-ring calc(1.8s * var(--sav-motion, 1)) ease-in-out infinite; }
+      @keyframes sav-level-ring { 50% { inset: -13px; opacity: .45; } }
+      .go { position: absolute; bottom: calc(100% + .8rem); left: 50%; z-index: 2; translate: -50% 0; padding: .3rem .7rem; border-radius: var(--sav-radius-sm);
+            background: var(--sav-color-tooltip-bg, var(--sav-color-text)); color: var(--sav-color-tooltip-text, var(--sav-color-bg)); box-shadow: var(--sav-tooltip-shadow, var(--sav-shadow-sm));
+            -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
+            font-size: .8rem; font-weight: var(--sav-font-weight-bold); line-height: 1.2; white-space: nowrap; letter-spacing: var(--sav-button-letter-spacing, normal); text-transform: var(--sav-button-text-transform, none);
+            animation: sav-level-bob calc(1.6s * var(--sav-motion, 1)) ease-in-out infinite; }
+      .go::after { content: ""; position: absolute; top: 100%; left: 50%; translate: -50% 0; border: 6px solid transparent; border-top-color: var(--sav-color-tooltip-bg, var(--sav-color-text)); }
+      @keyframes sav-level-bob { 50% { translate: -50% -4px; } }
+      @media (prefers-reduced-motion: reduce) { :host([data-state="current"]) .n::after, .go { animation: none; } }
+      /* auto-text: black or white, whichever is readable on the node */
+      :host { --_eb: var(--_c); }
+      :host([auto-text]:not([data-state="locked"]):not([data-state="open"])) .n { color: ${AUTO_TEXT}; }
+      /* the name sits on the page colour, so the line passes behind it */
+      .l { max-width: 10rem; padding: .1rem .5rem; border-radius: var(--sav-radius-sm); background: var(--sav-level-label-bg, var(--sav-color-bg));
+           font-weight: var(--sav-font-weight-semibold); font-size: var(--sav-font-size-sm); line-height: 1.25; color: var(--sav-color-text); }
+      .l:empty { display: none; }
+      :host([data-state="locked"]) .l { color: var(--sav-color-text-muted); }
+      .st { display: inline-flex; gap: 2px; margin-top: -.2rem; padding: .05rem .3rem; border-radius: var(--sav-radius-sm); background: var(--sav-level-label-bg, var(--sav-color-bg)); }
+      .st svg, .st sav-icon { width: .95rem; height: .95rem; font-size: .95rem; }
+      .st .on { color: var(--sav-color-warning); fill: currentColor; }
+      .st .off { color: var(--sav-color-border-strong); }
+    `];
+    static get observedAttributes() { return ['label', 'icon', 'href', 'target', 'value', 'stars', 'status', 'milestone', 'variant', 'data-state', 'data-n', 'data-of', 'data-go']; }
+    connectedCallback() { this.render(); }
+    changed(name) {
+      this.render();
+      if (name === 'status' || name === 'milestone') this.parentElement?.sync?.();
+    }
+    nodeRect() { return this.shadowRoot.querySelector('.n')?.getBoundingClientRect(); }
+    nodeSize() { return this.shadowRoot.querySelector('.n')?.offsetWidth || 70; }
+    render() {
+      const st = this.getAttribute('data-state') || 'open', locked = st === 'locked';
+      const label = this.getAttribute('label') || '', icon = this.getAttribute('icon'), n = this.getAttribute('data-n') || '', of = this.getAttribute('data-of') || '';
+      const mark = locked ? svgIcon('lock') : icon ? svgIcon(icon) : st === 'done' ? svgIcon('check') : esc(n);
+      const sv = this.getAttribute('stars'), stars = sv === null || locked ? -1 : Math.max(0, Math.min(3, Number(sv) || 0));
+      const starHtml = stars < 0 ? '' : `<span class="st" part="stars" aria-hidden="true">${[1, 2, 3].map((i) => svgIcon('star', i <= stars ? 'on' : 'off')).join('')}</span>`;
+      const state = { done: 'done', current: 'current level', locked: 'locked', open: '' }[st];
+      const name = [label || `Level ${n}`, of ? `level ${n} of ${of}` : '', state, stars >= 0 ? `${stars} of 3 stars` : ''].filter(Boolean).join(', ');
+      const href = this.getAttribute('href'), target = this.getAttribute('target');
+      const open = href !== null && !locked
+        ? `<a class="c" part="base" href="${esc(href)}"${target ? ` target="${esc(target)}"${target === '_blank' ? ' rel="noopener"' : ''}` : ''}`
+        : `<button type="button" class="c" part="base"${locked ? ' aria-disabled="true"' : ''}`;
+      const tag = open.startsWith('<a') ? 'a' : 'button';
+      this.shadowRoot.innerHTML = `${open} aria-label="${esc(name)}"${st === 'current' ? ' aria-current="step"' : ''}>`
+        + `<span class="n" part="node" aria-hidden="true">${st === 'current' && this.getAttribute('data-go') ? `<span class="go" part="bubble">${esc(this.getAttribute('data-go'))}</span>` : ''}${mark}</span>`
+        + `<span class="l" part="label" aria-hidden="true">${esc(label)}</span>${starHtml}</${tag}>`;
+    }
+  }
+  define('sav-level', SavLevel);
+
   /* ================================================================== sav-stat */
 
   /** A number that matters (a KPI): its name, the value, how it changed (green when it goes the good way) and a small trend line. */
@@ -7002,7 +7266,7 @@
       /* the number never breaks; in a narrow card the trend line goes under it instead of squeezing it */
       .row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .5rem .75rem; min-width: 0; }
       .ch { display: inline-flex; align-items: center; gap: .2rem; padding: .1rem .4rem; border-radius: var(--sav-radius-sm); font-size: .8rem; font-weight: var(--sav-font-weight-bold); font-variant-numeric: tabular-nums;
-            color: var(--_tc); background: color-mix(in oklab, var(--_tc) 12%, transparent); }
+            color: var(--_tc); background: color-mix(in oklab, var(--_tc) 12%, transparent); box-shadow: ${INK('1.5px')}; }
       .ch svg { width: .9em; height: .9em; }
       .ch:empty { display: none; }
       .good { --_tc: color-mix(in oklab, var(--sav-color-success) var(--sav-tint, 62%), var(--sav-color-text)); }
@@ -7064,7 +7328,7 @@
       /* the drawing: the icon on a leaning tinted tile with a second one behind it, the way the style leans */
       .art { position: relative; display: grid; place-items: center; width: var(--art, 4.5rem); height: var(--art, 4.5rem); margin-bottom: .45rem; color: var(--sav-color-primary); }
       .art::before, .art::after { content: ""; position: absolute; inset: 0; border-radius: var(--sav-radius-lg); }
-      .art::before { background: color-mix(in oklab, var(--sav-color-primary) 14%, var(--sav-color-surface)); transform: rotate(calc(var(--sav-knob-tilt, 0deg) - 6deg)); }
+      .art::before { background: color-mix(in oklab, var(--sav-color-primary) 14%, var(--sav-color-surface)); transform: rotate(calc(var(--sav-knob-tilt, 0deg) - 6deg)); box-shadow: ${INK()}, ${INK_DROP('3px')}; }
       .art::after { inset: 14%; z-index: -1; background: color-mix(in oklab, var(--sav-color-primary) 30%, transparent); transform: rotate(calc(var(--sav-knob-tilt, 0deg) + 14deg)) translate(18%, -10%); opacity: .5; }
       /* the icon (or your own picture) sits on top of the two tiles */
       .art svg, .art ::slotted(*) { position: relative; z-index: 1; width: 45%; height: 45%; }
@@ -7209,9 +7473,9 @@
       :host([data-last]) .rail::after { display: none; }
       /* the dot (or icon) takes the style's knob shape and lean */
       .dot { position: relative; isolation: isolate; display: grid; place-items: center; width: 1.6rem; height: 1.6rem; margin-top: .05rem; color: var(--sav-color-on-primary); }
-      .dot::before { content: ""; position: absolute; inset: .45rem; z-index: -1; border-radius: var(--sav-knob-radius, 50%); background: var(--_c); box-shadow: 0 0 0 4px color-mix(in oklab, var(--_c) 18%, transparent);
+      .dot::before { content: ""; position: absolute; inset: .45rem; z-index: -1; border-radius: var(--sav-knob-radius, 50%); background: var(--_c); box-shadow: ${INK('1.5px')}, 0 0 0 4px color-mix(in oklab, var(--_c) 18%, transparent);
                      transform: rotate(var(--sav-knob-tilt, 0deg)); }
-      :host([icon]) .dot::before { inset: 0; box-shadow: none; }
+      :host([icon]) .dot::before { inset: 0; box-shadow: ${INK()}; }
       :host([icon]:not([variant])) .dot { color: var(--sav-color-text); } :host([icon]:not([variant])) .dot::before { background: var(--sav-color-surface-2); box-shadow: inset 0 0 0 1px var(--sav-color-border); }
       :host([variant="warning"]) .dot { color: var(--sav-color-on-warning); }
       .dot svg, .dot sav-icon { width: .85rem; height: .85rem; }

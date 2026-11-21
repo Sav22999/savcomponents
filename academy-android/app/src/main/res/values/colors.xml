@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Behind the adaptive icon: the midnight of the web icon -->
+    <color name="ic_launcher_background">#EAF6FF</color>
+</resources>

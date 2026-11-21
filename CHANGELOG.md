@@ -137,6 +137,26 @@ The first public version.
   Header: logo, links (one is the current page), search, buttons and avatar. Dialog and drawer: the message, groups of fields (checkbox,
   switch, field, range), the footer buttons (colour, appearance, "closes it") and buttons in the header. "Current page", the open tab and
   the current item of the bottom navigation are on for one item at a time.
+- Brutal: the ink outline (and, on avatars and empty states, the hard shadow) on every filled shape that missed it: avatars (also
+  over a picture), the dot of the timeline, the done and failed markers of the steps, the chosen radio, the badge dot, the tiles of
+  the empty state, the heading marker, the current carousel dot, the change of a stat, flags, the current bottom navigation item,
+  chart bars, pie slices and points. Every other style is unchanged (the ink colour, `--sav-ink-border`, is set only by Brutal).
+  Switches, checkboxes and radios too: an ink border that stays when checked or hovered and a hard shadow (larger on hover, like
+  the buttons); the switch has a light inked track when off, a coloured inked one when on, and an inked thumb.
+- New: `sav-level-path` and `sav-level`, the map of a course as in learning apps: levels on a winding line (`wave`), done ones
+  coloured with their icon or a tick and their stars (0–3), the current one with a breathing ring and a bubble (`current-label`), the
+  next ones locked (or open with `open`); `milestone`, `variant`, `status`, `href`. A heading, divider or card inside starts a new stretch.
+  The nodes are drawn like the style's buttons and knobs (fill, ink border and hard shadow in Brutal, frosted in Glass, a leaning tile in
+  Tilt); events `sav-select` and `sav-locked`. In the builder its levels are edited as a form.
+  The dotted way ahead has round dots, or little squares in Tilt and with square shapes (`--sav-level-dot-cap`).
+- Avatar: `href` (and `target`) makes it a link, `button` a button, for an avatar that opens the profile or a menu. Hover draws a ring
+  on the avatar's own shape (the leaning square in Tilt, the circle elsewhere) and the keyboard focus ring follows the same shape,
+  instead of the box of a button wrapped around it.
+- Date picker: `mode="datetime"` picks a day and a time (2026-11-16T10:30): hours and minutes under the calendar, typed or moved with the
+  arrow keys; a day keeps the panel open, Done closes it, Now picks this moment. On phones with `native-on-mobile` it uses the system picker.
+- Builder and playground: the moment of the relative time is chosen with the date and time picker, the period of the activity chart with
+  date pickers, and the keys of the keyboard key as chips (mod, shift, K…, "then" for a sequence, "or" for another shortcut). The table
+  is filled in as a form: its columns (title, numbers or not, added and removed) and a grid of its cells, one row per row.
 - Glass: the switch has a frosted track with a rim of light, a coloured glow when it is on and a glossy thumb, in light and dark
   (`--sav-switch-track-shadow`, `--sav-switch-on-shadow`, `--sav-switch-backdrop`, `--sav-switch-thumb-border`).
 - Map: `region` frames one continent (Europe, Africa, Asia, North America, South America, Oceania, Antarctica) and dims the rest of the world.

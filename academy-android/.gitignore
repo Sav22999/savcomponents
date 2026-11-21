@@ -1,0 +1,11 @@
+# Secrets: the signing key and its passwords never go in git
+keystore.properties
+*.jks
+*.keystore
+# Build output and local settings
+build/
+.gradle/
+local.properties
+app/release/
+*.aab
+*.apk

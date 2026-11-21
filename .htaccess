@@ -7,7 +7,7 @@ DirectoryIndex index.html
   Require all denied
 </Files>
 # Tools, caches and repository files are not for the browser
-RedirectMatch 404 ^/(tools|cache|\.git|\.idea)(/|$)
+RedirectMatch 404 ^/(tools|cache|academy-android|\.git|\.idea)(/|$)
 <FilesMatch "^\.|\.(md|sh)$">
   Require all denied
 </FilesMatch>

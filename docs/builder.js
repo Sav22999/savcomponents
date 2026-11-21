@@ -309,6 +309,10 @@
       KK('sav-button[slot="actions"]', 'Button', [KF('text', 'Text'), KF('icon@icon', 'Icon'), KF('@href', 'Link')]),
       KK('sav-avatar[slot="actions"]', 'Avatar', [KF('@label', 'Name'), KF('@initials', 'Initials'), KF('@src', 'Photo address')], { single: true })],
     dialog: null, drawer: null,
+    table: [], // its own form: columns and cells (tableUi)
+    'level-path': [KK('sav-level', 'Level', [KF('@label', 'Label'), KF('icon@icon', 'Icon'), KF('enum@stars:0|1|2|3', 'Stars'), KF('enum@variant:primary|neutral|success|warning|danger', 'Colour'),
+      KF('enum@status:done|current|locked|open', 'Status (instead of current)'), KF('@href', 'Link'), KF('?milestone', 'Milestone (bigger)')]),
+      KK('sav-heading', 'Heading', [KF('text', 'Text'), KF('@eyebrow', 'Label above')]), KK('sav-divider', 'Divider', [KF('text', 'Text')])],
   };
   const FIELDS_IN = [KK('sav-checkbox', 'Checkbox', [KF('text', 'Label'), KF('?checked', 'Ticked')], { inner: true }), KK('sav-switch', 'Switch', [KF('text', 'Label'), KF('?checked', 'On')], { inner: true }),
     KK('sav-input', 'Field', [KF('@label', 'Label'), KF('@placeholder', 'Placeholder'), KF('enum@type:text|email|password|number|tel|url|search|date', 'Type')], { inner: true }),
@@ -368,6 +372,7 @@
     // from the HTML (at first, and after it was written by hand), or from the elements the form just changed
     if (fromHtml || !box._tpl) { const tpl = document.createElement('template'); tpl.innerHTML = box.querySelector('[data-children]').value || ''; box._tpl = tpl; }
     const tpl = box._tpl; box._open ||= new WeakSet();
+    if (cur.id === 'table') { tableUi(box); return; }
     const { rows, other } = kidRows(tpl.content, kinds, kinds);
     box._rows = rows;
     const many = new Set(rows.map((x) => x.k)).size > 1; // the kind is named only when there are several
@@ -406,6 +411,69 @@
     box.querySelector('.ke-ui').innerHTML = html
       + `<div class="de-adds">${kinds.filter((k) => !k.fixed && !k.inner && !(k.single && rows.some((x) => x.k === k))).map((k) => `<sav-button size="sm" appearance="soft" variant="neutral" icon="plus" data-ke="add" data-kind="${kinds.indexOf(k)}">Add ${esc(k.name.toLowerCase())}</sav-button>`).join('')}</div>`
       + (other ? `<p class="de-note">${other === 1 ? 'One more element is' : other + ' more elements are'} inside: ${other === 1 ? 'it stays' : 'they stay'} as ${other === 1 ? 'it is' : 'they are'}, change ${other === 1 ? 'it' : 'them'} in HTML.</p>` : '');
+  }
+  /* ---- the table: its columns (title, numbers or not) and a grid of its cells; the rest of the HTML (classes, data-value…) is kept */
+  const tParts = (box) => {
+    const t = box._tpl.content.querySelector('table');
+    if (!t) return null;
+    const head = t.tHead?.rows[0] || null, rows = [...t.tBodies].flatMap((b) => [...b.rows]);
+    const n = Math.max(head?.cells.length || 0, ...rows.map((x) => x.cells.length), 1);
+    return { t, head, rows, n };
+  };
+  function tableUi(box) {
+    const ui = box.querySelector('.ke-ui'), tp = tParts(box);
+    if (!tp) { ui.innerHTML = '<p class="de-note">There is no table inside: write one in HTML.</p>'; return; }
+    const { head, rows, n } = tp;
+    const name = (i) => head?.cells[i]?.textContent.trim() || `Column ${i + 1}`;
+    const x = (what, i, label) => `<sav-button size="sm" appearance="ghost" variant="neutral" icon="x" label="${esc(label)}" data-ke="${what}" data-i="${i}"></sav-button>`;
+    const add = (what, text) => `<sav-button size="sm" appearance="soft" variant="neutral" icon="plus" data-ke="${what}">${text}</sav-button>`;
+    const cols = Array.from({ length: n }, (_, i) => `<div class="tb-col"><sav-input size="sm" data-tc="${i}" value="${esc(head?.cells[i]?.textContent.trim() || '')}" aria-label="Title of column ${i + 1}" placeholder="Column ${i + 1}"${head ? '' : ' disabled'}></sav-input>`
+      + `<sav-checkbox size="sm" data-tn="${i}" ${head?.cells[i]?.classList.contains('num') ? 'checked' : ''} title="Numbers: aligned to the right, sorted as numbers">Numbers</sav-checkbox>${n > 1 ? x('tdel-col', i, `Remove the column ${name(i)}`) : '<span></span>'}</div>`).join('');
+    const grid = `<div class="de-grid tb-grid" style="--de-cols: ${n}">${Array.from({ length: n }, (_, i) => `<span class="de-h de-hn" data-c="${i}">${esc(name(i))}</span>`).join('')}<span></span>`
+      + rows.map((row, r) => `<div class="de-row">${Array.from({ length: n }, (_, c) => `<sav-input size="sm" data-tr="${r}" data-tcell="${c}" value="${esc(row.cells[c]?.textContent.trim() || '')}" aria-label="${esc(`${name(c)}, row ${r + 1}`)}"></sav-input>`).join('')}${x('tdel-row', r, `Remove row ${r + 1}`)}</div>`).join('') + '</div>';
+    ui.innerHTML = `<div class="de-series"><span class="de-h">Columns</span>${cols}<div class="de-adds">${add('tadd-col', 'Add column')}</div></div>`
+      + `<div class="de-scroll">${grid}</div><div class="de-adds">${add('tadd-row', 'Add row')}</div>`;
+  }
+  function tableEdit(box, el) {
+    const tp = tParts(box); if (!tp) return;
+    const { head, rows } = tp;
+    if (el.dataset.tc !== undefined) {
+      const i = Number(el.dataset.tc), th = head?.cells[i]; if (!th) return;
+      th.textContent = el.value ?? '';
+      const h = box.querySelector(`.tb-grid .de-hn[data-c="${i}"]`); if (h) h.textContent = th.textContent.trim() || `Column ${i + 1}`;
+    } else if (el.dataset.tn !== undefined) {
+      const i = Number(el.dataset.tn), on = el.checked;
+      [head?.cells[i], ...rows.map((x) => x.cells[i])].filter(Boolean).forEach((c) => { c.classList.toggle('num', on); if (!c.classList.length) c.removeAttribute('class'); });
+    } else if (el.dataset.tcell !== undefined) {
+      const row = rows[Number(el.dataset.tr)]; if (!row) return;
+      const c = Number(el.dataset.tcell);
+      while (row.cells.length <= c) row.append(document.createElement('td'));
+      row.cells[c].textContent = el.value ?? '';
+      row.cells[c].removeAttribute('data-value'); // the sort value would no longer match the text
+    } else return;
+    kidsWrite(box);
+  }
+  function tableAct(box, what, i) {
+    const tp = tParts(box); if (!tp) return;
+    const { t, head, rows, n } = tp;
+    if (what === 'tadd-col') {
+      if (head) { const th = document.createElement('th'); th.textContent = `Column ${n + 1}`; head.append(th); }
+      rows.forEach((x) => x.append(document.createElement('td')));
+    } else if (what === 'tdel-col') { head?.cells[i]?.remove(); rows.forEach((x) => x.cells[i]?.remove()); }
+    else if (what === 'tadd-row') {
+      const last = rows[rows.length - 1];
+      const tr = last ? last.cloneNode(true) : document.createElement('tr');
+      if (last) [...tr.cells].forEach((c) => { c.textContent = ''; c.removeAttribute('data-value'); });
+      else for (let c = 0; c < n; c++) tr.append(document.createElement('td'));
+      const body = t.tBodies[t.tBodies.length - 1] || t.appendChild(document.createElement('tbody'));
+      body.insertBefore(tr, body.lastChild?.nodeType === 3 && !body.lastChild.data.trim() ? body.lastChild : null);
+      tidyKids(body);
+    } else if (what === 'tdel-row') { const p = rows[i]?.parentNode; rows[i]?.remove(); if (p) tidyKids(p); }
+    renderKids(box, false); kidsWrite(box);
+    // the focus: the first cell of the new row, the title of the new column, or the row / column that took the place of the removed one
+    const go = what === 'tadd-row' ? [...box.querySelectorAll('[data-tcell="0"]')].pop() : what === 'tadd-col' ? [...box.querySelectorAll('[data-tc]')].pop()
+      : what === 'tdel-row' ? box.querySelector(`[data-tr="${Math.max(0, Math.min(i, rows.length - 2))}"]`) : box.querySelector(`[data-tc="${Math.max(0, Math.min(i, n - 2))}"]`);
+    requestAnimationFrame(() => go?.focus?.());
   }
   const kidsWrite = (box) => { const ta = box.querySelector('[data-children]'); ta.value = box._tpl.innerHTML; ta.dispatchEvent(new Event('input', { bubbles: true })); };
   /** a new item: like the last one of its kind (its look, its icon), with a new name and nothing on */
@@ -453,6 +521,7 @@
         box.dataset.mode = mode.value; D().store.set('savc-kids-mode', mode.value);
         return;
       }
+      if (cur.id === 'table') { const el = e.target.closest('.ke-ui [data-tc], .ke-ui [data-tn], .ke-ui [data-tcell]'); if (el) tableEdit(box, el); return; }
       const fld = e.target.closest('.ke-ui [data-f]'); if (!fld) return;
       const r = box._rows[Number(fld.closest('.ke-item').dataset.n)], f = r.k.fields[Number(fld.dataset.f)];
       let v = fld.localName === 'sav-checkbox' ? fld.checked : String(fld.value ?? '');
@@ -473,6 +542,7 @@
       const b = e.target.closest?.('.kid-ed [data-ke]'); if (!b) return;
       const box = boxOf(b), item = b.closest('.ke-item'), r = item && box._rows[Number(item.dataset.n)];
       const what = b.dataset.ke;
+      if (/^t(add|del)-/.test(what)) { tableAct(box, what, Number(b.dataset.i)); return; }
       if (what === 'more') {
         const open = !box._open.has(r.el);
         open ? box._open.add(r.el) : box._open.delete(r.el);
@@ -559,7 +629,8 @@
       <p class="muted small bld-about">${esc(first)} <a href="#${d.id}">All about it</a></p>
       <sav-accordion appearance="plain" class="bld-acc">
       ${baseOf(d).tags ? section('Version', 'layers', `<sav-radio-group appearance="buttons" size="sm" data-tag value="${S.tag}" aria-label="Version">${baseOf(d).tags.map((t) => `<sav-radio value="${t.tag}">${esc(t.label)}</sav-radio>`).join('')}</sav-radio-group>`) : ''}
-      ${section('Content', 'text-cursor-input', (baseOf(d).text !== undefined ? `<sav-input size="sm" data-text value="${esc(S.text || '')}" placeholder="What it says">${lbl('Text', 'What is written in the component.')}</sav-input>` : '')
+      ${section('Content', 'text-cursor-input', (baseOf(d).text !== undefined ? (d.id === 'kbd' ? D().keysField('data-text', S.text, lbl('Keys', 'The keys to press: one chip each (mod is ⌘ on a Mac, Ctrl elsewhere); "then" for keys pressed one after the other, "or" for another shortcut.'))
+          : `<sav-input size="sm" data-text value="${esc(S.text || '')}" placeholder="What it says">${lbl('Text', 'What is written in the component.')}</sav-input>`) : '')
         + texts.map(field).join('')
         + (baseOf(d).children ? kidsField(d) : ''))}
       ${section('Look', 'palette', enums.map(field).join(''))}
@@ -685,7 +756,7 @@
       const k = el.dataset.a;
       let v = el.localName === 'sav-switch' ? el.checked : el.value;
       if (v === '_' || v === null) v = '';
-      if (Array.isArray(v)) v = D().multiAttr(el, v); // a chip field: its list, as the attribute writes it
+      if (Array.isArray(v)) v = el.hasAttribute('data-keys') ? D().keysJoin(v) : D().multiAttr(el, v); // a chip field: its list, as the attribute writes it
       v = D().clampKnob(el, v);
       // an icon field changes the component only with a real icon name (or when emptied): while typing, the last good icon stays
       if (el.hasAttribute('data-icons') && v) { iconIndex(); if (!iconNames || !iconNames.has(String(v).trim())) return; v = String(v).trim(); }
@@ -696,7 +767,7 @@
       const unit = el.dataset.unit || '';
       S.tokens[el.dataset.t] = el.value === '' ? '' : el.value + unit;
       el.closest('.bld-color, .bld-tok')?.classList.toggle('on', !!S.tokens[el.dataset.t]);
-    } else if (el.hasAttribute('data-text')) S.text = el.value;
+    } else if (el.hasAttribute('data-text')) S.text = el.hasAttribute('data-keys') ? D().keysJoin(el.value) : el.value;
     else if (el.hasAttribute('data-children')) S.children = safeHtml(el.value);
     else if (el.hasAttribute('data-tag')) {
       S.tag = el.value;

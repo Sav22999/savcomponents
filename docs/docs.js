@@ -40,7 +40,7 @@
     const START = [['#', '', 'Overview', 'home'], ['#start', 'start', 'Getting started', 'rocket'], ['#theming', 'theming', 'Theming', 'palette'], ['#styles', 'styles', 'Styles', 'shapes'],
       ['#builder', 'builder', 'Component builder', 'wand-sparkles'], ['#examples', 'examples', 'Practical examples', 'layout-template'], ['#versions', 'versions', 'Versions', 'history']];
     let html = f ? '' : `<div class="side-group"><div class="side-title">Start</div>
-      ${START.map(([h, r, n, i]) => link(h, r, n, i) + '</a>').join('')}${link('demo.html', null, 'Demo website', 'monitor', ' class="side-ext" target="_blank" rel="noopener"')}${ICON('external')}<span class="sr-only"> (opens in a new tab)</span></a></div>`;
+      ${START.map(([h, r, n, i]) => link(h, r, n, i) + '</a>').join('')}${link('demo.html', null, 'Demo website', 'monitor', ' class="side-ext" target="_blank" rel="noopener"')}${ICON('external')}<span class="sr-only"> (opens in a new tab)</span></a>${link('academy/', null, 'Academy', 'graduation-cap', ' class="side-ext"')}</a></div>`;
     for (const g of groups) {
       const items = DOCS.filter((d) => d.group === g && match(d));
       if (!items.length) continue;
@@ -107,6 +107,16 @@
       <div><span class="f-ic tilt">${ICON('check-circle')}</span><h3>Form-ready</h3><p>Inputs, selects, checkboxes and radios submit with native forms and support validation.</p></div>
       <div><span class="f-ic tilt">${ICON('moon')}</span><h3>Styles &amp; modes</h3><p>Soft, Tilt, Sharp, Brutal and Glass styles, each in light and dark, with a single class.</p></div>
     </section>
+    <sav-card class="academy-banner">
+      <div class="ab">
+        <img src="academy/icons/icon.svg" alt="" width="96" height="96" class="ab-ic">
+        <div class="ab-t">
+          <sav-heading level="2" eyebrow="New · SavComponents Academy" subtitle="A lesson for every component, quizzes, hands-on challenges checked live, a daily quiz, badges and streaks. With your SavComponents account, on the web and on Android.">Learn SavComponents by doing</sav-heading>
+          <div class="row"><sav-badge appearance="soft">${DOCS.length + 9} lessons</sav-badge><sav-badge appearance="soft" variant="success">34 challenges</sav-badge><sav-badge appearance="soft" variant="warning">Daily quiz</sav-badge></div>
+        </div>
+        <div class="ab-go"><sav-button size="lg" href="academy/" icon-end="arrow-right">Start learning</sav-button><sav-button appearance="soft" href="academy/#daily" icon="calendar-check">Daily quiz</sav-button></div>
+      </div>
+    </sav-card>
     <sav-heading level="2" class="sec-title" eyebrow="Components" subtitle="${DOCS.length} components in ${groups.length} groups. Filter them by name or by group.">All components</sav-heading>
     <div class="comp-tools">
       <sav-input id="compFilter" type="search" size="sm" placeholder="Filter: button, chart, date…" clearable aria-label="Filter components"><sav-icon slot="prefix" name="search"></sav-icon></sav-input>
@@ -515,6 +525,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     'chip-input': ['multiple', 'live', 'search-keys'], // a chip field: always several, it does not search
     select: ['min', 'max', 'locale'], 'language-choice': ['min', 'max'], 'country-choice': ['min', 'max'],
     button: ['download'],
+    kbd: ['keys'], // the same keys as the text inside: the Keys field (chips) writes that one
   };
   const KNOB_BOOL = /^(disabled|required|readonly|autofocus|clearable|searchable|multiple|select-all|native-names|mask|live|pill|open|loop|muted|autoplay|stacked|smooth|points|antarctica|compact|alpha|counter|zoom|eager|rules|exclusive|sortable|striped|hover|selectable|clickable|collapsible|collapsed|closable|persistent|sticky|vertical|no-[a-z-]+|[a-z-]+-only)$/;
   const KNOB_NUM = /^(min|max|step|minlength|maxlength|height|gap|thickness|length|max-chips|max-terms|min-chars|levels|rows|debounce|delay|threshold|duration|max-items|max-size|per-view|page|pages|total|page-size|siblings|current|columns|first-day|week-start)$/;
@@ -555,7 +566,28 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     accept: ['image/*', 'video/*', 'audio/*', '.pdf', '.csv', '.json', '.txt', '.zip', '.doc,.docx', '.xls,.xlsx'],
   };
   const KEYS = ['enter', 'space', 'tab', 'comma', 'semicolon'];
+  /* ---- keys of a shortcut (sav-kbd): chips mod · K · then · G, written as the component reads them: "mod+K", "G then I", "mod+K, mod+P" */
+  const KEY_CHIPS = ['mod', 'ctrl', 'alt', 'shift', 'meta', 'enter', 'esc', 'tab', 'space', 'backspace', 'delete', 'up', 'down', 'left', 'right', 'home', 'end',
+    ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split(''), ...Array.from({ length: 12 }, (_, i) => `F${i + 1}`), 'then', 'or'];
+  function keysJoin(list) {
+    const out = []; let cur = [];
+    for (const t of (Array.isArray(list) ? list : String(list || '').split(',')).map((x) => String(x).trim()).filter(Boolean)) {
+      if (/^(then|or)$/i.test(t)) { if (cur.length) out.push(cur.join('+')); out.push(t.toLowerCase()); cur = []; } else cur.push(t);
+    }
+    if (cur.length) out.push(cur.join('+'));
+    while (/^(then|or)$/.test(out[out.length - 1] || '')) out.pop();
+    return out.map((x) => (x === 'then' ? ' then ' : x === 'or' ? ', ' : x)).join('').replace(/^ then |^, /, '');
+  }
+  const keysSplit = (v) => String(v || '').split(/(\s*,\s*|\s+then\s+)/i).filter((x) => x.trim() !== '' || /,/.test(x))
+    .flatMap((x) => (/^\s*,\s*$/.test(x) ? ['or'] : /^\s+then\s+$/i.test(x) ? ['then'] : x.split('+').map((k) => k.trim()).filter(Boolean)));
+  /** the keys field: one chip per key; "then" for a sequence, "or" for another shortcut */
+  const keysField = (attr, v, label) => `<sav-chip-input size="sm" ${attr} data-keys value="${esc(keysSplit(v).join(','))}" placeholder="Type a key, then Enter">${label}${KEY_CHIPS.map((k) => `<option>${k}</option>`).join('')}</sav-chip-input>`;
+
   function richKind(k, d) {
+    // a moment: a calendar with the time; a day: a calendar
+    if (d.id === 'relative-time' && k.name === 'datetime') { k.kind = 'datetime'; return; }
+    if (d.id === 'chart-activity' && /^(start|end)$/.test(k.name)) { k.kind = 'date'; return; }
+    if (d.id === 'kbd' && k.name === 'keys') { k.kind = 'keys'; return; }
     if (d.id === 'chart-map' && /^(highlight|focus)$/.test(k.name)) { k.kind = 'places'; return; }
     if (k.name === 'locale') { k.kind = 'locale'; return; }
     if (/^(include|exclude)$/.test(k.name) && d.id === 'language-choice') { k.kind = 'languages'; return; }
@@ -579,6 +611,9 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         + `<optgroup label="Continents">${conts.map((c) => `<option value="${c}">${contName[c]}</option>`).join('')}</optgroup>`
         + `<optgroup label="Countries">${countries.map(([c, n]) => `<option value="${c}">${esc(n)}</option>`).join('')}</optgroup></sav-select>`;
     }
+    if (k.kind === 'datetime') return `<sav-date-picker size="sm" mode="datetime" clearable ${attr}="${k.name}" value="${esc(val)}" placeholder="Now">${label}</sav-date-picker>`;
+    if (k.kind === 'date') return `<sav-date-picker size="sm" clearable ${attr}="${k.name}" value="${esc(val)}" placeholder="Default">${label}</sav-date-picker>`;
+    if (k.kind === 'keys') return keysField(`${attr}="${k.name}"`, val, label);
     if (k.kind === 'locale') return `<sav-language-choice size="sm" clearable no-flag ${attr}="${k.name}" value="${esc(val)}" placeholder="The page language">${label}</sav-language-choice>`;
     if (k.kind === 'languages') return `<sav-language-choice size="sm" multiple clearable ${attr}="${k.name}" value="${esc(val)}" placeholder="None">${label}</sav-language-choice>`;
     if (k.kind === 'countries') return `<sav-country-choice size="sm" multiple clearable ${attr}="${k.name}" value="${esc(val)}" placeholder="None">${label}</sav-country-choice>`;
@@ -755,7 +790,8 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       return `<sav-input size="sm" data-k="${k.name}" value="${esc(v || '')}">${lbl(L, k.desc)}</sav-input>`;
     };
     box.innerHTML = (d.play.tags ? `<sav-radio-group appearance="buttons" size="sm" data-tag value="${playState.tag || d.play.tag}">${lbl('Component', 'Which version of the component to show.')}${d.play.tags.map((t) => `<sav-radio value="${t.tag}">${t.label}</sav-radio>`).join('')}</sav-radio-group>` : '')
-      + (d.play.text !== undefined ? `<sav-input size="sm" data-text value="${esc(playState.text || '')}">${lbl('Text', 'What is written inside the component.')}</sav-input>` : '')
+      + (d.play.text !== undefined ? (d.id === 'kbd' ? keysField('data-text', playState.text, lbl('Keys', 'The keys to press: one chip each (mod is ⌘ on a Mac, Ctrl elsewhere); "then" for keys pressed one after the other, "or" for another shortcut.'))
+        : `<sav-input size="sm" data-text value="${esc(playState.text || '')}">${lbl('Text', 'What is written inside the component.')}</sav-input>`) : '')
       + knobs.filter((k) => k.type !== 'bool').map(field).join('')
       + `<sav-color-picker size="sm" clearable data-token="--sav-color-primary" value="${esc(playState.tokens['--sav-color-primary'] || '')}" placeholder="Theme colour">${lbl('Custom colour', 'Gives this component its own main colour (the --sav-color-primary token) instead of the theme one. Empty: the theme colour.')}</sav-color-picker>`
       + ((d.attrs || []).some((r) => r[0] === '--text-color') ? `<sav-color-picker size="sm" clearable data-token="--text-color" value="${esc(playState.tokens['--text-color'] || '')}" placeholder="Fits the background">${lbl('Text colour', 'The colour of the text (the --text-color property), whatever the background. Empty: the colour that fits the background.')}</sav-color-picker>` : '')
@@ -785,13 +821,13 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         // data (JSON) changes the component only once it reads well; until then the field says what is wrong
         if (el.hasAttribute('data-json') && !jsonOk(el, v)) return;
         if (typeof v === 'number') v = String(v);
-        if (Array.isArray(v)) v = multiAttr(el, v); // a chip field: its list, as the attribute writes it
+        if (Array.isArray(v)) v = el.hasAttribute('data-keys') ? keysJoin(v) : multiAttr(el, v); // a chip field: its list, as the attribute writes it
         v = clampKnob(el, v);
         playState.attrs[el.dataset.k] = v;
         applyDeps(el.closest('.play'), playState.attrs, d.id);
         const ic = el.querySelector(`[data-icon-of="${el.dataset.k}"]`); if (ic) { if (v) ic.setAttribute('name', v); ic.hidden = !v; }
       }
-      else if (el.hasAttribute('data-text')) playState.text = el.value;
+      else if (el.hasAttribute('data-text')) playState.text = el.hasAttribute('data-keys') ? keysJoin(el.value) : el.value;
       else {
         playState.tokens[el.dataset.token] = el.value || ''; // the colour field: empty means the theme colour
       }
@@ -962,7 +998,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   window.SavDocs = {
     clampKnob,
     docs: DOCS, icon: ICON, esc, codeBlock, footer: () => footer(), route: () => route(),
-    playMarkup, knobsFor, richField, dataEditor, wireData, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
+    playMarkup, knobsFor, richField, dataEditor, wireData, keysJoin, keysField, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
     themeConfig: () => ({ style: store.get('savc-style', 'tilt'), mode: store.get('savc-mode', 'auto'), tokens: themeTokens(), settings: { ...theme } }),
     applyThemeConfig(cfg) {
       theme = { ...(cfg.settings || {}) };
@@ -1191,6 +1227,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
       { label: 'Practical examples', sub: 'Sign-in, settings, shop cards…', href: '#examples', kind: 'Page', icon: 'image' },
       { label: 'Component builder', sub: 'Every option of a component, code ready to copy', href: '#builder', kind: 'Page', icon: 'wand-sparkles', words: 'builder customise customize generator configurator playground code copy react vue typescript' },
       { label: 'Demo website', sub: 'A whole lorem ipsum site made only with the library', href: 'demo.html', kind: 'Page', icon: 'layout', words: 'demo example site template landing' },
+      { label: 'SavComponents Academy', sub: 'Learn the components by doing: lessons, quizzes, challenges, badges', href: 'academy/', kind: 'Page', icon: 'graduation-cap', words: 'academy learn course tutorial quiz challenge game lessons' },
       { label: 'Versions', sub: 'What changes between major versions', href: '#versions', kind: 'Page', icon: 'history', words: 'changelog release update migrate breaking' },
     ];
     for (const d of DOCS) {
