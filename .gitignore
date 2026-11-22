@@ -5,3 +5,4 @@
 
 # Copies of saved themes made by theme.php
 cache/
+.agent/
