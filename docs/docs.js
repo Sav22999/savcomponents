@@ -40,7 +40,7 @@
     const START = [['#', '', 'Overview', 'home'], ['#start', 'start', 'Getting started', 'rocket'], ['#theming', 'theming', 'Theming', 'palette'], ['#styles', 'styles', 'Styles', 'shapes'],
       ['#builder', 'builder', 'Component builder', 'wand-sparkles'], ['#examples', 'examples', 'Practical examples', 'layout-template'], ['#versions', 'versions', 'Versions', 'history']];
     let html = f ? '' : `<div class="side-group"><div class="side-title">Start</div>
-      ${START.map(([h, r, n, i]) => link(h, r, n, i) + '</a>').join('')}${link('demo.html', null, 'Demo website', 'monitor', ' class="side-ext" target="_blank" rel="noopener"')}${ICON('external')}<span class="sr-only"> (opens in a new tab)</span></a>${link('academy/', null, 'Academy', 'graduation-cap', ' class="side-ext"')}</a></div>`;
+      ${START.map(([h, r, n, i]) => link(h, r, n, i) + '</a>').join('')}${link('demo.html', null, 'Demo website', 'monitor', ' class="side-ext" target="_blank" rel="noopener"')}${ICON('external')}<span class="sr-only"> (opens in a new tab)</span></a>${link('academy/', null, 'Academy', 'graduation-cap', ' class="side-ext" target="_blank" rel="noopener"')}${ICON('external')}<span class="sr-only"> (opens in a new tab)</span></a></div>`;
     for (const g of groups) {
       const items = DOCS.filter((d) => d.group === g && match(d));
       if (!items.length) continue;

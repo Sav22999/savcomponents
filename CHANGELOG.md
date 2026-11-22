@@ -21,6 +21,9 @@ The first public version.
 - Range: track and thumb change with the style (Tilt leaning tile, Sharp bar, Brutal inked block, Glass pearl), set by the `--sav-range-*` tokens.
 - Code block: a highlighted line is one continuous band, the same height as its number and as wide as the block.
 - Fields: a label or help given in a slot replaces the `label`/`help` attribute instead of showing both.
+- Number input: after a wrong entry a line under the field says why instead of a red border only (too small, too large,
+  which steps fit); `limits="always"` also shows the allowed range beforehand ("From 1,024 to 131,072 tokens"), `limits="never"`
+  shows nothing. `button-step` lets the buttons and arrows move by more than `step`.
 - Radio group `appearance="buttons"`: drawn like the segmented tabs in every style (leaning in Tilt).
 - Spinner and progress ring follow the style: in Tilt the spinner is the logo's four tiles lighting up and the ring is a leaning square;
   Sharp uses squares, Brutal rounded squares (`--sav-spinner-tiles`, `--sav-spinner-radius`, `--sav-ring-radius`, `--sav-ring-tilt`, `--sav-ring-start`).

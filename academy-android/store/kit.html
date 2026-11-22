@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SavComponents Academy — Google Play graphics</title>
+<!--
+  The Google Play graphics of SavComponents Academy, made from the real app: each phone shows /academy/ at phone size.
+  ?shot=1…8 gives a phone screenshot (1080×1920), ?shot=feature the feature graphic (1024×500).
+  tools/build-academy-store.sh opens each one in headless Chrome and saves the PNGs next to this file (en-GB/).
+  The portal must be served on http://localhost:8092 (savcomponents-portal). This folder is never published.
+-->
+<style>
+  :root { --ink: #14203a; --muted: #4b5875; --blue: #4ca2f0; --sky: #7dd3ff; }
+  html, body { margin: 0; overflow: hidden; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .shot { position: relative; display: flex; flex-direction: column; align-items: center; width: 1080px; height: 1920px; overflow: hidden; background: linear-gradient(170deg, #f2f9ff 0%, #e6f2ff 45%, #f7fbff 100%); }
+  .shot.dark { background: linear-gradient(170deg, #0e1424 0%, #16213b 55%, #0b1020 100%); color: #eef3ff; --muted: #b4c1dc; }
+  /* the leaning tiles of the SavComponents logo, large and soft, behind everything */
+  .tile { position: absolute; border-radius: 0; transform: rotate(10deg); opacity: .5; }
+  .t1 { width: 520px; height: 520px; right: -150px; top: 250px; background: var(--sky); opacity: .28; }
+  .t2 { width: 380px; height: 380px; left: -170px; top: 980px; background: var(--blue); opacity: .16; }
+  .t3 { width: 220px; height: 220px; right: 90px; top: 1560px; background: var(--blue); opacity: .14; }
+  .dark .t1 { opacity: .12; } .dark .t2, .dark .t3 { opacity: .1; }
+  .head { position: relative; z-index: 1; align-self: stretch; margin: 104px 88px 0; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 14px; margin-bottom: 26px; font-size: 30px; font-weight: 700; color: var(--muted); }
+  .eyebrow img { width: 46px; height: 46px; }
+  h1 { margin: 0; font-size: 86px; line-height: .98; letter-spacing: -.035em; font-weight: 850; }
+  h1 em { font-style: normal; color: #2f86d8; }
+  .dark h1 em { color: var(--sky); }
+  .sub { margin: 26px 0 0; font-size: 40px; line-height: 1.3; color: var(--muted); }
+  /* the phone: a dark frame, the real app inside at 390×844, made larger */
+  .phone { position: relative; flex: none; margin-top: 64px; width: 726px; height: 1521px; padding: 22px; box-sizing: border-box; border-radius: 96px;
+           background: #10131b; box-shadow: 0 40px 90px rgb(20 40 90 / .28), inset 0 0 0 3px #2a2f3c; }
+  .screen { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 76px; background: #fff; }
+  .screen iframe { position: absolute; left: 0; top: var(--sb, 76px); width: 390px; height: 844px; border: 0; transform-origin: 0 0; transform: scale(1.75); }
+  .sbar { position: absolute; inset: 0 0 auto; height: var(--sb, 76px); display: flex; align-items: center; justify-content: space-between; padding: 6px 70px 0; box-sizing: border-box; font: 600 30px system-ui; color: #14203a; background: #f6f7fb; }
+  .dark .sbar { color: #eef3ff; background: #0f1320; }
+  .sbar i { display: inline-block; width: 44px; height: 22px; border: 3px solid currentColor; border-radius: 7px; position: relative; }
+  .sbar i::after { content: ""; position: absolute; inset: 3px 9px 3px 3px; background: currentColor; border-radius: 3px; }
+  .mini { --sb: 26px; } .mini .sbar { font-size: 11px; padding: 2px 26px 0; } .mini .sbar i { width: 16px; height: 8px; border-width: 1.5px; border-radius: 3px; } .mini .sbar i::after { inset: 1px 4px 1px 1px; }
+  .mini .cam { top: 7px; width: 12px; height: 12px; }
+  .cam { position: absolute; z-index: 3; top: 22px; left: 50%; width: 30px; height: 30px; translate: -50% 0; border-radius: 50%; background: #0b0d12; }
+  /* the feature graphic */
+  .feature { position: relative; width: 1024px; height: 500px; overflow: hidden; background: linear-gradient(120deg, #1c63c7 0%, #2f86d8 45%, #5bb5f5 100%); color: #fff; }
+  .feature .tile { opacity: .14; background: #fff; }
+  .f1 { width: 420px; height: 420px; left: -120px; top: -160px; } .f2 { width: 300px; height: 300px; left: 330px; top: 330px; }
+  .brand { position: absolute; left: 64px; top: 92px; width: 470px; }
+  .brand .ic { width: 112px; height: 112px; padding: 10px; box-sizing: border-box; border-radius: 28px; background: #fff; box-shadow: 0 14px 30px rgb(0 20 60 / .25); }
+  .brand .ic img { width: 100%; height: 100%; }
+  .brand h2 { margin: 26px 0 0; font-size: 60px; line-height: 1; letter-spacing: -.03em; font-weight: 850; }
+  .brand h2 span { display: block; font-weight: 400; font-size: 40px; letter-spacing: -.01em; opacity: .9; margin-bottom: 6px; }
+  .brand h2 span b { font-weight: 800; }
+  .brand p { margin: 18px 0 0; font-size: 27px; opacity: .95; }
+  .pills { display: flex; gap: 12px; margin-top: 26px; }
+  .pill { padding: 10px 20px; border-radius: 999px; background: rgb(255 255 255 / .18); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .35); font-size: 22px; font-weight: 650; }
+  .mini { position: absolute; width: 268px; height: 560px; padding: 9px; box-sizing: border-box; border-radius: 40px; background: #10131b; box-shadow: 0 24px 60px rgb(0 20 60 / .45); }
+  .mini .screen { border-radius: 32px; }
+  .mini iframe { transform: scale(.641); }
+  .feature .mini .sbar { background: #f6f7fb; color: #14203a; }
+  .m1 { left: 560px; top: 92px; transform: rotate(-8deg); }
+  .m2 { left: 760px; top: 36px; transform: rotate(6deg); }
+</style>
+</head>
+<body>
+<script>
+  // a learner a few days in: some lessons and challenges done, a streak, today's quiz played
+  const day = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const t = Date.now() - 5 * 864e5;
+  const L = (best, total = 4) => ({ done: t, best, total });
+  const state = {
+    v: 1,
+    lessons: { 'basics-start': L(3, 3), 'basics-styles': L(3, 3), 'basics-modes': L(2, 3), 'basics-tokens': L(3, 3), button: L(4), 'button-group': L(4), 'copy-button': L(3), alert: L(4), badge: L(2), toast: L(4),
+      input: L(4), 'number-input': L(3), checkbox: L(4), select: L(3), textarea: L(4), radio: L(2) },
+    challenges: { 'ch-first-button': { done: t }, 'ch-danger': { done: t }, 'ch-icon-only': { done: t }, 'ch-alert': { done: t }, 'ch-input': { done: t }, 'ch-switch': { done: t }, 'ch-tabs': { done: t } },
+    daily: { [day(0)]: { played: true, score: 5 }, [day(1)]: { played: true, score: 6 }, [day(2)]: { played: true, score: 4, ch: true } },
+    days: [day(5), day(4), day(3), day(2), day(1), day(0)], badges: {}, styles: ['tilt', 'soft', 'glass'], dark: false,
+  };
+  const SHOTS = {
+    1: { hash: '#home', title: 'Learn <em>by doing</em>', sub: 'Every SavComponents component, a lesson on your phone' },
+    2: { hash: '#path/forms', title: 'Every component <em>a level</em>', sub: 'Follow the path, earn stars, keep going' },
+    3: { hash: '#lesson/button', title: 'Try every <em>attribute</em>', sub: 'Change it, see it, copy the code', act: (w) => w.document.querySelector('#lnext')?.click() },
+    4: { hash: '#lesson/checkbox', title: 'Quick quizzes, <em>real answers</em>', sub: 'Four questions after every lesson',
+         act: (w) => { const s = [...w.document.querySelectorAll('#lsteps sav-step')]; s.at(-1)?.click(); setTimeout(() => w.document.querySelector('.opt[data-k="0"]')?.click(), 400); } },
+    5: { hash: '#challenge/ch-tabs', title: 'Build it, <em>checked live</em>', sub: 'Hands-on challenges with a live preview', drop: 'ch-tabs',
+         code: { 'ch-tabs': '<sav-tabs>\n  <sav-tab label="Overview">The overview.</sav-tab>\n  <sav-tab label="Activity">What happened.</sav-tab>\n  <sav-tab label="Settings" icon="settings">Options.</sav-tab>\n</sav-tabs>' } },
+    6: { hash: '#collection', title: 'Badges and <em>streaks</em>', sub: 'Every lesson unlocks its card' },
+    7: { hash: '#daily', title: 'A new quiz <em>every day</em>', sub: 'Six questions, the same for everybody', fresh: true },
+    8: { hash: '#path/actions', title: 'Your style, <em>light or dark</em>', sub: 'Soft, Tilt, Sharp, Brutal and Glass', dark: true, style: 'brutal' },
+  };
+  const q = new URLSearchParams(location.search), which = q.get('shot') || '1';
+  const set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  const s = which === 'feature' ? state : SHOTS[which];
+  const st = structuredClone(state);
+  if (s?.fresh) delete st.daily[day(0)];
+  if (s?.drop) delete st.challenges[s.drop];
+  // the code of the challenge is already written (as if typed), so its preview and checks start at once
+  if (s?.code) localStorage.setItem('savc-academy-code', JSON.stringify(s.code)); else localStorage.removeItem('savc-academy-code');
+  set('savc-academy', st);
+  set('savc-style', s?.style || 'tilt');
+  set('savc-mode', s?.dark ? 'dark' : 'light');
+  localStorage.removeItem('savc-token');
+  localStorage.setItem('savc-api', 'http://localhost:8094/projects/savcomponents/api/'); // no account calls reach production
+
+  const phone = (hash, cls = 'phone', act) => {
+    const id = 'f' + Math.random().toString(36).slice(2);
+    setTimeout(() => {
+      const f = document.getElementById(id);
+      f.addEventListener('load', () => { if (act) setTimeout(() => act(f.contentWindow), 900); });
+    });
+    return `<div class="${cls}"><div class="screen"><div class="sbar"><span>9:41</span><i></i></div><span class="cam"></span><iframe id="${id}" src="/academy/index.html${hash}" scrolling="no"></iframe></div></div>`;
+  };
+  // ?wait=ms: the load event (and so the screenshot) comes only after that time, in real time
+  if (q.get('wait')) { const img = new Image(); img.src = 'wait.php?ms=' + Number(q.get('wait')); img.style.display = 'none'; document.documentElement.append(img); }
+  if (which === 'feature') {
+    document.body.innerHTML = `<div class="feature"><div class="tile f1"></div><div class="tile f2"></div>
+      <div class="brand"><div class="ic"><img src="/academy/icons/icon.svg" alt=""></div>
+        <h2><span>Sav<b>Components</b></span>Academy</h2>
+        <p>Learn web components by doing</p>
+        <div class="pills"><span class="pill">Lessons</span><span class="pill">Challenges</span><span class="pill">Daily quiz</span></div></div>
+      ${phone('#home', 'mini m1')}${phone('#path/forms', 'mini m2')}</div>`;
+  } else {
+    document.body.innerHTML = `<div class="shot${s.dark ? ' dark' : ''}"><div class="tile t1"></div><div class="tile t2"></div><div class="tile t3"></div>
+      <div class="head"><div class="eyebrow"><img src="/academy/icons/icon.svg" alt="">SavComponents Academy</div><h1>${s.title}</h1><p class="sub">${s.sub}</p></div>
+      ${phone(s.hash, 'phone', s.act)}</div>`;
+  }
+</script>
+</body>
+</html>

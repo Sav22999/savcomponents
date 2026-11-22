@@ -16,6 +16,9 @@ RedirectMatch 404 ^/(tools|cache|academy-android|\.git|\.idea)(/|$)
   RewriteEngine On
   # A saved theme, for any site: /theme/<id>.css
   RewriteRule ^theme/([a-f0-9]{16})\.css$ theme.php?id=$1 [L,QSA]
+  # A released version of the library: usage.php serves it and counts how many sites use it (a salted hash of the site,
+  # once a day; no IP, no cookie). Icons, flags and maps stay plain files.
+  RewriteRule ^v/(\d+\.\d+\.\d+)/(sav\.(?:js|css))$ usage.php?v=$1&f=$2 [L,QSA]
 </IfModule>
 
 <IfModule mod_headers.c>

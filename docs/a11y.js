@@ -71,7 +71,7 @@
 
   /* ---------- everything else: [criterion, 'ok' | 'partial' | 'you', explanation] */
   const KEY = '2.1.1 Keyboard', FOCUS = '2.4.7 Focus visible', NAME = '4.1.2 Name, role, value', MOTION = '2.3.3 Animation';
-  const LABEL = '3.3.2 Labels', TARGET = '2.5.8 Target size', ALT = '1.1.1 Text alternatives', STATUS = '4.1.3 Status messages';
+  const LABEL = '3.3.2 Labels', TARGET = '2.5.8 Target size', ALT = '1.1.1 Text alternatives', STATUS = '4.1.3 Status messages', ERRORS = '3.3.1 Error identification';
   const NOTES = {
     button: [[KEY, 'ok', 'A real button (or link with href): Enter and Space work.'], ['1.4.3 Contrast (minimum)', 'ok', 'With auto-text the text turns black or white, whichever reaches 4.5:1 on the colour behind it (also Badge, Tag, Label, Chip, New label, Alert, Avatar, Tooltip, Tabs, Pagination, Steps, Menu, Breadcrumb, Tree and the pickers).'], [FOCUS, 'ok', 'Focus ring shown on keyboard focus.'],
       [NAME, 'ok', 'Name from its text; loading sets aria-busy, disabled sets aria-disabled.'], [ALT, 'you', 'An icon-only button needs a label (label attribute or aria-label).'], [TARGET, 'ok', 'At least 32px high (size sm).']],
@@ -110,7 +110,8 @@
     popover: [[NAME, 'ok', 'A dialog named by its heading (or label); the trigger has aria-haspopup and aria-expanded.'], [KEY, 'ok', 'Enter on the trigger opens it and moves the focus inside; Esc closes it and gives the focus back.']],
     command: [[NAME, 'ok', 'A modal dialog with a combobox and a listbox; the highlighted command is aria-activedescendant.'], [KEY, 'ok', 'Opens with the shortcut; ↑ ↓ move, Enter runs, Esc closes and gives the focus back.']],
     'color-picker': [[NAME, 'ok', 'The hex field carries the label; with compact the swatch is the labelled control. The panel is a dialog: the area is a slider that says “Saturation 60%, brightness 80%”, hue and opacity are sliders with their value; suggested colours are buttons named by their code, the chosen one has aria-pressed.'], [KEY, 'ok', 'Type a code in the field; Arrow down (or Enter / Space on the swatch) opens the panel. In it the arrows move the area (left and right the saturation, up and down the brightness) and the sliders, Shift or Page up / down by 10, Home / End to the ends; Escape closes it and gives the focus back. With picker="native" the system picker opens from the swatch.'], ['1.4.1 Use of colour', 'ok', 'Every colour also has its code written (field, names of the suggestions).']],
-    'number-input': [[KEY, 'ok', 'A native number field (role spinbutton): arrows step, PageUp and PageDown step ten times. The − and + buttons are extra and skipped by Tab.'],
+    'number-input': [[KEY, 'ok', 'A native number field (role spinbutton): arrows step (by button-step when set), PageUp and PageDown step ten times. The − and + buttons are extra and skipped by Tab.'],
+      [ERRORS, 'ok', 'After a wrong entry a line under the field says why (too small, too large, not a step) and is announced (aria-live), not shown by colour alone. With limits="never" only the border turns red: then give the reason another way.'],
       [NAME, 'ok', 'The buttons are labelled "Decrease" and "Increase" (decrease-label, increase-label) and are disabled at the minimum and maximum.'], [LABEL, 'ok', 'Real <label>; help linked with aria-describedby.'],
       [TARGET, 'partial', 'The buttons are about 30px at the default size but about 22px at size sm: leave space around a small field.']],
     rating: [[KEY, 'ok', 'role="slider": arrows, Home, End.'], [NAME, 'ok', 'Value announced as "3 of 5".']],

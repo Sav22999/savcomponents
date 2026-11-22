@@ -292,13 +292,16 @@ window.SAVC_DOCS = [
   },
   {
     id: 'number-input', name: 'Number input', play: { tag: 'sav-number-input', attrs: { label: 'Guests', value: '2', min: '1', max: '12' } }, tag: 'sav-number-input', group: 'Forms', icon: 'diff',
-    desc: 'A number field with a − button on the left and a + on the right. The buttons switch off at the minimum and maximum; hold one to keep counting. It takes part in native forms and validation.',
+    desc: 'A number field with a − button on the left and a + on the right. The buttons switch off at the minimum and maximum; hold one to keep counting. After a wrong entry it says why (too small, too large, which steps fit); with <code>limits="always"</code> it also shows the allowed range beforehand. It takes part in native forms and validation.',
     demos: [
       { title: 'Basic', html: `<sav-number-input label="Guests" value="2" min="1" max="12" help="From 1 to 12 people."></sav-number-input>
 <sav-number-input label="Weight" value="2.5" min="0" step="0.5" unit="kg"></sav-number-input>` },
       { title: 'Buttons', html: `<sav-number-input label="Buttons on the sides (default)" value="1" min="0"></sav-number-input>
 <sav-number-input label="Both buttons on the right" value="1" min="0" buttons="end"></sav-number-input>
 <sav-number-input label="No buttons" value="1" min="0" buttons="none"></sav-number-input>` },
+      { title: 'Range and errors', html: `<sav-number-input label="Always (limits=always)" value="16000" min="1024" max="131072" step="1" button-step="1024" unit="tokens" limits="always" help="Any whole number; the buttons and arrows move by 1024."></sav-number-input>
+<sav-number-input label="Only after a mistake (auto, default)" value="7" min="0" max="100" step="5" help="Leave 7 and click elsewhere: it says which values fit."></sav-number-input>
+<sav-number-input label="Never (limits=never)" value="9" min="1" max="5" limits="never"></sav-number-input>` },
       { title: 'Sizes, colours, pill', html: `<sav-number-input size="sm" value="3" min="0" max="5" aria-label="Small"></sav-number-input>
 <sav-number-input value="40" step="5" variant="success" unit="%" aria-label="Medium, success"></sav-number-input>
 <sav-number-input size="lg" value="10" pill appearance="filled" aria-label="Large pill"></sav-number-input>
@@ -313,12 +316,12 @@ window.SAVC_DOCS = [
 </script>` },
     ],
     attrs: [['label · help · placeholder', 'string', ''], ['value · min · max · step', 'number', 'Arrows step by step, PageUp and PageDown by ten steps.'], ['unit', 'string', 'Text after the number, inside the field (kg, %, EUR…).'],
-      ['buttons', 'sides · end · none', 'Where the − and + buttons go. Default sides.'], ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['variant', 'primary · …', 'Colour of the buttons.'],
+      ['buttons', 'sides · end · none', 'Where the − and + buttons go. Default sides.'], ['button-step', 'number', 'How far the buttons and the arrow keys move, when it differs from step (e.g. step 1 and button-step 1024).'], ['limits', 'auto · always · never', 'When the allowed range is written under the field: auto (default) only after a wrong entry, with the reason; always also before ("From 1 to 12"); never not at all (only the red border).'], ['size', 'sm · md · lg', ''], ['appearance', 'outline · filled', ''], ['variant', 'primary · …', 'Colour of the buttons.'],
       ['pill · readonly · disabled · required', 'boolean', ''], ['name', 'string', 'Form field name.'], ['decrease-label · increase-label', 'string', 'Names of the buttons for screen readers. Default "Decrease" and "Increase".'], ['autofocus', 'boolean', 'Takes the focus when the page opens.'], ['autocomplete', 'string', 'What the browser may fill in.'], ['inputmode', 'numeric · decimal', 'The keyboard phones show (numeric by default for whole steps).']],
     slots: [['label', 'Rich label'], ['prefix · suffix', 'Icons or text inside the field, next to the number'], ['help', 'Rich help text']],
     events: [['input', 'While the number changes (typing or buttons): detail.value.'], ['change', 'When a change is done: detail.value (a number, or null when empty).']],
     methods: [['stepUp(n) · stepDown(n)', 'Change the number by n steps.'], ['focus() · blur() · select()', ''], ['checkValidity() · reportValidity() · setCustomValidity(msg)', '']],
-    parts: ['form-control', 'label', 'base', 'input', 'button', 'decrease-button', 'increase-button', 'unit', 'help-text'],
+    parts: ['form-control', 'label', 'base', 'input', 'button', 'decrease-button', 'increase-button', 'unit', 'help-text', 'limits'],
   },
   {
     id: 'zoom', name: 'Zoom', play: { tag: 'sav-zoom', attrs: {} }, tag: 'sav-zoom', group: 'Forms', icon: 'zoom-in',

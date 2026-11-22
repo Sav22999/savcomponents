@@ -483,8 +483,17 @@
       const s = await api('admin.stats');
       const tile = (n, label, icon) => `<div class="stat layered"><span class="cc-ic tilt">${ICON(icon)}</span><div><b>${n}</b><small>${label}</small></div></div>`;
       $('#admStats').innerHTML = tile(s.stats.users, `accounts · ${s.stats.verified} confirmed`, 'users') + tile(s.stats.active30, 'active in the last 30 days', 'activity')
-        + tile(s.stats.themes, 'saved themes', 'palette') + tile(s.stats.components, `saved components · ${s.stats.favorites} favourites`, 'layers');
+        + tile(s.stats.themes, 'saved themes', 'palette') + tile(s.stats.components, `saved components · ${s.stats.favorites} favourites`, 'layers')
+        + (s.stats.learners !== undefined ? tile(s.stats.learners, `Academy learners · ${s.stats.learners30} in 30 days · ${s.stats.onBoard} on the leaderboard`, 'graduation-cap') : '');
     } catch (e) { fail(e); }
+    // sites that load the library from savcomponents.com (usage.php: a salted hash per site and day, numbers only)
+    try {
+      const u = await (await fetch('usage.php?report', { credentials: 'omit' })).json();
+      const ms = Object.keys(u.months || {}).sort(), cur = ms.at(-1), prev = ms.at(-2);
+      const tile = (n, label, icon) => `<div class="stat layered"><span class="cc-ic tilt">${ICON(icon)}</span><div><b>${n}</b><small>${label}</small></div></div>`;
+      $('#admStats')?.insertAdjacentHTML('beforeend', tile(cur ? u.months[cur].sites : 0, `sites using the library this month${prev ? ` · ${u.months[prev].sites} last month` : ''}`, 'globe')
+        + tile(u.days?.[new Date().toISOString().slice(0, 10)] ?? 0, 'sites today (loading it from savcomponents.com)', 'activity'));
+    } catch { /* the counter is not there (a local copy of the site): nothing to show */ }
     loadUsers();
   }
 

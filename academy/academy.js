@@ -254,16 +254,17 @@
 
   /* ================================================================ look: style and mode (shared with savcomponents.com) */
   const STYLES = ['soft', 'tilt', 'sharp', 'brutal', 'glass'];
-  function applyTheme() {
+  /** quiet at start: what was already earned is recorded without a toast for each badge */
+  function applyTheme(quiet = false) {
     const m = store.get('savc-mode', 'auto'), st = store.get('savc-style', 'tilt');
     const dark = m === 'dark' || (m === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.className = (dark ? 'sav-theme-dark' : 'sav-theme-light') + (st && st !== 'soft' ? ' sav-style-' + st : '');
     let changed = false;
     if (STYLES.includes(st) && !S.styles.includes(st)) { S.styles.push(st); changed = true; }
     if (dark && !S.dark) { S.dark = true; changed = true; }
-    if (changed) commit();
+    if (changed) commit({ quiet });
   }
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
 
   /* ================================================================ the frame: top bar and navigation */
   const NAV = [['home', 'Learn', 'graduation-cap'], ['challenges', 'Challenges', 'hammer'], ['daily', 'Daily', 'calendar-check'], ['collection', 'Collection', 'gem'], ['board', 'Leaderboard', 'trophy'], ['profile', 'Profile', 'user']];
@@ -841,7 +842,7 @@ addEventListener('message', (e) => {
   function start() {
     const bn = $('#bnav');
     bn.innerHTML = NAV.filter(([k]) => k !== 'board').map(([k, label, ic]) => `<sav-bottom-nav-item value="${k}" icon="${ic}" label="${label}" href="#${k}"></sav-bottom-nav-item>`).join('');
-    applyTheme();
+    applyTheme(true);
     commit({ quiet: true });
     renderTop();
     addEventListener('hashchange', route);

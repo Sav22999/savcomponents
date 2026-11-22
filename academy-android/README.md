@@ -33,4 +33,6 @@ The app and the site must vouch for each other, otherwise the browser shows its 
 
 ## Store listing
 
-`store/listing.md`: texts for the Google Play page. Screenshots (phone 1080×1920) and the feature graphic (1024×500) are to be made.
+`store/listing.md`: texts for the Google Play page. `store/en-GB/`: the eight phone screenshots (1080×1920) and the feature graphic
+(1024×500), made from the real app by `sh tools/build-academy-store.sh` (it opens `store/kit.html` in headless Chrome, with a sample
+learner; `store/wait.php` only holds the screenshot back until the app has finished, in that local build).

@@ -22,8 +22,10 @@ SavComponents Academy teaches you SavComponents, the library of ready-made web c
 **Contact email:** (the one of the developer account)
 **Privacy policy:** https://savcomponents.com/privacy.html
 
-**Graphics to make:** phone screenshots (1080×1920: home, a lesson, a challenge, the collection), feature graphic 1024×500.
-The icon is `play-store-icon-512.png`.
+**Graphics** (24-bit PNG, no transparency), in `en-GB/`: eight phone screenshots 1080×1920 (`phone-1-home` … `phone-8-dark`:
+home, the path as levels, the playground of a lesson, a quiz, a challenge checked live, the collection, the daily quiz, Brutal in dark
+mode) and the feature graphic `feature-graphic-1024x500.png`. The icon is `play-store-icon-512.png`.
+They are taken from the real app: `sh tools/build-academy-store.sh` (headless Chrome on `kit.html`; it starts its own local server).
 
 **Content rating:** questionnaire in Play Console (no violence, no user-generated content shown to others apart from usernames on the
 leaderboard, no purchases, no ads).

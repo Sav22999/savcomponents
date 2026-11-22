@@ -1302,7 +1302,10 @@
 
   /* A number field with a − button on the left and a + on the right (buttons="end" puts both on the right, "none" hides them).
      The buttons switch off by themselves at min and max; holding one repeats, faster and faster. Arrows step like a native
-     number field, PageUp and PageDown step ten times. */
+     number field, PageUp and PageDown step ten times. limits says when the allowed range is written under the field:
+     "auto" (default) only after a wrong entry, together with why it is wrong; "always" also before ("From 1 to 12");
+     "never" not at all. button-step lets the buttons and arrows jump by more than step (step 1 accepts any whole
+     number, button-step 1024 moves by 1024). */
   class SavNumberInput extends SavFormControl {
     static styles = [SIZES, FIELD, VARIANTS, `
       :host { min-width: 8.5rem; }
@@ -1327,10 +1330,13 @@
       .step svg { width: 1em; height: 1em; }
       .unit { flex: none; color: var(--sav-color-text-muted); font-size: .9em; }
       .unit:empty { display: none; }
+      .limits { display: block; }
+      .limits:empty { display: none; }
+      .help-text:not(:empty) + .limits { margin-top: .15rem; }
       @media (prefers-reduced-motion: reduce) { .step::before { transition: none; } }
     `];
     static NATIVE = ['placeholder', 'min', 'max', 'step', 'readonly', 'autofocus', 'autocomplete', 'inputmode'];
-    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'unit', 'buttons', 'decrease-label', 'increase-label', ...SavNumberInput.NATIVE]; }
+    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'unit', 'buttons', 'decrease-label', 'increase-label', 'limits', 'button-step', ...SavNumberInput.NATIVE]; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       const id = nextId('nu');
@@ -1343,7 +1349,7 @@
           <span class="unit" part="unit"></span><slot name="suffix"></slot>
           <button type="button" class="step plus" part="button increase-button" tabindex="-1" aria-controls="${id}">${svgIcon('plus')}</button>
         </div>
-        <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span></div>
+        <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span><span class="limits" part="limits" aria-live="polite"></span></div>
       </div>`;
       const input = (this.native = this.$('input'));
       this._default = this.getAttribute('value') ?? '';
@@ -1354,6 +1360,7 @@
       input.addEventListener('invalid', () => this.markTouched());
       input.addEventListener('keydown', (e) => {
         if (e.key === 'PageUp' || e.key === 'PageDown') { e.preventDefault(); this.bump(e.key === 'PageUp' ? 10 : -10, true); }
+        else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && this.hasAttribute('button-step')) { e.preventDefault(); this.bump(e.key === 'ArrowUp' ? 1 : -1, true); }
         else if (e.key === 'Enter' && this.form && !e.isComposing) { e.preventDefault(); this.form.requestSubmit(); }
       });
       // the scroll wheel never changes the number by accident while the page scrolls
@@ -1402,10 +1409,13 @@
       const input = this.native;
       if (this.isDisabled || input.readOnly) return false;
       const before = input.value;
-      try { n > 0 ? input.stepUp(n) : input.stepDown(-n); } catch {
-        const st = Number(input.step) || 1, v = (Number(input.value) || 0) + n * st;
+      const jump = Number(this.getAttribute('button-step'));
+      const by = (st) => {
+        const v = Math.round(((Number(input.value) || 0) + n * st) * 1e9) / 1e9;
         input.value = String(Math.min(Number(input.max || Infinity), Math.max(Number(input.min || -Infinity), v)));
-      }
+      };
+      if (jump > 0) by(jump);
+      else try { n > 0 ? input.stepUp(n) : input.stepDown(-n); } catch { by(Number(input.step) || 1); }
       if (input.value === before) return false;
       this.onValue();
       if (fire) this.emit('input', { value: this.value });
@@ -1421,8 +1431,41 @@
       this.$('.plus').disabled = off || (v !== null && v >= max);
       this.syncValidity();
       if (this.hasAttribute('data-user-invalid')) this.markTouched();
+      this.syncLimits();
     }
-    formResetCallback() { this.native.value = this._default; this.onValue(); this.removeAttribute('data-user-invalid'); }
+    markTouched() { super.markTouched(); this.syncLimits(); }
+    reportValidity() { const ok = super.reportValidity(); this.syncLimits(); return ok; }
+    syncLabels(wrap) { super.syncLabels(wrap); this.syncLimits(); }
+    fmt(n) {
+      let loc; try { loc = Intl.getCanonicalLocales(document.documentElement.lang || [])[0]; } catch { loc = undefined; }
+      return Number(n).toLocaleString(loc, { maximumFractionDigits: 6 });
+    }
+    /** Under the field: the allowed range, or why the number is wrong once the user has touched it */
+    syncLimits() {
+      const input = this.native, out = this.$('.limits');
+      if (!input || !out) return;
+      const unit = this.getAttribute('unit'), u = unit ? ` ${unit}` : '';
+      const { min, max } = input, v = input.validity;
+      let text = '';
+      if (this.getAttribute('limits') === 'never') text = '';
+      else if (this.hasAttribute('data-user-invalid') && !v.valid) {
+        if (v.badInput || v.valueMissing) text = 'Enter a number.';
+        else if (v.rangeUnderflow) text = `The smallest value is ${this.fmt(min)}${u}.`;
+        else if (v.rangeOverflow) text = `The largest value is ${this.fmt(max)}${u}.`;
+        else if (v.stepMismatch) {
+          const st = Number(input.step), base = min === '' ? 0 : Number(min);
+          const lo = Math.round((base + Math.floor((Number(input.value) - base) / st) * st) * 1e9) / 1e9;
+          text = `Use steps of ${this.fmt(st)}: for example ${this.fmt(lo)} or ${this.fmt(lo + st)}${u}.`;
+        } else text = input.validationMessage;
+      } else if (this.getAttribute('limits') === 'always') {
+        if (min !== '' && max !== '') text = `From ${this.fmt(min)} to ${this.fmt(max)}${u}.`;
+        else if (min !== '') text = `At least ${this.fmt(min)}${u}.`;
+        else if (max !== '') text = `At most ${this.fmt(max)}${u}.`;
+      }
+      if (out.textContent !== text) out.textContent = text;
+      this.$('.w').classList.toggle('has-help', !!text || !!this.getAttribute('help') || this.hasSlot('help'));
+    }
+    formResetCallback() { this.native.value = this._default; this.onValue(); this.removeAttribute('data-user-invalid'); this.syncLimits(); }
     formStateRestoreCallback(s) { this.native.value = s || ''; this.onValue(); }
     /** a number, or null when the field is empty */
     get value() { const s = this.native ? this.native.value : this.getAttribute('value') ?? ''; return s === '' || s === null ? null : Number(s); }
