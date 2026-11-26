@@ -464,7 +464,7 @@ window.SAVC_DOCS = [
   },
   {
     id: 'radio', name: 'Radio group', tag: 'sav-radio-group · sav-radio', group: 'Forms', icon: 'circle-dot',
-    desc: 'One choice among several, with arrow-key navigation. <code>appearance="buttons"</code> turns it into a segmented control.',
+    desc: 'One choice among several, with arrow-key navigation. <code>appearance="buttons"</code> turns it into a segmented control; <code>appearance="cards"</code> into a grid of cards, each with a picture of its own (looks, layouts, templates, plans).',
     demos: [
       { title: 'Basic', html: `<sav-radio-group label="Delivery" name="delivery" value="standard">
   <sav-radio value="standard">Standard (3–5 days)</sav-radio>
@@ -482,8 +482,31 @@ window.SAVC_DOCS = [
   <sav-radio value="week">Week</sav-radio>
   <sav-radio value="month">Month</sav-radio>
 </sav-radio-group>` },
+      { title: 'Cards, with a picture', html: `<sav-radio-group label="Look of the page" appearance="cards" value="card" columns="3" style="width: 100%; max-width: 34rem">
+  <sav-radio value="card"><span slot="media" class="choice-art"><i></i><i class="short"></i><b></b></span>Card</sav-radio>
+  <sav-radio value="minimal"><span slot="media" class="choice-art plain"><i></i><i class="short"></i><b></b></span>Minimal</sav-radio>
+  <sav-radio value="bold"><span slot="media" class="choice-art bold"><i></i><i class="short"></i><b></b></span>Bold</sav-radio>
+</sav-radio-group>
+<style>
+  .choice-art { display: grid; align-content: center; justify-items: center; gap: 5px; height: 4.5rem; padding: .5rem; border-radius: var(--sav-radius); background: var(--sav-color-surface-2); }
+  .choice-art i { display: block; width: 72%; height: 5px; border-radius: 3px; background: var(--sav-color-border-strong); }
+  .choice-art i.short { width: 50%; }
+  .choice-art b { display: block; width: 46%; height: 10px; border-radius: 5px; background: var(--sav-color-primary); }
+  .choice-art.plain { background: transparent; }
+  .choice-art.bold { background: var(--sav-color-primary); }
+  .choice-art.bold i, .choice-art.bold b { background: var(--sav-color-on-primary); }
+</style>` },
+      { title: 'Cards, with a line under the name', html: `<sav-radio-group label="Plan" appearance="cards" value="team" style="width: 100%; max-width: 34rem">
+  <sav-radio value="solo">Solo<span slot="description">For one person, free</span></sav-radio>
+  <sav-radio value="team">Team<span slot="description">Up to 10 people</span></sav-radio>
+  <sav-radio value="company" disabled>Company<span slot="description">Ask us</span></sav-radio>
+</sav-radio-group>` },
     ],
-    attrs: [['label · help · value · name', 'string', 'On the group.'], ['orientation', 'vertical · horizontal', ''], ['appearance', 'buttons', 'Segmented control.'], ['size', 'sm · md · lg', ''], ['mark', 'fill · dot · ring', 'How the chosen option looks: fill fills the shape (the default); dot fills it with a small mark inside; ring keeps it light, with a coloured border and a mark in the middle (the clearest difference from a ticked checkbox in the square styles). On the group it reaches every radio; a radio can have its own.'], ['required · disabled', '', ''], ['value · disabled', '', 'On each sav-radio.'], ['auto-text', 'boolean', 'The dot of the chosen option is black or white, whichever is readable on the filled circle (WCAG AA, at least 4.5:1), also with your own colours. On the group it reaches every sav-radio.']],
+    attrs: [['label · help · value · name', 'string', 'On the group.'], ['orientation', 'vertical · horizontal', ''], ['appearance', 'buttons · cards', 'buttons: a segmented control. cards: a grid of cards drawn like sav-card (in every style), the mark of the radio in their top corner; the chosen one takes the colour.'],
+      ['columns', 'number', 'Cards: how many per row. Without it the grid fills the width with cards at least --sav-choice-min wide.'],
+      ['--sav-choice-min · --sav-choice-gap · --sav-choice-padding · --sav-choice-align', 'CSS', 'Cards: the narrowest card (default 9rem), the space between them, inside them, and the alignment of their text (start or center).'], ['size', 'sm · md · lg', ''], ['mark', 'fill · dot · ring', 'How the chosen option looks: fill fills the shape (the default); dot fills it with a small mark inside; ring keeps it light, with a coloured border and a mark in the middle (the clearest difference from a ticked checkbox in the square styles). On the group it reaches every radio; a radio can have its own.'], ['required · disabled', '', ''], ['value · disabled', '', 'On each sav-radio.'], ['auto-text', 'boolean', 'The dot of the chosen option is black or white, whichever is readable on the filled circle (WCAG AA, at least 4.5:1), also with your own colours. On the group it reaches every sav-radio.']],
+    slots: [['(default)', 'On sav-radio: its name'], ['media', 'On sav-radio, with cards: the picture on top'], ['description', 'On sav-radio, with cards: a line under the name']],
+    parts: ['base', 'control', 'label', 'media', 'description', 'back'],
     events: [['change', 'On the group.'], ['input', 'Another option chosen (as it happens).']],
   },
   {

@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.1.0 — web components, no dependencies
+ * SavComponents v1.1.1 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.1.0' });
+  const Sav = (window.Sav = { version: '1.1.1' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -2864,11 +2864,44 @@
       :host([data-m="ring"]) { --_ri: oklch(from var(--_c) calc(l * var(--sav-indicator-l, 1)) c h); }
       :host([data-m="ring"][checked]) .dot { background: var(--sav-color-input-bg); border-color: var(--_ri); border-width: calc(var(--sav-border-width) + 1.5px); }
       :host([data-m="ring"]) .dot::after { width: 46%; height: 46%; background: var(--_ri); }
+      /* cards: each option is a card with a picture (slot media), its name and a line under it (slot description), drawn with the
+         tokens of sav-card so it follows every style; the mark of the radio sits in the top corner. The chosen one takes the colour:
+         --sav-choice-checked-border, -shadow and -tint (set by the styles), its back plate in Tilt. */
+      .cb, .media, .desc { display: none; }
+      :host([data-appearance="cards"]) { display: block; position: relative; isolation: isolate; min-width: 0; }
+      :host([data-appearance="cards"]) .cb { display: var(--sav-card-back, none); position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-lg);
+        background: var(--_cbk, color-mix(in oklab, var(--_c) 16%, transparent)); transform: rotate(var(--sav-card-tilt, calc(${TILT} * -2.2)));
+        transition: transform calc(.3s * var(--sav-motion, 1)) var(--sav-easing), background calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      :host([data-appearance="cards"]:not([disabled]):hover) .cb { transform: rotate(calc(var(--sav-card-tilt, calc(${TILT} * -2.2)) * -1.4)); }
+      :host([data-appearance="cards"][checked]) .cb { --_cbk: color-mix(in oklab, var(--_c) 40%, transparent); }
+      :host([data-appearance="cards"]) .row { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: .55rem; height: 100%; box-sizing: border-box;
+        padding: var(--sav-choice-padding, calc(var(--_fs) * .8)); border-radius: var(--sav-radius-lg); text-align: var(--sav-choice-align, start); white-space: normal;
+        color: var(--sav-color-text); background-color: var(--_cbg, var(--sav-color-surface)); background-image: var(--sav-sheen, none);
+        border: var(--sav-border-width) solid var(--_cbd, var(--sav-color-border)); box-shadow: var(--_csh, var(--sav-shadow-sm));
+        -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
+        transition: box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(var(--sav-duration) * var(--sav-motion, 1)), border-color calc(var(--sav-duration) * var(--sav-motion, 1)), background-color calc(var(--sav-duration) * var(--sav-motion, 1)); }
+      :host([data-appearance="cards"]:not([disabled])) .row:hover { transform: var(--sav-choice-hover-transform, translateY(-2px)); --_cbd: var(--sav-color-border-strong); --_csh: var(--sav-choice-hover-shadow, var(--sav-shadow)); }
+      :host([data-appearance="cards"][checked]) .row { --_cbd: var(--sav-choice-checked-border, var(--_c)); --_cbg: color-mix(in oklab, var(--_c) var(--sav-choice-checked-tint, 7%), var(--sav-color-surface));
+        --_csh: var(--sav-choice-checked-shadow, 0 0 0 calc(var(--sav-border-width) + .5px) var(--_c), var(--sav-shadow-sm)); }
+      :host([data-appearance="cards"]:focus-visible) .row { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 3px; }
+      :host([data-appearance="cards"]) .dot { position: absolute; z-index: 1; top: calc(var(--sav-choice-padding, calc(var(--_fs) * .8)) * .75); inset-inline-end: calc(var(--sav-choice-padding, calc(var(--_fs) * .8)) * .75); margin: 0; }
+      :host([data-appearance="cards"]) .has-media .media { display: block; border-radius: max(0px, calc(var(--sav-radius-lg) - var(--sav-border-width) - 2px)); overflow: hidden; }
+      :host([data-appearance="cards"]) ::slotted([slot="media"]) { display: block; width: 100%; max-width: 100%; }
+      :host([data-appearance="cards"]) .lb { display: grid; gap: .15rem; font-weight: var(--sav-font-weight-semibold); min-width: 0; }
+      :host([data-appearance="cards"]) .row:not(.has-media) .lb { padding-inline-end: calc(var(--_box) + .5rem); }
+      :host([data-appearance="cards"]) .has-desc .desc { display: block; font-weight: 400; font-size: .86em; color: var(--sav-color-text-muted); }
     `];
     connectedCallback() {
-      if (!this.shadowRoot.firstChild) this.shadowRoot.innerHTML = '<div class="row" part="base"><span class="dot" part="control"></span><span class="lb" part="label"><slot></slot></span></div>';
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = '<span class="cb" part="back"></span><div class="row" part="base"><span class="media" part="media"><slot name="media"></slot></span><span class="dot" part="control"></span><span class="lb" part="label"><slot></slot><span class="desc" part="description"><slot name="description"></slot></span></span></div>';
+        // cards: the picture and the line under the name show only when they are given
+        const row = this.$('.row'), parts = () => { row.classList.toggle('has-media', this.hasSlot('media')); row.classList.toggle('has-desc', this.hasSlot('description')); };
+        this.$$('slot[name]').forEach((sl) => sl.addEventListener('slotchange', parts));
+        parts();
+      }
       this.setAttribute('role', 'radio');
       tiltWatch(this.$('.row'));
+      tiltWatch(this.$('.cb'));
       this.sync();
       this.addEventListener('click', this._click ||= () => { if (!this.disabled) this.closest('sav-radio-group')?.pick(this, true); });
     }
@@ -2894,10 +2927,13 @@
       :host([appearance="buttons"]) .items { flex-direction: row; display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--sav-radius); background: var(--sav-color-surface-2); border: var(--sav-border-width) solid var(--sav-color-border); }
       /* more buttons than room: the row scrolls sideways instead of spilling out of its container */
       :host([appearance="buttons"]) .items { max-width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+      /* cards: a grid that fills the width; columns="n" fixes how many per row, --sav-choice-min the narrowest card otherwise */
+      :host([appearance="cards"]) .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(var(--sav-choice-min, 9rem), 100%), 1fr)); gap: var(--sav-choice-gap, .75rem); padding: 3px; margin: -3px; }
+      :host([appearance="cards"][columns]) .items { grid-template-columns: repeat(var(--_cols, 3), minmax(0, 1fr)); }
       :host([data-user-invalid]) .items { --sav-color-border-strong: var(--sav-color-danger); }
       .native { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
     `];
-    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'appearance', 'size', 'auto-text', 'mark']; }
+    static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'appearance', 'size', 'auto-text', 'mark', 'columns']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = `<fieldset class="w" part="form-control" role="radiogroup">
@@ -2957,6 +2993,7 @@
     }
     changed(name, v) {
       if (name === 'value') { this._value = v ?? ''; this.syncRadios(); return; }
+      if (name === 'columns') { const n = parseInt(v, 10); n > 0 ? this.style.setProperty('--_cols', String(Math.min(n, 12))) : this.style.removeProperty('--_cols'); return; }
       if (name === 'appearance' || name === 'size' || name === 'auto-text' || name === 'mark') this.syncRadios();
       this.sync();
     }

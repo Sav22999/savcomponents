@@ -91,7 +91,7 @@
     'date-picker': [[KEY, 'ok', 'Arrows move by day and week, PageUp/PageDown by month; the native picker is available on phones.'], [NAME, 'ok', 'Grid of buttons with full dates as labels; the month title is announced.'], [LABEL, 'ok', 'Labelled by its label.']],
     'time-picker': [[KEY, 'partial', 'Hours and minutes are buttons reached with Tab, not with arrow keys; the native picker is available on phones.'], [NAME, 'ok', 'Hour and minute lists are labelled.']],
     checkbox: [[KEY, 'ok', 'Native checkbox (switch: role="switch"); Space toggles.'], [LABEL, 'ok', 'The text is part of the clickable label.'], [TARGET, 'ok', 'The whole label is the target.']],
-    radio: [[KEY, 'ok', 'Arrows move and select, Tab enters and leaves the group.'], [NAME, 'ok', 'role="radiogroup" and "radio" with aria-checked.'], [LABEL, 'ok', 'The group label names the group.']],
+    radio: [[KEY, 'ok', 'Arrows move and select, Tab enters and leaves the group (also with cards: the grid is one stop).'], [NAME, 'ok', 'role="radiogroup" and "radio" with aria-checked; a card reads its name and its description, the picture is up to you (alt text or aria-hidden).'], [LABEL, 'ok', 'The group label names the group.']],
     range: [[KEY, 'ok', 'Native range: arrows, Home, End, PageUp, PageDown.'], [NAME, 'ok', 'aria-valuetext uses the unit or the step names.']],
     'range-dual': [[KEY, 'ok', 'Two native sliders: Tab goes from the start handle to the end one; arrows, Home, End, PageUp and PageDown move the focused one, never past the other.'],
       [NAME, 'ok', 'A group named by its label; each handle has its own name (start-label, end-label) and says its value with the unit or as a date (aria-valuetext).'],

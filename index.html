@@ -30,7 +30,7 @@
   <script>
     /* The released versions, newest first (tools/release.sh adds each new one). The site shows the newest library (dist/, the
        same files as the newest v/<version>/); ?v=1.0.0 shows it with an older release instead: the version menu next to the logo. */
-    window.SAVC_RELEASES = ['1.1.0', '1.0.0'];
+    window.SAVC_RELEASES = ['1.1.1', '1.1.0', '1.0.0'];
     (() => {
       const v = new URLSearchParams(location.search).get('v');
       const lib = v && v !== SAVC_RELEASES[0] && SAVC_RELEASES.includes(v) ? `v/${v}/` : 'dist/';

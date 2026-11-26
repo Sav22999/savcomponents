@@ -2,6 +2,16 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.1.1 — 2026-11-26
+
+- Radio group: `appearance="cards"` turns the options into a grid of cards, each with a picture of its own (slot `media`), its name
+  and a line under it (slot `description`): looks, layouts, templates, plans. The cards are drawn with the tokens of `sav-card`, so
+  they follow every style (Tilt's leaning plate, Sharp's offset block, Brutal's ink, Glass's rim); the mark of the radio sits in their
+  top corner and the chosen one takes the colour. Same keyboard, form value and events as the other radio groups. `columns="n"`
+  fixes how many per row; `--sav-choice-min`, `--sav-choice-gap`, `--sav-choice-padding` and `--sav-choice-align` shape the grid.
+  New style tokens: `--sav-choice-checked-border`, `--sav-choice-checked-shadow`, `--sav-choice-checked-tint`,
+  `--sav-choice-hover-shadow`, `--sav-choice-hover-transform`.
+
 ## 1.1.0 — 2026-11-25
 
 - The words the components write by themselves (Done, Today, Light, Show password, "Character 1 of 6"…) follow the language of
