@@ -28,8 +28,9 @@ English and Italian are built in. Add a language, or change some words, right af
 Sav.addStrings('fr', { Done: 'Terminé', 'Page {n}': 'Page {n}' });
 ```
 
-`Sav.strings.it` has the whole list. A `*-label` attribute of a component always wins. Components already on the page keep
-their words until they are drawn again.
+`Sav.strings.it` has the whole list: every word a component writes or says to screen readers, key names (`Shift`, `Space`…)
+and continent names included. A `*-label` attribute of a component always wins. Dates, numbers and the names of languages and
+countries come from the browser in the same language. Components already on the page keep their words until they are drawn again.
 
 ## Repository
 

@@ -78,6 +78,9 @@
     '{name}: {n} values, highest {max}': '{name}: {n} valori, massimo {max}', '{n} continents, highest {name} {max}': '{n} continenti, massimo {name} {max}',
     '{n} countries, highest {name} {max}': '{n} paesi, massimo {name} {max}', 'World map': 'Mappa del mondo',
     'Move cancelled.': 'Spostamento annullato.', '{name} added': '{name} aggiunto', '{name} removed': '{name} rimosso',
+    'carousel': 'carosello', 'slide': 'diapositiva', '{n} degrees': '{n} gradi', '{colour} picked': '{colour} scelto',
+    'Zoom': 'Zoom', 'Zoom out': 'Riduci', 'Zoom in': 'Ingrandisci', 'then': 'poi',
+    'Shift': 'Maiusc', 'Space': 'Spazio', 'Del': 'Canc', 'Enter': 'Invio', 'Escape': 'Esc', 'Command': 'Comando', 'Option': 'Opzione',
   } };
   Sav.addStrings = (lang, words) => { const l = String(lang).toLowerCase(); Sav.strings[l] = { ...Sav.strings[l], ...words }; };
 
@@ -1761,7 +1764,7 @@
       al.querySelector('.th').style.cssText = `--_x:${a};--_c:${solid}`;
       sv.setAttribute('aria-valuenow', String(Math.round(s * 100)));
       sv.setAttribute('aria-valuetext', T(this, 'Saturation {s}%, brightness {v}%', { s: Math.round(s * 100), v: Math.round(v * 100) }));
-      hue.setAttribute('aria-valuenow', String(Math.round(h))); hue.setAttribute('aria-valuetext', `${Math.round(h)} degrees`);
+      hue.setAttribute('aria-valuenow', String(Math.round(h))); hue.setAttribute('aria-valuetext', T(this, '{n} degrees', { n: Math.round(h) }));
       al.setAttribute('aria-valuenow', String(Math.round(a * 100))); al.setAttribute('aria-valuetext', `${Math.round(a * 100)}%`);
       this.$('.pv').style.setProperty('--_v', this._v || 'transparent');
       const hx = this.$('.hx'); if (this.shadowRoot.activeElement !== hx) hx.value = this._v;
@@ -1817,7 +1820,7 @@
           return;
         }
         this._picking = true;
-        try { const r = await new window.EyeDropper().open(); if (r?.sRGBHex) { this.set(this.norm(r.sRGBHex), 'change'); this.$('.sr').textContent = `${this._v} picked`; } }
+        try { const r = await new window.EyeDropper().open(); if (r?.sRGBHex) { this.set(this.norm(r.sRGBHex), 'change'); this.$('.sr').textContent = T(this, '{colour} picked', { colour: this._v }); } }
         catch (e) { if (e?.name !== 'AbortError') this.$('.sr').textContent = T(this, 'The browser did not allow picking a colour from the screen.'); }
         finally { this._picking = false; if (this.isOpen) this.$('.eye').focus({ preventScroll: true }); }
       });
@@ -1930,6 +1933,12 @@
   const MOBILE = typeof matchMedia === 'function' ? matchMedia('(max-width: 640px)') : { matches: false };
   /** a language tag the browser accepts, or undefined (a half-typed or wrong locale="…" must not break the component) */
   const safeLocale = (l) => { if (!l) return undefined; try { return Intl.getCanonicalLocales(l)[0]; } catch { return undefined; } };
+  /** The locale of a component: its locale attribute, else the closest lang (also around a shadow root), like the words it writes. */
+  const elLocale = (el) => {
+    const own = safeLocale(el.getAttribute('locale')); if (own) return own;
+    for (let n = el; n; n = n.getRootNode?.().host) { const l = n.closest?.('[lang]')?.getAttribute('lang'); if (l) return safeLocale(l); }
+    return undefined;
+  };
   const userLocale = (el) => safeLocale(el.getAttribute('locale')) || safeLocale(el.closest('[lang]')?.getAttribute('lang')) || safeLocale(navigator.language) || 'en';
   const pad = (n) => String(n).padStart(2, '0');
 
@@ -2385,7 +2394,7 @@
 
   class SavLanguageChoice extends SavRegionChoice {
     readOptions() {
-      const loc = safeLocale(this.getAttribute('locale')), nat = this.hasAttribute('native-names');
+      const loc = elLocale(this), nat = this.hasAttribute('native-names');
       const codeKind = this.getAttribute('code') || 'iso3';
       const list = this.filterList(LANGS, (l) => l.tag);
       this.opts = list.map((l) => {
@@ -2399,7 +2408,7 @@
 
   class SavCountryChoice extends SavRegionChoice {
     readOptions() {
-      const loc = safeLocale(this.getAttribute('locale')), codeKind = this.getAttribute('code') || 'alpha3';
+      const loc = elLocale(this), codeKind = this.getAttribute('code') || 'alpha3';
       const list = this.filterList(ISO_COUNTRIES, (c) => c.a2);
       this.opts = list.map((c) => {
         const name = displayName(loc, 'region', c.a2);
@@ -5077,7 +5086,7 @@
     `;
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.setAttribute('role', 'region'); this.setAttribute('aria-roledescription', 'carousel');
+      this.setAttribute('role', 'region'); this.setAttribute('aria-roledescription', T(this, 'carousel'));
       if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Carousel'));
       this.shadowRoot.innerHTML = `<div class="vp" part="viewport" tabindex="0"><slot></slot></div>
         <button type="button" class="nav prev" part="previous" aria-label="${esc(T(this, 'Previous slide'))}">${svgIcon('chevron-left')}</button>
@@ -5153,7 +5162,7 @@
     get positions() { return Math.max(1, this.slides.length - this.perView + 1); }
     build() {
       const n = this.slides.length, per = this.perView;
-      this.slides.forEach((s, i) => { s.setAttribute('role', 'group'); s.setAttribute('aria-roledescription', 'slide'); s.setAttribute('aria-label', T(this, '{i} of {n}', { i: i + 1, n })); });
+      this.slides.forEach((s, i) => { s.setAttribute('role', 'group'); s.setAttribute('aria-roledescription', T(this, 'slide')); s.setAttribute('aria-label', T(this, '{i} of {n}', { i: i + 1, n })); });
       this.$('.dots').innerHTML = Array.from({ length: this.positions }, (_, i) => `<button type="button" class="dot" aria-label="${esc(per > 1 ? T(this, 'Slides {a} to {b}', { a: i + 1, b: Math.min(n, i + per) }) : T(this, 'Slide {i}', { i: i + 1 }))}" data-i="${i}"></button>`).join('');
       this.$$('.dot').forEach((d) => d.addEventListener('click', () => this.go(Number(d.dataset.i))));
       this.index = Math.min(this.index || 0, this.positions - 1); this.syncIndex();
@@ -6486,7 +6495,7 @@
     tableHtml() { return `<caption>${esc(this.getAttribute('label') || T(this, 'Activity'))}</caption>` + this.days().filter((d) => d.value).map((d) => `<tr><th>${d.key}</th><td>${d.value}</td></tr>`).join(''); }
     render() {
       const ds = this.days(), weeks = Math.ceil(ds.length / 7), lv = Number(this.getAttribute('levels')) || 5;
-      const loc = safeLocale(this.getAttribute('locale')) || safeLocale(document.documentElement.lang);
+      const loc = elLocale(this) || safeLocale(document.documentElement.lang);
       const left = 28, top = 18, cell = Math.max(8, Math.min(16, Math.floor((this.W - left) / weeks) - 3)), gap = 3, step = cell + gap;
       const W = left + weeks * step, H = top + 7 * step + 4;
       let g = '<g class="axis">';
@@ -6554,8 +6563,9 @@
     get byContinent() { return this.getAttribute('by') === 'continent'; }
     /** the name of a country (alpha-2) or of a continent, in the language of the page */
     areaName(k) {
-      const loc = safeLocale(this.getAttribute('locale'));
+      const loc = elLocale(this);
       if (!CONTINENT_M49[k]) return displayName(loc, 'region', k);
+      const own = T(this, CONTINENT_NAMES.en[k]); if (own !== CONTINENT_NAMES.en[k]) return own; // renamed with Sav.addStrings
       // the browser's name when it has one, else the list above (by the language of the page)
       const fromIntl = displayName(loc, 'region', CONTINENT_M49[k]);
       if (fromIntl && fromIntl !== CONTINENT_M49[k]) return fromIntl;
@@ -6570,13 +6580,13 @@
     values() { const out = {}; for (const [k, v] of Object.entries(this.data || {})) { if (this.byContinent) { const c = contKey(k); if (c) out[c] = Number(v); continue; } const K = k.toUpperCase(); const c = K.length === 3 ? ISO_COUNTRIES.find((x) => x.a3 === K)?.a2 : K; if (c) out[c] = Number(v); } return out; }
     legendItems() { return []; }
     summary() { const v = Object.entries(this.values()).sort((a, b) => b[1] - a[1]); return v.length ? T(this, this.byContinent ? '{n} continents, highest {name} {max}' : '{n} countries, highest {name} {max}', { n: v.length, name: this.areaName(v[0][0]), max: nfmt(v[0][1]) }) : T(this, 'World map'); }
-    tableHtml() { const loc = safeLocale(this.getAttribute('locale')); return `<caption>${esc(this.getAttribute('label') || T(this, 'Map data'))}</caption>` + Object.entries(this.values()).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><th>${esc(this.areaName(c) || displayName(loc, 'region', c))}</th><td>${v}</td></tr>`).join(''); }
+    tableHtml() { const loc = elLocale(this); return `<caption>${esc(this.getAttribute('label') || T(this, 'Map data'))}</caption>` + Object.entries(this.values()).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><th>${esc(this.areaName(c) || displayName(loc, 'region', c))}</th><td>${v}</td></tr>`).join(''); }
     render() {
       const w = this._world; if (!w) return '<svg viewBox="0 0 1000 520"></svg>';
       const vals = this.values(), by = this.byContinent;
       // highlight: country codes, or continents (europe…): a continent lights all its countries
       const hi = new Set((this.getAttribute('highlight') || '').split(/[\s,]+/).filter(Boolean).flatMap((h) => { const c = contKey(h); return c ? (by ? [c] : CONTINENTS[c].split(' ')) : [h.toUpperCase()]; }));
-      const max = Number(this.getAttribute('max')) || Math.max(1, ...Object.values(vals)), lv = Number(this.getAttribute('levels')) || 5, loc = safeLocale(this.getAttribute('locale'));
+      const max = Number(this.getAttribute('max')) || Math.max(1, ...Object.values(vals)), lv = Number(this.getAttribute('levels')) || 5, loc = elLocale(this);
       const shade = (v) => { const k = Math.min(lv, Math.max(1, Math.ceil((v / max) * lv))); return `color-mix(in oklab, var(--sav-chart-1) ${Math.round(18 + (82 * k) / lv)}%, var(--sav-color-surface-2))`; };
       let g = '';
       const groups = {};
@@ -7854,7 +7864,7 @@
       const hit = (c) => { const hay = `${c.label} ${c.description || ''} ${c.keywords || ''} ${c.group || ''}`.toLowerCase(); return words.every((w) => hay.includes(w)); };
       const shown = (this._shown = words.length ? all.filter(hit).sort((a, b) => (b.label.toLowerCase().startsWith(q) - a.label.toLowerCase().startsWith(q))) : all);
       this._a = Math.min(this._a || 0, Math.max(0, shown.length - 1));
-      const keys = (s) => s ? `<span class="kb">${s.split('+').map((k) => `<span>${esc(keyName(k))}</span>`).join('')}</span>` : '';
+      const keys = (s) => s ? `<span class="kb">${s.split('+').map((k) => `<span>${esc(keyName(k, this))}</span>`).join('')}</span>` : '';
       const hl = (t) => { let h = esc(t); for (const w of words) h = h.replace(new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig'), '<mark>$1</mark>'); return h; };
       let html = '', group = null;
       shown.forEach((c, i) => {
@@ -7878,13 +7888,17 @@
     }
   }
   /** how a key is written: ⌘ ⇧ ⌥ on a Mac, Ctrl Shift Alt elsewhere; "mod" is ⌘ on a Mac and Ctrl elsewhere */
-  const keyName = (k) => {
-    const t = k.trim().toLowerCase();
+  const keyName = (k, el) => {
+    const t = k.trim().toLowerCase(), W = (w) => (el ? T(el, w) : w); // key names that are words follow the language (Maiusc, Spazio, Canc…)
     const mac = { mod: '⌘', meta: '⌘', cmd: '⌘', ctrl: '⌃', shift: '⇧', alt: '⌥', option: '⌥' }, pc = { mod: 'Ctrl', meta: 'Win', cmd: 'Ctrl', ctrl: 'Ctrl', shift: 'Shift', alt: 'Alt', option: 'Alt' };
-    const any = { enter: '↵', return: '↵', esc: 'Esc', escape: 'Esc', tab: 'Tab', space: 'Space', up: '↑', down: '↓', left: '←', right: '→', backspace: '⌫', delete: 'Del' };
-    return (IS_MAC ? mac : pc)[t] || any[t] || (t.length === 1 ? t.toUpperCase() : k.trim());
+    const any = { enter: '↵', return: '↵', esc: 'Esc', escape: 'Esc', tab: 'Tab', space: 'Space', up: '↑', down: '↓', left: '←', right: '→', backspace: '⌫', delete: 'Del', del: 'Del' };
+    const name = (IS_MAC ? mac : pc)[t] || any[t];
+    return name ? (/^[A-Za-z]/.test(name) ? W(name) : name) : t.length === 1 ? t.toUpperCase() : k.trim();
   };
-  const keySpoken = (k) => ({ mod: IS_MAC ? 'Command' : 'Control', meta: IS_MAC ? 'Command' : 'Windows', cmd: 'Command', ctrl: 'Control', shift: 'Shift', alt: IS_MAC ? 'Option' : 'Alt', option: 'Option', enter: 'Enter', esc: 'Escape' }[k.trim().toLowerCase()] || keyName(k));
+  const keySpoken = (k, el) => {
+    const w = { mod: IS_MAC ? 'Command' : 'Control', meta: IS_MAC ? 'Command' : 'Windows', cmd: 'Command', ctrl: 'Control', shift: 'Shift', alt: IS_MAC ? 'Option' : 'Alt', option: 'Option', enter: 'Enter', esc: 'Escape' }[k.trim().toLowerCase()];
+    return w ? (el ? T(el, w) : w) : keyName(k, el);
+  };
   define('sav-command', SavCommand);
 
   /* ================================================================== sav-kbd */
@@ -7908,9 +7922,9 @@
       const raw = (this.getAttribute('keys') || this.textContent || '').trim();
       // "mod+K" is one shortcut; "mod+K, mod+P" or "G then I" are several
       const combos = raw.split(/\s*(?:,|\bthen\b)\s*/i).filter(Boolean);
-      const cap = (k) => `<kbd class="c" part="key">${esc(keyName(k))}</kbd>`;
-      this.shadowRoot.innerHTML = `<span class="k" part="base" role="img" aria-label="${esc(combos.map((c) => c.split('+').map(keySpoken).join(' + ')).join(', then '))}">`
-        + combos.map((c) => c.split('+').filter(Boolean).map(cap).join('')).join('<span class="p">then</span>') + '</span>';
+      const cap = (k) => `<kbd class="c" part="key">${esc(keyName(k, this))}</kbd>`, then = T(this, 'then');
+      this.shadowRoot.innerHTML = `<span class="k" part="base" role="img" aria-label="${esc(combos.map((c) => c.split('+').map((k) => keySpoken(k, this)).join(' + ')).join(`, ${then} `))}">`
+        + combos.map((c) => c.split('+').filter(Boolean).map(cap).join('')).join(`<span class="p">${esc(then)}</span>`) + '</span>';
     }
   }
   props(SavKbd, { size: String });
@@ -7987,12 +8001,12 @@
     sync() {
       if (!this.shadowRoot.firstChild) return;
       const v = this.value, r = this.resetValue, A = (n, d) => this.getAttribute(n) || d;
-      this.$('.z').setAttribute('aria-label', A('label', 'Zoom'));
+      this.$('.z').setAttribute('aria-label', A('label', T(this, 'Zoom')));
       this.$('.v').textContent = `${v}%`;
       this.$('.v').setAttribute('aria-label', `${v}%. ${A('reset-label', T(this, 'Back to {r}%', { r }))}`);
       this.$('.v').title = A('reset-label', T(this, 'Back to {r}%', { r }));
-      this.$('.m').setAttribute('aria-label', A('decrease-label', 'Zoom out')); this.$('.m').title = A('decrease-label', 'Zoom out');
-      this.$('.p').setAttribute('aria-label', A('increase-label', 'Zoom in')); this.$('.p').title = A('increase-label', 'Zoom in');
+      this.$('.m').setAttribute('aria-label', A('decrease-label', T(this, 'Zoom out'))); this.$('.m').title = A('decrease-label', T(this, 'Zoom out'));
+      this.$('.p').setAttribute('aria-label', A('increase-label', T(this, 'Zoom in'))); this.$('.p').title = A('increase-label', T(this, 'Zoom in'));
       this.$('.m').disabled = v <= this.min; this.$('.p').disabled = v >= this.max;
       this.toggleAttribute('data-at-reset', v === r);
       // for="id": that element is zoomed directly

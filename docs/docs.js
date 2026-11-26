@@ -149,7 +149,7 @@
     <h2>Forms</h2>
     <p>Form controls are <em>form-associated</em>: give them a <code>name</code> and they are sent with the form, are reset by <code>form.reset()</code> and respect <code>required</code>, <code>min</code>, <code>pattern</code> and the other validation attributes.</p>
     <h2>Languages</h2>
-    <p>The words the components write by themselves (Done, Today, Show password…) follow the language of the page: the closest <code>lang</code> attribute, then English. English and Italian are built in; add another, or change some words, right after <code>sav.js</code>. The English text is the key; the <code>*-label</code> attributes of a component always win.</p>
+    <p>The words the components write by themselves (Done, Today, Show password…) follow the language of the page: the closest <code>lang</code> attribute, then English. English and Italian are built in; add another, or change some words, right after <code>sav.js</code>. The English text is the key; the <code>*-label</code> attributes of a component always win. Every word goes through it, also what only screen readers hear, key names and continent names; dates, numbers, languages and countries are named by the browser in the same language.</p>
     ${codeBlock(`Sav.addStrings('fr', { Done: 'Terminé', 'Page {n}': 'Page {n}' });\n// Sav.strings.it has the whole list`, 'js')}
     <h2>Browser support</h2>
     <p>Current versions of Chrome, Edge, Firefox and Safari (2024 and later).</p>

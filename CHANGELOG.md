@@ -7,6 +7,9 @@ Every version is published at `https://savcomponents.com/v/<version>/` and never
 - The words the components write by themselves (Done, Today, Light, Show password, "Character 1 of 6"…) follow the language of
   the page: the closest `lang` attribute, then English. Italian is built in; `Sav.addStrings('fr', { Done: 'Terminé' })` adds a
   language or changes some words. English pages look exactly the same, and the `*-label` attributes still win.
+  Every word goes through it, also what only screen readers hear ("carousel", "slide", "200 degrees"), the zoom buttons, the key names
+  of `sav-kbd` and of the command palette (Maiusc, Spazio, Canc, Invio; "G poi I") and the names of the continents of the map.
+  Names of languages, countries and continents follow the closest `lang` too (they followed only the whole page).
 - Focus: a table is a stop of the Tab key only when it is wider than its frame (then the frame is a region named by `label`
   or the caption, scrolled with the arrows); a table that fits, like separators and containers, never takes the focus.
 - Avatar with `href` or `button`: `focus()` reaches its link or button, so a popover opened from it gives the focus back.
