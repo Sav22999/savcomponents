@@ -12,11 +12,14 @@
   const ICON = (name) => (Sav.icons[name] ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${Sav.icons[name]}</svg>` : `<sav-icon name="${name}"></sav-icon>`);
   const BASE_URL = new URL('.', location.href).href.replace(/\/$/, '');
   const PUBLIC_URL = 'https://savcomponents.com';
-  /* The documentation of each major version. Only 1.x exists now; when 2.0 ships, the 1.x docs stay at their own address
-     (e.g. https://savcomponents.com/docs/1/) and get a line here, with current on the newest. */
-  const DOC_VERSIONS = [
-    { major: '1', label: 'v1.0', title: 'Version 1', url: `${location.pathname}`, current: true },
-  ];
+  /* The released versions, newest first (window.SAVC_RELEASES in index.html, kept by tools/release.sh). The site runs the newest
+     one; ?v=<version> runs it with an older release, chosen in the menu next to the logo. */
+  const RELEASES = window.SAVC_RELEASES?.length ? window.SAVC_RELEASES : [Sav.version];
+  const LATEST = RELEASES[0];
+  const OLDER = Sav.version !== LATEST && RELEASES.includes(Sav.version); // the site is showing an older release
+  const shortVer = (v) => 'v' + String(v).replace(/\.0$/, ''); // 1.1.0 → v1.1, 1.1.2 → v1.1.2
+  /** The address of the current page with another release (the newest has no ?v). */
+  const verUrl = (v) => { const u = new URL(location.href); if (v === LATEST) u.searchParams.delete('v'); else u.searchParams.set('v', v); return u.href; };
   const LIB_URL = `${PUBLIC_URL}/v/${Sav.version}`; // a fixed version: a new release never changes a site that uses this one
   const slug = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const titleCase = (n) => { const t = String(n).replace(/-/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1); };
@@ -145,6 +148,9 @@
     ${codeBlock(`const sw = document.querySelector('sav-switch');\nsw.addEventListener('change', () => console.log(sw.checked));\n\ndocument.querySelector('sav-dropdown')\n  .addEventListener('sav-select', (e) => console.log(e.detail.value));`, 'js')}
     <h2>Forms</h2>
     <p>Form controls are <em>form-associated</em>: give them a <code>name</code> and they are sent with the form, are reset by <code>form.reset()</code> and respect <code>required</code>, <code>min</code>, <code>pattern</code> and the other validation attributes.</p>
+    <h2>Languages</h2>
+    <p>The words the components write by themselves (Done, Today, Show password…) follow the language of the page: the closest <code>lang</code> attribute, then English. English and Italian are built in; add another, or change some words, right after <code>sav.js</code>. The English text is the key; the <code>*-label</code> attributes of a component always win.</p>
+    ${codeBlock(`Sav.addStrings('fr', { Done: 'Terminé', 'Page {n}': 'Page {n}' });\n// Sav.strings.it has the whole list`, 'js')}
     <h2>Browser support</h2>
     <p>Current versions of Chrome, Edge, Firefox and Safari (2024 and later).</p>
     <h2 id="s-frameworks">With a framework</h2>
@@ -350,8 +356,8 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     ${footer()}`;
   }
 
-  /* Major versions only: within one major version an update never breaks a site, so only a new major version
-     (1.x → 2.x) can ask for changes. Add the newest major version at the top; small releases go in CHANGELOG.md. */
+  /* Major versions: within one major version an update never breaks a site, so only a new major version (1.x → 2.x) can ask
+     for changes. Add the newest major version at the top. Its releases (1.0, 1.1…) are listed from CHANGELOG.md (mountChangelog). */
   const MAJORS = [
     {
       v: '1', title: 'Version 1', when: 'December 2026', current: true,
@@ -376,13 +382,50 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
         <p>${esc(m.intro)}</p>
         ${list('New', m.added)}${list('Changes that need work on your side', m.changed)}
         ${m.update ? `<h3>How to update</h3><p>${esc(m.update)}</p>` : ''}
+        <h3>Releases</h3><div class="ver-log" data-major="${esc(m.v)}"><p class="muted small">Loading the releases…</p></div>
       </section>`).join('');
     return `<div class="doc-head"><sav-label class="eyebrow">Start</sav-label><h1>Versions</h1>
-      <p class="lead">What changes from one major version to the next (1.x → 2.x). Inside a major version every update is safe: same tags, same attributes, same tokens.</p></div>
+      <p class="lead">What changes from one major version to the next (1.x → 2.x), and every release inside each one. Inside a major version every update is safe: same tags, same attributes, same tokens.</p></div>
       <sav-alert variant="primary" heading="Which version am I using?">The number is in the address of the library, for example <code>/v/${esc(Sav.version)}/sav.js</code>. A link to a version never changes: to get a newer one, change the number.</sav-alert>
       ${cards}
-      <p class="muted small">Every smaller release is listed in the <a href="https://github.com/Sav22999/savcomponents/blob/main/CHANGELOG.md" target="_blank" rel="noopener">changelog on GitHub</a>.</p>
+      <p class="muted small">The same list is in the <a href="https://github.com/Sav22999/savcomponents/blob/main/CHANGELOG.md" target="_blank" rel="noopener">changelog on GitHub</a>.</p>
       ${footer()}`;
+  }
+
+  /* The releases of each major version come from CHANGELOG.md (the one list of what changed): "## 1.1.0 — 2026-11-25", then
+     optional plain lines and "- " items, whose next lines are indented. Read once, then kept. */
+  let changelog = null;
+  const loadChangelog = () => (changelog ||= fetch('CHANGELOG.md', { cache: 'no-cache' }).then((r) => (r.ok ? r.text() : Promise.reject(r.status))).then(parseChangelog).catch((e) => { changelog = null; throw e; }));
+  function parseChangelog(md) {
+    const out = []; let rel = null, item = null;
+    for (const line of md.split('\n')) {
+      const h = line.match(/^##\s+(\d+\.\d+\.\d+)\s*(?:—|-)?\s*(.*)$/);
+      if (h) { rel = { v: h[1], date: h[2].trim(), intro: [], items: [] }; out.push(rel); item = null; continue; }
+      if (!rel || !line.trim()) continue;
+      if (/^- /.test(line)) { item = line.slice(2).trim(); rel.items.push(item); }
+      else if (/^\s/.test(line) && rel.items.length) rel.items[rel.items.length - 1] += ' ' + line.trim();
+      else rel.intro.push(line.trim());
+    }
+    return out;
+  }
+  /** Markdown inside a line: `code`, **bold**, [text](https://…); everything else is plain text. */
+  const mdInline = (t) => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const longDate = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(d + 'T00:00:00Z')) : d);
+  function mountChangelog(main) {
+    const boxes = [...main.querySelectorAll('.ver-log')]; if (!boxes.length) return;
+    loadChangelog().then((all) => boxes.forEach((box) => {
+      if (!box.isConnected) return;
+      const list = all.filter((r) => r.v.split('.')[0] === box.dataset.major);
+      box.innerHTML = list.length ? list.map((r, i) => `<sav-details appearance="plain" class="ver-rel" id="r${esc(r.v)}" ${i === 0 ? 'open' : ''}>
+          <span slot="summary" class="ver-rel-sum"><b>${esc(shortVer(r.v))}</b><code>${esc(r.v)}</code>
+            ${r.v === LATEST ? '<sav-badge variant="success" size="sm">Latest</sav-badge>' : ''}${r.v === Sav.version && OLDER ? '<sav-badge variant="warning" size="sm">Viewing</sav-badge>' : ''}
+            <span class="muted small">${esc(longDate(r.date))} · ${r.items.length} ${r.items.length === 1 ? 'change' : 'changes'}</span></span>
+          ${r.intro.map((p) => `<p>${mdInline(p)}</p>`).join('')}
+          ${r.items.length ? `<ul class="ver-list">${r.items.map((x) => `<li>${mdInline(x)}</li>`).join('')}</ul>` : ''}
+          ${RELEASES.includes(r.v) && r.v !== Sav.version ? `<p><a href="${esc(verUrl(r.v))}">See the site with ${esc(shortVer(r.v))}</a></p>` : ''}
+        </sav-details>`).join('') : '<p class="muted small">No releases listed yet.</p>';
+    })).catch(() => boxes.forEach((box) => { box.innerHTML = '<p class="muted small">The list of releases could not be loaded: see the changelog on GitHub, linked below.</p>'; }));
   }
 
   function pageExamples() {
@@ -1011,19 +1054,18 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     openPlayground(item) { pendingPlay = item; if (location.hash === '#' + item.component) route(); else location.hash = item.component; },
   };
 
-  /** The version badge next to the logo: a dropdown to switch to the documentation of another major version. */
+  /** The version badge next to the logo: a dropdown to see the site with another release of the library, grouped by major version. */
   function initVersionPicker() {
     const dd = $('#verPick'); if (!dd) return;
-    const cur = DOC_VERSIONS.find((v) => v.current) || DOC_VERSIONS[0];
-    dd.innerHTML = `<sav-button slot="trigger" size="sm" appearance="soft" variant="neutral" class="ver-btn" aria-label="Documentation version ${esc(cur.label)}">${esc(cur.label)}<sav-icon slot="suffix" name="chevron-down"></sav-icon></sav-button>
-      <sav-menu-label>Documentation</sav-menu-label>
-      ${DOC_VERSIONS.map((v) => `<sav-menu-item type="checkbox" value="${esc(v.major)}" ${v.current ? 'checked' : ''}>${esc(v.title)}${v.current ? ' (latest)' : ''}<span slot="suffix" class="muted small">${esc(v.label)}</span></sav-menu-item>`).join('')}
+    const majors = [...new Set(RELEASES.map((v) => v.split('.')[0]))];
+    dd.innerHTML = `<sav-button slot="trigger" size="sm" appearance="soft" variant="${OLDER ? 'warning' : 'neutral'}" class="ver-btn" aria-label="Library version ${esc(shortVer(Sav.version))}">${esc(shortVer(Sav.version))}<sav-icon slot="suffix" name="chevron-down"></sav-icon></sav-button>
+      ${majors.map((m) => `<sav-menu-label>Version ${esc(m)}</sav-menu-label>
+        ${RELEASES.filter((v) => v.split('.')[0] === m).map((v) => `<sav-menu-item type="checkbox" value="${esc(v)}" ${v === Sav.version ? 'checked' : ''}>${esc(shortVer(v))}${v === LATEST ? ' (latest)' : ''}<span slot="suffix" class="muted small">${esc(v)}</span></sav-menu-item>`).join('')}`).join('')}
       <sav-menu-item value="versions"><sav-icon slot="prefix" name="history"></sav-icon>What changed between versions</sav-menu-item>`;
     dd.addEventListener('sav-select', (e) => {
       const v = e.detail.value;
       if (v === 'versions') { location.hash = '#versions'; return; }
-      const to = DOC_VERSIONS.find((x) => x.major === v);
-      if (to && !to.current) location.href = to.url;
+      if (RELEASES.includes(v) && v !== Sav.version) location.href = verUrl(v);
       else e.detail.item.checked = true; // the current one stays ticked
     });
   }
@@ -1052,9 +1094,12 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
     const extra = window.SavAccount?.pages?.[id] || window.SavBuilder?.pages?.[id];
     main.classList.toggle('wide', !!window.SavBuilder?.pages?.[id]);
     main.innerHTML = extra ? extra.html() + footer() : id === 'start' ? pageStart() : id === 'theming' ? pageTheming() : id === 'styles' ? pageStyles() : id === 'examples' ? pageExamples() : id === 'versions' ? pageVersions() : d ? pageComponent(d) : pageHome();
+    // an older release: say so at the top of every page, with the way back to the newest
+    if (OLDER) main.insertAdjacentHTML('afterbegin', `<sav-alert class="ver-old" variant="warning" heading="You are viewing version ${esc(Sav.version)}">The components on this site run on an older release of the library; the text describes the newest one (${esc(LATEST)}). <a href="${esc(verUrl(LATEST))}">Back to the latest version</a></sav-alert>`);
     // scripts inside demos do not run from innerHTML: re-create them
     main.querySelectorAll('.demo-view script').forEach((old) => { const s = document.createElement('script'); s.textContent = `{\n${old.textContent}\n}`; old.replaceWith(s); }); // a block: running a demo twice never redeclares its const
     if ($('#iconGrid')) mountIcons(params.get('q') || '');
+    if (id === 'versions') mountChangelog(main);
     document.title = (d ? d.name : extra ? extra.title : { start: 'Getting started', theming: 'Theming', styles: 'Styles', examples: 'Practical examples', versions: 'Versions' }[id] || 'Web components you can customise') + ' — SavComponents';
     if (d?.play) mountPlayground(d);
     if (d) window.SavA11y?.mount(main);

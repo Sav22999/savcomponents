@@ -2,6 +2,30 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.1.0 — 2026-11-25
+
+- The words the components write by themselves (Done, Today, Light, Show password, "Character 1 of 6"…) follow the language of
+  the page: the closest `lang` attribute, then English. Italian is built in; `Sav.addStrings('fr', { Done: 'Terminé' })` adds a
+  language or changes some words. English pages look exactly the same, and the `*-label` attributes still win.
+- Focus: a table is a stop of the Tab key only when it is wider than its frame (then the frame is a region named by `label`
+  or the caption, scrolled with the arrows); a table that fits, like separators and containers, never takes the focus.
+- Avatar with `href` or `button`: `focus()` reaches its link or button, so a popover opened from it gives the focus back.
+- Fields (input, select, pickers, number, search, chips, password, colour, OTP, zoom) look the part in every style: Glass etches them
+  into the glass (a soft shadow inside, a rim of light, brighter while you hover and type, a coloured glow on focus); Tilt and Sharp
+  show a tinted block behind the focused field; Brutal keeps its ink border on focus and the hard shadow turns to the main colour;
+  a filled field keeps the ink border in Brutal and gets an underline in Sharp. New tokens: `--sav-field-shadow`, `--sav-field-sheen`,
+  `--sav-field-bg-hover`, `--sav-field-bg-focus`, `--sav-field-focus-shadow`, `--sav-field-focus-border`, `--sav-field-filled-bg`,
+  `--sav-field-filled-border`.
+- Styles mixed in one page: a section with another style no longer inherits what the page's style set (Tilt's lean on the number
+  buttons, colour swatches and OTP cells of a Sharp, Brutal or Glass section, Brutal's ink, Glass's sheen).
+- Same height for every control of the same size, in every style: in Brutal select, date, time, language and country pickers were 2px
+  taller than fields and buttons; the buttons of a radio group, the theme choice buttons and the segmented tabs are now as tall as a
+  field (the theme choice also takes `size`).
+- OTP: the cells shrink together to fit a narrow space instead of wrapping onto a second line.
+- Brutal: empty stars and hearts of the rating are light with an ink outline (they looked filled in black); chart grid lines are a light
+  ink instead of crossing the bars (`--sav-rating-empty`, `--sav-chart-grid`).
+- Showcase: one column when the showcase itself is narrow, not only on narrow screens.
+
 ## 1.0.0 — 2026-12-15
 
 The first public version.

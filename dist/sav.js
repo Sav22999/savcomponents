@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.0.0 — web components, no dependencies
+ * SavComponents v1.1.0 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.0.0' });
+  const Sav = (window.Sav = { version: '1.1.0' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -25,6 +25,76 @@
   const nextId = (p = 'sav') => `${p}-${++uid}`;
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ------------------------------------------------------------------ words written by the components */
+
+  /* A component writes its own words (Done, Today, Show password…) in the language of the page: the closest lang attribute,
+     then English. Sav.addStrings('fr', { Done: 'Terminé' }) adds a language or changes some words: the English text is the key,
+     {n} and the like stay as they are. The *-label attributes of a component always win. A component already on the page keeps
+     its words until it is drawn again. */
+  Sav.strings = { it: {
+    'New': 'Novità', 'Remove': 'Rimuovi', 'Close': 'Chiudi', 'Avatar': 'Avatar', 'Loading': 'Caricamento', 'Progress': 'Avanzamento', 'Clear': 'Cancella',
+    'Show password': 'Mostra la password', 'Hide password': 'Nascondi la password', 'Decrease': 'Diminuisci', 'Increase': 'Aumenta', 'Enter a number.': 'Inserisci un numero.',
+    'The smallest value is {n}.': 'Il valore minimo è {n}.', 'The largest value is {n}.': 'Il valore massimo è {n}.',
+    'Use steps of {step}: for example {a} or {b}.': 'Usa passi di {step}: per esempio {a} o {b}.', 'From {a} to {b}.': 'Da {a} a {b}.', 'At least {n}.': 'Almeno {n}.',
+    'At most {n}.': 'Al massimo {n}.', 'No colour': 'Nessun colore', 'Suggested colours': 'Colori suggeriti', 'Choose a colour': 'Scegli un colore',
+    '{name}: choose a colour': '{name}: scegli un colore', 'Saturation and brightness': 'Saturazione e luminosità', 'Saturation {s}%, brightness {v}%': 'Saturazione {s}%, luminosità {v}%',
+    'Hue': 'Tonalità', 'Opacity': 'Opacità', 'Colour code': 'Codice del colore', 'Pick a colour from the screen': 'Prendi un colore dallo schermo',
+    'Pick a colour from the screen, with the eyedropper of the system colour picker': 'Prendi un colore dallo schermo, con il contagocce del selettore di sistema', 'Colour': 'Colore',
+    'Choose a colour.': 'Scegli un colore.', 'The browser did not allow picking a colour from the screen.': 'Il browser non ha permesso di prendere un colore dallo schermo.',
+    'Done': 'Fine', 'Please choose a value.': 'Scegli un valore.', 'Remove {name}': 'Rimuovi {name}', 'Search': 'Cerca', 'Options': 'Opzioni', 'No results': 'Nessun risultato',
+    'Clear all': 'Deseleziona tutto', 'Select all': 'Seleziona tutto', 'Today': 'Oggi', 'This month': 'Questo mese', 'This year': 'Quest’anno', 'Now': 'Adesso', 'Time': 'Ora',
+    'Hours': 'Ore', 'Minutes': 'Minuti', 'Previous': 'Precedente', 'Next': 'Successivo', 'Please select an option.': 'Scegli un’opzione.', 'Start': 'Inizio', 'End': 'Fine',
+    'Rating': 'Valutazione', 'Expand': 'Espandi', 'Collapse': 'Riduci', 'More information': 'Più informazioni', 'Enlarge {name}': 'Ingrandisci {name}', 'image': 'immagine',
+    'Character {i} of {n}': 'Carattere {i} di {n}', 'Enter all {n} characters.': 'Inserisci tutti i {n} caratteri.', 'At least {x} characters': 'Almeno {x} caratteri',
+    '{x} upper-case letter': '{x} lettera maiuscola', '{x} upper-case letters': '{x} lettere maiuscole', '{x} lower-case letter': '{x} lettera minuscola',
+    '{x} lower-case letters': '{x} lettere minuscole', '{x} number': '{x} numero', '{x} numbers': '{x} numeri', '{x} symbol (like ! ? # @)': '{x} simbolo (come ! ? # @)',
+    '{x} symbols (like ! ? # @)': '{x} simboli (come ! ? # @)', 'Too weak,Weak,Fair,Good,Strong': 'Troppo debole,Debole,Discreta,Buona,Forte', 'Strength: {word}': 'Sicurezza: {word}',
+    'done': 'fatto', 'Enter a password.': 'Inserisci una password.', 'Choose a stronger password.': 'Scegli una password più sicura.', 'Light': 'Chiaro', 'Dark': 'Scuro',
+    'Auto': 'Automatico', 'Theme': 'Tema', 'Theme: {name}': 'Tema: {name}', 'Up to {n} terms': 'Al massimo {n} termini', 'Values': 'Valori', 'Carousel': 'Carosello', 'Table': 'Tabella',
+    'Previous slide': 'Diapositiva precedente', 'Next slide': 'Diapositiva successiva', '{i} of {n}': '{i} di {n}', 'Slides {a} to {b}': 'Diapositive da {a} a {b}',
+    'Slide {i}': 'Diapositiva {i}', 'Slides {a} to {b} of {n}': 'Diapositive da {a} a {b} di {n}', 'Slide {i} of {n}': 'Diapositiva {i} di {n}', 'Play': 'Riproduci', 'Pause': 'Pausa',
+    'Replay': 'Riproduci di nuovo', 'Play {name}': 'Riproduci {name}', 'video': 'video', 'Back 10 seconds': 'Indietro di 10 secondi', 'Forward 10 seconds': 'Avanti di 10 secondi',
+    'Position': 'Posizione', '{a} of {b}': '{a} di {b}', 'Mute': 'Disattiva l’audio', 'Unmute': 'Riattiva l’audio', 'Volume': 'Volume', 'Speed {r}': 'Velocità {r}', 'Loop': 'Ripetizione',
+    'Loop: on': 'Ripetizione: attiva', 'Loop: off': 'Ripetizione: non attiva', 'Captions': 'Sottotitoli', 'Picture in picture': 'Picture in picture', 'Full screen': 'Schermo intero',
+    'Exit full screen': 'Esci da schermo intero', 'More controls': 'Altri comandi', 'Audio player': 'Lettore audio', 'Fold the menu': 'Riduci il menu', 'Unfold the menu': 'Espandi il menu',
+    'Fold': 'Riduci', 'Main': 'Principale', 'Open the menu': 'Apri il menu', 'Close the menu': 'Chiudi il menu', 'Close the search': 'Chiudi la ricerca',
+    '{name} moved to position {i} of {n}.': '{name} spostato in posizione {i} di {n}.', '{name} dropped at position {i} of {n}.': '{name} rilasciato in posizione {i} di {n}.',
+    '{name} picked up, position {i} of {n}. Use the arrow keys to move, Space to drop, Escape to cancel.': '{name} selezionato, posizione {i} di {n}. Usa le frecce per spostarlo, Spazio per rilasciarlo, Esc per annullare.',
+    '{name}, position {i} of {n}.': '{name}, posizione {i} di {n}.', 'Drop text or links here, or paste them': 'Trascina qui testo o link, oppure incollali',
+    'Drop files, text or links here': 'Trascina qui file, testo o link', 'Drop files here or click to choose': 'Trascina qui i file o fai clic per sceglierli',
+    'Drop a file here or click to choose': 'Trascina qui un file o fai clic per sceglierlo', 'link': 'link', 'text': 'testo', 'Choose a file.': 'Scegli un file.', 'Series {i}': 'Serie {i}',
+    'Chart': 'Grafico', 'Chart data': 'Dati del grafico', 'Activity': 'Attività', 'Map data': 'Dati della mappa', 'Breadcrumb': 'Percorso',
+    'Show the whole path': 'Mostra tutto il percorso', 'Copy': 'Copia', 'Copied': 'Copiato', 'Copy failed': 'Copia non riuscita', 'Pages': 'Pagine', 'Previous page': 'Pagina precedente',
+    'Next page': 'Pagina successiva', 'Page {n}': 'Pagina {n}', 'Steps': 'Passaggi', 'Levels': 'Livelli', 'Level {n}': 'Livello {n}', 'level {n} of {of}': 'livello {n} di {of}',
+    '{n} of 3 stars': '{n} stelle su 3', 'current level': 'livello attuale', 'locked': 'bloccato', 'Details': 'Dettagli', 'Timeline': 'Cronologia', 'Tree': 'Albero', 'Commands': 'Comandi',
+    'Search commands': 'Cerca tra i comandi', 'Type a command or search…': 'Scrivi un comando o cerca…', 'Nothing found': 'Nessun risultato', 'move': 'sposta', 'open': 'apri',
+    'close': 'chiudi', 'Try again': 'Riprova', 'Loading…': 'Caricamento…', 'Load more': 'Carica altro', 'It did not load.': 'Caricamento non riuscito.', 'That’s all': 'Non c’è altro',
+    'Back to {r}%': 'Torna a {r}%',
+    '{name} is already there': '{name} c’è già', '{name} is not a colour code': '{name} non è un codice colore', '{name} is not a number': '{name} non è un numero',
+    'sortable item': 'elemento ordinabile', '{name}: this type is not accepted': '{name}: questo tipo non è accettato', '{name}: larger than {size}': '{name}: più grande di {size}',
+    '{n} active days, highest {max}': '{n} giorni attivi, massimo {max}', 'error': 'errore', 'current step': 'passaggio attuale', 'not done yet': 'ancora da fare',
+    'better by {n}': 'migliorato di {n}', 'worse by {n}': 'peggiorato di {n}', 'changed by {n}': 'cambiato di {n}', '{n} more loaded': 'Caricati altri {n}',
+    '{name}: {n} values, highest {max}': '{name}: {n} valori, massimo {max}', '{n} continents, highest {name} {max}': '{n} continenti, massimo {name} {max}',
+    '{n} countries, highest {name} {max}': '{n} paesi, massimo {name} {max}', 'World map': 'Mappa del mondo',
+    'Move cancelled.': 'Spostamento annullato.', '{name} added': '{name} aggiunto', '{name} removed': '{name} rimosso',
+  } };
+  Sav.addStrings = (lang, words) => { const l = String(lang).toLowerCase(); Sav.strings[l] = { ...Sav.strings[l], ...words }; };
+
+  /** The language around an element, also from inside a shadow root. */
+  function langOf(el) {
+    for (let n = el; n; n = n.getRootNode?.().host) {
+      const l = n.closest?.('[lang]')?.getAttribute('lang');
+      if (l) return l.toLowerCase();
+    }
+    return (document.documentElement.lang || 'en').toLowerCase();
+  }
+  /** A word in the language of the element: T(this, 'Page {n}', { n: 2 }). */
+  function T(el, text, vars) {
+    const l = langOf(el);
+    const said = Sav.strings[l]?.[text] ?? Sav.strings[l.split('-')[0]]?.[text] ?? text;
+    return vars ? said.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : said;
+  }
 
   /** Declares reflected properties: {name: Boolean|Number|String} */
   function props(cls, spec) {
@@ -276,23 +346,28 @@
       position: relative; isolation: isolate; display: flex; align-items: center; gap: .5rem;
       min-height: var(--_h); padding: 0 .8rem; color: var(--sav-color-text);
       border: var(--sav-border-width) solid transparent; border-radius: var(--sav-radius); font-size: var(--_fs);
-      --_fbg: var(--sav-color-input-bg); --_fbd: var(--sav-color-border-strong); --_fsh: var(--sav-control-shadow, none);
+      /* the look of a field comes from tokens each style can set: --sav-field-shadow (at rest), --sav-field-sheen, --sav-field-bg-hover,
+         --sav-field-bg-focus, --sav-field-focus-shadow, --sav-field-focus-border, --sav-field-filled-bg, --sav-field-filled-border */
+      --_frest: var(--sav-field-shadow, var(--sav-control-shadow, inset 0 1px 2px rgb(20 24 40 / .05)));
+      --_fbg: var(--sav-color-input-bg); --_fbd: var(--sav-color-border-strong); --_fsh: var(--_frest);
     }
     .box::before {
       content: ""; position: absolute; inset: calc(var(--sav-border-width) * -1); z-index: -1; pointer-events: none;
-      border-radius: inherit; background: var(--_fbg); background-image: var(--sav-sheen, none); border: var(--sav-border-width) solid var(--_fbd); box-shadow: var(--_fsh);
+      border-radius: inherit; background: var(--_fbg); background-image: var(--sav-field-sheen, var(--sav-sheen, none)); border: var(--sav-border-width) solid; border-color: var(--_fbd); box-shadow: var(--_fsh);
       -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
       transform: rotate(${TILT});
       transition: border-color calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), background calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.25s * var(--sav-motion, 1)) var(--sav-easing);
     }
     :host([pill]) .box { border-radius: var(--sav-radius-pill); padding: 0 1rem; }
-    :host([appearance="filled"]) .box { --_fbg: var(--sav-color-surface-2); --_fbd: transparent; }
+    :host([appearance="filled"]) .box { --_fbg: var(--sav-field-filled-bg, var(--sav-color-surface-2)); --_fbd: var(--sav-field-filled-border, transparent); }
     .box:hover { --_fbd: color-mix(in oklab, var(--sav-color-border-strong), var(--sav-color-text) 22%); }
-    .box:focus-within, :host([open]) .box { --_fbd: var(--sav-color-primary); --_fsh: 0 0 0 3px color-mix(in oklab, var(--sav-color-primary) 22%, transparent); }
+    :host(:not([appearance="filled"])) .box:hover { --_fbg: var(--sav-field-bg-hover, var(--sav-color-input-bg)); }
+    .box:focus-within, :host([open]) .box { --_fbg: var(--sav-field-bg-focus, var(--sav-color-input-bg)); --_fbd: var(--sav-field-focus-border, var(--sav-color-primary));
+      --_fsh: var(--sav-field-focus-shadow, 0 0 0 3px color-mix(in oklab, var(--sav-color-primary) 22%, transparent)), var(--_frest); }
     /* tilt: straight while you type or while its popup is open */
     .box:focus-within::before, :host([open]) .box::before { transform: none; }
     :host([data-user-invalid]) .box { --_fbd: var(--sav-color-danger); }
-    :host([data-user-invalid]) .box:focus-within { --_fsh: 0 0 0 3px color-mix(in oklab, var(--sav-color-danger) 22%, transparent); }
+    :host([data-user-invalid]) .box:focus-within { --_fbd: var(--sav-color-danger); --_fsh: 0 0 0 3px color-mix(in oklab, var(--sav-color-danger) 22%, transparent), var(--_frest); }
     :host([disabled]) .box { opacity: .55; cursor: not-allowed; }
     .ctl {
       flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; outline: none; background: none;
@@ -765,7 +840,7 @@
     static get observedAttributes() { return ['until', 'seen-key']; }
     connectedCallback() {
       if (!this.shadowRoot.firstChild) {
-        this.shadowRoot.innerHTML = `<span class="b" part="base">${svgIcon('sparkles', 'ic')}<span class="t" part="label"><slot>New</slot></span></span>`;
+        this.shadowRoot.innerHTML = `<span class="b" part="base">${svgIcon('sparkles', 'ic')}<span class="t" part="label"><slot>${esc(T(this, 'New'))}</slot></span></span>`;
         tiltWatch(this.$('.b'));
       }
       this.check();
@@ -820,7 +895,7 @@
     connectedCallback() { if (!this.shadowRoot.firstChild) this.render(); }
     changed(n) { if (n === 'removable') this.render(); }
     render() {
-      this.shadowRoot.innerHTML = `<span class="t" part="base"><slot name="prefix"></slot><span part="content"><slot></slot></span>${this.removable ? `<button class="x" part="remove-button" aria-label="${esc(this.getAttribute('remove-label') || 'Remove')}">${svgIcon('x')}</button>` : ''}</span>`;
+      this.shadowRoot.innerHTML = `<span class="t" part="base"><slot name="prefix"></slot><span part="content"><slot></slot></span>${this.removable ? `<button class="x" part="remove-button" aria-label="${esc(this.getAttribute('remove-label') || T(this, 'Remove'))}">${svgIcon('x')}</button>` : ''}</span>`;
       this.$('.x')?.addEventListener('click', () => { if (this.emit('sav-remove', {}, true)) this.remove(); });
       tiltWatch(this.$('.t'));
     }
@@ -881,7 +956,7 @@
       this.shadowRoot.innerHTML = `<div class="a" part="base" role="${role}">
         <span class="ic" part="icon"><slot name="icon">${svgIcon(VARIANT_ICON[variant] || 'info')}</slot></span>
         <div class="body" part="message"><div class="h" part="heading"><slot name="heading"></slot><span class="ht"></span></div><slot></slot></div>
-        ${this.closable ? `<button class="x" part="close-button" aria-label="${esc(this.getAttribute('close-label') || 'Close')}">${svgIcon('x')}</button>` : ''}
+        ${this.closable ? `<button class="x" part="close-button" aria-label="${esc(this.getAttribute('close-label') || T(this, 'Close'))}">${svgIcon('x')}</button>` : ''}
       </div>`;
       const heading = this.getAttribute('heading');
       this.$('.ht').textContent = heading || '';
@@ -1000,6 +1075,7 @@
   /* ================================================================== sav-avatar */
 
   class SavAvatar extends SavElement {
+    static delegatesFocus = true; // with href or button, focus() and the popover's "focus back" reach the inner link or button; otherwise nothing is focusable
     static styles = [VARIANTS, `
       :host { display: inline-flex; vertical-align: middle; --size: 2.5rem; --_c: var(--sav-color-neutral);
               --_ar: var(--sav-avatar-radius, 50%); --_at: var(--sav-avatar-tilt, 0deg); --_ai: var(--sav-avatar-inset, 0%); --_is: var(--sav-avatar-img-scale, 1); }
@@ -1037,7 +1113,7 @@
       const initials = this.initials || label.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
       const fallback = initials ? esc(initials) : svgIcon('user');
       const inner = this.image ? `<span class="ph"><img part="image" alt="" src="${esc(this.image)}"></span>` : `<slot name="icon">${fallback}</slot>`;
-      const name = esc(label || 'Avatar');
+      const name = esc(label || T(this, 'Avatar'));
       // a link (href) or a button (button): the name of the person is the name of the control
       const href = this.getAttribute('href');
       if (href !== null) {
@@ -1082,7 +1158,7 @@
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.setAttribute('role', 'progressbar');
-      if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', this.getAttribute('label') || 'Loading');
+      if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Loading'));
       this.shadowRoot.innerHTML = `<span class="b" part="base">`
         + `<svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><rect class="tr" x="2.5" y="2.5" width="19" height="19" rx="9.5"/><rect class="in" x="2.5" y="2.5" width="19" height="19" rx="9.5" pathLength="80"/></svg>`
         + `<svg class="tiles" viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(10 12 12)"><rect class="t1" x="3.8" y="3.8" width="7.8" height="7.8"/><rect class="t2" x="13.2" y="3" width="7.8" height="7.8"/>`
@@ -1122,7 +1198,7 @@
       t.setAttribute('aria-valuemin', '0'); t.setAttribute('aria-valuemax', String(max));
       if (this.indeterminate) t.removeAttribute('aria-valuenow'); else t.setAttribute('aria-valuenow', String(v));
       const label = this.getAttribute('label') || '';
-      t.setAttribute('aria-label', label || 'Progress');
+      t.setAttribute('aria-label', label || T(this, 'Progress'));
       this.$('.l').textContent = label;
       this.$('.v').textContent = this.showValue && !this.indeterminate ? Math.round(pct) + '%' : '';
       this.$('.w').classList.toggle('has-head', !!label || (this.showValue && !this.indeterminate));
@@ -1158,7 +1234,7 @@
       this.toggleAttribute('data-empty', v === 0);
       const s = this.$('svg');
       s.setAttribute('aria-valuenow', String(v)); s.setAttribute('aria-valuemin', '0'); s.setAttribute('aria-valuemax', '100');
-      s.setAttribute('aria-label', this.getAttribute('label') || 'Progress');
+      s.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Progress'));
     }
   }
   props(SavProgressRing, { value: Number, variant: String });
@@ -1224,8 +1300,8 @@
         <label class="lbl" part="label" for="${id}"><slot name="label"></slot><span class="lbl-text"></span></label>
         <div class="box" part="base"><slot name="prefix"></slot>
           <input class="ctl" part="input" id="${id}">
-          <button type="button" class="ibtn clear" part="clear-button" tabindex="-1" aria-label="Clear">${svgIcon('x')}</button>
-          <button type="button" class="ibtn eye" part="password-toggle-button" aria-label="Show password">${svgIcon('eye')}</button>
+          <button type="button" class="ibtn clear" part="clear-button" tabindex="-1" aria-label="${esc(T(this, 'Clear'))}">${svgIcon('x')}</button>
+          <button type="button" class="ibtn eye" part="password-toggle-button" aria-label="${esc(T(this, 'Show password'))}">${svgIcon('eye')}</button>
           <slot name="suffix"></slot></div>
         <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span></div>
       </div>`;
@@ -1245,7 +1321,7 @@
         input.type = show ? 'text' : 'password';
         const b = this.$('.eye');
         b.innerHTML = svgIcon(show ? 'eye-off' : 'eye');
-        b.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        b.setAttribute('aria-label', show ? T(this, 'Hide password') : T(this, 'Show password'));
       });
       this.$$('slot').forEach((s) => s.addEventListener('slotchange', () => this.syncLabels(this.$('.w'))));
       this.sync();
@@ -1398,8 +1474,8 @@
       const lbl = this.getAttribute('aria-label');
       if (lbl) input.setAttribute('aria-label', lbl);
       input.setAttribute('aria-describedby', this.$('.help').id);
-      this.$('.minus').setAttribute('aria-label', this.getAttribute('decrease-label') || 'Decrease');
-      this.$('.plus').setAttribute('aria-label', this.getAttribute('increase-label') || 'Increase');
+      this.$('.minus').setAttribute('aria-label', this.getAttribute('decrease-label') || T(this, 'Decrease'));
+      this.$('.plus').setAttribute('aria-label', this.getAttribute('increase-label') || T(this, 'Increase'));
       this.$('.unit').textContent = this.getAttribute('unit') || '';
       this.syncLabels(this.$('.w'));
       this.onValue(false);
@@ -1449,18 +1525,18 @@
       let text = '';
       if (this.getAttribute('limits') === 'never') text = '';
       else if (this.hasAttribute('data-user-invalid') && !v.valid) {
-        if (v.badInput || v.valueMissing) text = 'Enter a number.';
-        else if (v.rangeUnderflow) text = `The smallest value is ${this.fmt(min)}${u}.`;
-        else if (v.rangeOverflow) text = `The largest value is ${this.fmt(max)}${u}.`;
+        if (v.badInput || v.valueMissing) text = T(this, 'Enter a number.');
+        else if (v.rangeUnderflow) text = T(this, 'The smallest value is {n}.', { n: this.fmt(min) + u });
+        else if (v.rangeOverflow) text = T(this, 'The largest value is {n}.', { n: this.fmt(max) + u });
         else if (v.stepMismatch) {
           const st = Number(input.step), base = min === '' ? 0 : Number(min);
           const lo = Math.round((base + Math.floor((Number(input.value) - base) / st) * st) * 1e9) / 1e9;
-          text = `Use steps of ${this.fmt(st)}: for example ${this.fmt(lo)} or ${this.fmt(lo + st)}${u}.`;
+          text = T(this, 'Use steps of {step}: for example {a} or {b}.', { step: this.fmt(st), a: this.fmt(lo), b: this.fmt(lo + st) + u });
         } else text = input.validationMessage;
       } else if (this.getAttribute('limits') === 'always') {
-        if (min !== '' && max !== '') text = `From ${this.fmt(min)} to ${this.fmt(max)}${u}.`;
-        else if (min !== '') text = `At least ${this.fmt(min)}${u}.`;
-        else if (max !== '') text = `At most ${this.fmt(max)}${u}.`;
+        if (min !== '' && max !== '') text = T(this, 'From {a} to {b}.', { a: this.fmt(min), b: this.fmt(max) + u });
+        else if (min !== '') text = T(this, 'At least {n}.', { n: this.fmt(min) + u });
+        else if (max !== '') text = T(this, 'At most {n}.', { n: this.fmt(max) + u });
       }
       if (out.textContent !== text) out.textContent = text;
       this.$('.w').classList.toggle('has-help', !!text || !!this.getAttribute('help') || this.hasSlot('help'));
@@ -1575,19 +1651,19 @@
         <div class="box" part="base">
           <span class="sw" part="swatch"><input class="pick" type="color" tabindex="-1"><button type="button" class="swb" aria-haspopup="dialog" aria-expanded="false" aria-controls="${id}-p"></button></span>
           <input class="ctl" part="input" id="${id}" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" maxlength="9">
-          <button type="button" class="x" part="clear-button" aria-label="No colour">${svgIcon('x')}</button>
+          <button type="button" class="x" part="clear-button" aria-label="${esc(T(this, 'No colour'))}">${svgIcon('x')}</button>
         </div>
-        <div class="sws" part="swatches" role="group" aria-label="Suggested colours"></div>
+        <div class="sws" part="swatches" role="group" aria-label="${esc(T(this, 'Suggested colours'))}"></div>
         <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span></div>
-        <div class="cp float" id="${id}-p" part="panel" role="dialog" aria-label="Choose a colour" ${supportsPopover ? 'popover="manual"' : ''}>
-          <div class="sv" part="area" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100"><span class="th"></span></div>
+        <div class="cp float" id="${id}-p" part="panel" role="dialog" aria-label="${esc(T(this, 'Choose a colour'))}" ${supportsPopover ? 'popover="manual"' : ''}>
+          <div class="sv" part="area" role="slider" tabindex="0" aria-label="${esc(T(this, 'Saturation and brightness'))}" aria-valuemin="0" aria-valuemax="100"><span class="th"></span></div>
           <div class="row"><div class="sls">
-            <div class="track hue" part="hue" role="slider" tabindex="0" aria-label="Hue" aria-valuemin="0" aria-valuemax="360"><span class="th"></span></div>
-            <div class="track al" part="opacity" role="slider" tabindex="0" aria-label="Opacity" aria-valuemin="0" aria-valuemax="100"><span class="th"></span></div>
+            <div class="track hue" part="hue" role="slider" tabindex="0" aria-label="${esc(T(this, 'Hue'))}" aria-valuemin="0" aria-valuemax="360"><span class="th"></span></div>
+            <div class="track al" part="opacity" role="slider" tabindex="0" aria-label="${esc(T(this, 'Opacity'))}" aria-valuemin="0" aria-valuemax="100"><span class="th"></span></div>
           </div><span class="pv" part="preview" aria-hidden="true"></span></div>
-          <div class="row"><input class="hx" part="panel-input" type="text" spellcheck="false" autocomplete="off" maxlength="9" aria-label="Colour code">
-            <button type="button" class="ib eye" part="eyedropper" aria-label="Pick a colour from the screen" title="Pick a colour from the screen" hidden>${svgIcon('pipette')}</button></div>
-          <div class="sws psw" role="group" aria-label="Suggested colours"></div>
+          <div class="row"><input class="hx" part="panel-input" type="text" spellcheck="false" autocomplete="off" maxlength="9" aria-label="${esc(T(this, 'Colour code'))}">
+            <button type="button" class="ib eye" part="eyedropper" aria-label="${esc(T(this, 'Pick a colour from the screen'))}" title="${esc(T(this, 'Pick a colour from the screen'))}" hidden>${svgIcon('pipette')}</button></div>
+          <div class="sws psw" role="group" aria-label="${esc(T(this, 'Suggested colours'))}"></div>
           <span class="sr" aria-live="polite"></span>
         </div>
       </div>`;
@@ -1637,11 +1713,11 @@
       this.toggleAttribute('data-native', !this.custom);
       pick.disabled = off; swb.disabled = off;
       // compact: the swatch is the field, so it takes the focus and the name
-      const name = this.getAttribute('label') || this.getAttribute('aria-label') || 'Colour';
+      const name = this.getAttribute('label') || this.getAttribute('aria-label') || T(this, 'Colour');
       pick.tabIndex = compact && !this.custom ? 0 : -1;
       if (compact && !this.custom) { pick.setAttribute('aria-label', name); pick.removeAttribute('aria-hidden'); } else pick.setAttribute('aria-hidden', 'true');
       swb.tabIndex = compact ? 0 : -1;
-      swb.setAttribute('aria-label', compact ? `${name}: choose a colour` : 'Choose a colour');
+      swb.setAttribute('aria-label', compact ? T(this, '{name}: choose a colour', { name }) : T(this, 'Choose a colour'));
       const lbl = this.getAttribute('aria-label'); if (lbl) text.setAttribute('aria-label', lbl);
       text.setAttribute('aria-describedby', this.$('.help').id);
       const list = (this.getAttribute('swatches') || '').split(/[\s,]+/).map((c) => this.norm(c)).filter(Boolean);
@@ -1654,7 +1730,7 @@
       const apple = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
       eye.hidden = !own && !apple;
       eye.dataset.via = own ? 'eyedropper' : 'system';
-      const tip = own ? 'Pick a colour from the screen' : 'Pick a colour from the screen, with the eyedropper of the system colour picker';
+      const tip = own ? T(this, 'Pick a colour from the screen') : T(this, 'Pick a colour from the screen, with the eyedropper of the system colour picker');
       eye.title = tip; eye.setAttribute('aria-label', tip);
       this.syncLabels(this.$('.w'));
       this.show();
@@ -1669,7 +1745,7 @@
       this.$$('.sws button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === v)));
       this.$('.w').classList.toggle('has-value', !!v);
       this.internals.setFormValue(v);
-      if (this.required && !v) this.internals.setValidity({ valueMissing: true }, 'Choose a colour.', text); else this.internals.setValidity({});
+      if (this.required && !v) this.internals.setValidity({ valueMissing: true }, T(this, 'Choose a colour.'), text); else this.internals.setValidity({});
       // the panel follows the value, unless the value came from the panel itself (a grey keeps the hue you were on)
       if (!this._fromPanel) { const [r, g, b, a] = hexRgba(v || '#000000'); const hsv = rgbHsv(r, g, b); this._hsv = { h: hsv.s ? hsv.h : this._hsv?.h ?? 0, s: hsv.s, v: hsv.v }; this._a = v ? a : 1; }
       this.paint();
@@ -1684,7 +1760,7 @@
       hue.querySelector('.th').style.cssText = `--_x:${h / 360};--_c:hsl(${Math.round(h)} 100% 50%)`;
       al.querySelector('.th').style.cssText = `--_x:${a};--_c:${solid}`;
       sv.setAttribute('aria-valuenow', String(Math.round(s * 100)));
-      sv.setAttribute('aria-valuetext', `Saturation ${Math.round(s * 100)}%, brightness ${Math.round(v * 100)}%`);
+      sv.setAttribute('aria-valuetext', T(this, 'Saturation {s}%, brightness {v}%', { s: Math.round(s * 100), v: Math.round(v * 100) }));
       hue.setAttribute('aria-valuenow', String(Math.round(h))); hue.setAttribute('aria-valuetext', `${Math.round(h)} degrees`);
       al.setAttribute('aria-valuenow', String(Math.round(a * 100))); al.setAttribute('aria-valuetext', `${Math.round(a * 100)}%`);
       this.$('.pv').style.setProperty('--_v', this._v || 'transparent');
@@ -1742,7 +1818,7 @@
         }
         this._picking = true;
         try { const r = await new window.EyeDropper().open(); if (r?.sRGBHex) { this.set(this.norm(r.sRGBHex), 'change'); this.$('.sr').textContent = `${this._v} picked`; } }
-        catch (e) { if (e?.name !== 'AbortError') this.$('.sr').textContent = 'The browser did not allow picking a colour from the screen.'; }
+        catch (e) { if (e?.name !== 'AbortError') this.$('.sr').textContent = T(this, 'The browser did not allow picking a colour from the screen.'); }
         finally { this._picking = false; if (this.isOpen) this.$('.eye').focus({ preventScroll: true }); }
       });
       // Escape closes; leaving the panel and the swatch closes it too
@@ -1860,7 +1936,7 @@
   const PICKER = `
     .box { cursor: pointer; padding-right: .55rem; }
     :host([disabled]) .box, :host([readonly]) .box { cursor: default; }
-    .trigger { flex: 1; min-width: 0; display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; min-height: calc(var(--_h) - 2px); margin: 0; padding: .2rem 0;
+    .trigger { flex: 1; min-width: 0; display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; min-height: calc(var(--_h) - 2 * var(--sav-border-width)); margin: 0; padding: .2rem 0;
                border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: inherit; outline: none; }
     .val { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ph { color: var(--sav-color-text-muted); }
@@ -1911,11 +1987,11 @@
         <label class="lbl" part="label" id="${id}-l"><slot name="label"></slot><span class="lbl-text"></span></label>
         <div class="box" part="base"><slot name="prefix"></slot>
           <button class="trigger" part="trigger" type="button" aria-haspopup="${this.constructor.popupRole}" aria-expanded="false" aria-labelledby="${id}-l ${id}-v"><span class="val" id="${id}-v"></span></button>
-          <span class="end"><button type="button" class="ibtn clear" part="clear-button" tabindex="-1" aria-label="Clear">${svgIcon('x')}</button>${svgIcon(this.constructor.endIcon, 'chev')}</span>
+          <span class="end"><button type="button" class="ibtn clear" part="clear-button" tabindex="-1" aria-label="${esc(T(this, 'Clear'))}">${svgIcon('x')}</button>${svgIcon(this.constructor.endIcon, 'chev')}</span>
           ${this.nativeHtml()}
         </div>
         <div class="help" part="help-text"><slot name="help"></slot><span class="help-text"></span></div>
-        <div class="pop float" part="popup" ${supportsPopover ? 'popover="auto"' : ''}><div class="sheet-head" part="sheet-header"><span class="sheet-title"></span><button class="done" type="button">Done</button></div><div class="body" part="body"></div></div>
+        <div class="pop float" part="popup" ${supportsPopover ? 'popover="auto"' : ''}><div class="sheet-head" part="sheet-header"><span class="sheet-title"></span><button class="done" type="button">${esc(T(this, 'Done'))}</button></div><div class="body" part="body"></div></div>
       </div>`;
       this.native = this.$('.native');
       this.trigger = this.$('.trigger');
@@ -1972,7 +2048,7 @@
       else v.innerHTML = `<span class="ph">${esc(this.getAttribute('placeholder') || '')}</span>`;
       this.$('.box').classList.toggle('has-value', !!text);
       this.internals.setFormValue(this.formValue());
-      if (this.required && !this.serialize()) this.internals.setValidity({ valueMissing: true }, 'Please choose a value.', this.trigger);
+      if (this.required && !this.serialize()) this.internals.setValidity({ valueMissing: true }, T(this, 'Please choose a value.'), this.trigger);
       else this.internals.setValidity({});
       if (this.hasAttribute('data-user-invalid')) this.markTouched();
       if (this.native) this.toNative?.();
@@ -2126,20 +2202,20 @@
       const opt = (v) => this.opts.find((o) => o.value === v) || { value: v, label: v };
       if (!this.multiple) return `<span class="val">${this.valueInner(opt(this._values[0]))}</span>`;
       const max = Number(this.getAttribute('max-chips')) || 3;
-      const chips = this._values.slice(0, max).map((v) => `<span class="chip">${this.valueInner(opt(v))}<span class="x" data-rm="${esc(v)}" role="button" aria-label="Remove ${esc(label(v))}">${svgIcon('x')}</span></span>`).join('');
+      const chips = this._values.slice(0, max).map((v) => `<span class="chip">${this.valueInner(opt(v))}<span class="x" data-rm="${esc(v)}" role="button" aria-label="${esc(T(this, 'Remove {name}', { name: label(v) }))}">${svgIcon('x')}</span></span>`).join('');
       return chips + (this._values.length > max ? `<span class="more">+${this._values.length - max}</span>` : '');
     }
     renderBody() {
       const id = this._lid ||= nextId('lb');
-      let html = this.hasAttribute('searchable') ? `<div class="search">${svgIcon('search')}<input type="text" placeholder="${esc(this.getAttribute('search-placeholder') || 'Search')}" aria-controls="${id}" aria-autocomplete="list" autocomplete="off" spellcheck="false"></div>` : '';
+      let html = this.hasAttribute('searchable') ? `<div class="search">${svgIcon('search')}<input type="text" placeholder="${esc(this.getAttribute('search-placeholder') || T(this, 'Search'))}" aria-controls="${id}" aria-autocomplete="list" autocomplete="off" spellcheck="false"></div>` : '';
       if (this.multiple && this.hasAttribute('select-all')) html += `<button type="button" class="all" part="select-all"></button>`;
-      html += `<div class="list" id="${id}" role="listbox" tabindex="-1" ${this.multiple ? 'aria-multiselectable="true"' : ''} aria-label="${esc(this.getAttribute('label') || 'Options')}">`;
+      html += `<div class="list" id="${id}" role="listbox" tabindex="-1" ${this.multiple ? 'aria-multiselectable="true"' : ''} aria-label="${esc(this.getAttribute('label') || T(this, 'Options'))}">`;
       let group = null;
       this.opts.forEach((o, i) => {
         if (o.group !== group) { group = o.group; if (group) html += `<div class="grp" role="presentation" data-g="${esc(group)}">${esc(group)}</div>`; }
         html += `<div class="opt" role="option" id="${id}-${i}" data-i="${i}" data-g="${esc(o.group)}" aria-selected="${this._values.includes(o.value)}" ${o.disabled ? 'aria-disabled="true"' : ''}>${svgIcon('check', 'ck')}<span class="opt-l">${this.optionInner(o)}</span></div>`;
       });
-      html += `</div><div class="empty" hidden>${esc(this.getAttribute('empty-text') || 'No results')}</div>`;
+      html += `</div><div class="empty" hidden>${esc(this.getAttribute('empty-text') || T(this, 'No results'))}</div>`;
       const body = this.$('.body');
       body.innerHTML = html;
       body.querySelectorAll('.opt').forEach((el) => tiltWatch(el));
@@ -2201,7 +2277,7 @@
     syncAll() {
       const b = this.$('.all'); if (!b) return;
       const can = this.opts.filter((o) => !o.disabled).map((o) => o.value), all = can.length && can.every((v) => this._values.includes(v));
-      b.innerHTML = `${svgIcon(all ? 'x' : 'check')}<span>${esc(all ? this.getAttribute('clear-all-label') || 'Clear all' : this.getAttribute('select-all-label') || 'Select all')}</span>`;
+      b.innerHTML = `${svgIcon(all ? 'x' : 'check')}<span>${esc(all ? this.getAttribute('clear-all-label') || T(this, 'Clear all') : this.getAttribute('select-all-label') || T(this, 'Select all'))}</span>`;
     }
     pick(i) {
       const o = this.opts[i];
@@ -2457,14 +2533,14 @@
         }).join('')}</div>`;
       }
       const dt = this.mode === 'datetime';
-      const todayLabel = { date: 'Today', month: 'This month', year: 'This year', datetime: 'Now' }[this.mode];
+      const todayLabel = T(this, { date: 'Today', month: 'This month', year: 'This year', datetime: 'Now' }[this.mode]);
       // datetime: hours and minutes under the calendar; choosing a day keeps the panel open, Done closes it
       const [hh, mi] = (this.time || this.nowTime()).split(':');
-      const time = dt ? `<div class="tm"><span class="tm-l" id="tm-l">Time</span><input class="hh" inputmode="numeric" maxlength="2" value="${hh}" aria-label="Hours" aria-describedby="tm-l"><span class="colon" aria-hidden="true">:</span><input class="mi" inputmode="numeric" maxlength="2" value="${mi}" aria-label="Minutes" aria-describedby="tm-l"></div>` : '';
-      this.$('.body').innerHTML = `<div class="cal-head"><button type="button" class="nav" data-nav="-1" aria-label="Previous">${svgIcon('chevron-left')}</button>
+      const time = dt ? `<div class="tm"><span class="tm-l" id="tm-l">${esc(T(this, 'Time'))}</span><input class="hh" inputmode="numeric" maxlength="2" value="${hh}" aria-label="${esc(T(this, 'Hours'))}" aria-describedby="tm-l"><span class="colon" aria-hidden="true">:</span><input class="mi" inputmode="numeric" maxlength="2" value="${mi}" aria-label="${esc(T(this, 'Minutes'))}" aria-describedby="tm-l"></div>` : '';
+      this.$('.body').innerHTML = `<div class="cal-head"><button type="button" class="nav" data-nav="-1" aria-label="${esc(T(this, 'Previous'))}">${svgIcon('chevron-left')}</button>
         <button type="button" class="cal-title" ${this.view === 'years' ? 'disabled' : ''} aria-live="polite">${esc(title)}</button>
-        <button type="button" class="nav" data-nav="1" aria-label="Next">${svgIcon('chevron-right')}</button></div>${grid}${time}
-        <div class="foot"><button type="button" class="lnk" data-act="today">${todayLabel}</button>${this.hasAttribute('clearable') || !this.required ? '<button type="button" class="lnk" data-act="clear">Clear</button>' : ''}${dt ? '<button type="button" class="lnk done" data-act="done">Done</button>' : ''}</div>`;
+        <button type="button" class="nav" data-nav="1" aria-label="${esc(T(this, 'Next'))}">${svgIcon('chevron-right')}</button></div>${grid}${time}
+        <div class="foot"><button type="button" class="lnk" data-act="today">${esc(todayLabel)}</button>${this.hasAttribute('clearable') || !this.required ? `<button type="button" class="lnk" data-act="clear">${esc(T(this, 'Clear'))}</button>` : ''}${dt ? `<button type="button" class="lnk done" data-act="done">${esc(T(this, 'Done'))}</button>` : ''}</div>`;
       const focus = this.$('.cell.sel:not(:disabled)') || this.$(`.cell[data-k="${this.key(this.cur.y, this.cur.m, this.cur.d)}"]`) || this.$('.cell:not(.out):not(:disabled)');
       if (focus) focus.tabIndex = 0;
     }
@@ -2612,7 +2688,7 @@
       const mm = Array.from({ length: Math.ceil(60 / step) }, (_, i) => i * step).map((x) => `<button type="button" class="t${this._v && x === m ? ' sel' : ''}" data-m="${x}">${pad(x)}</button>`).join('');
       const ap = this.h12 ? col('', ['AM', 'PM'].map((x, i) => `<button type="button" class="t${this._v && (i === 1) === pm ? ' sel' : ''}" data-ap="${i}">${x}</button>`).join('')) : '';
       this.$('.body').innerHTML = `<div class="cols">${col('Hour', hh)}${col('Min', mm)}${ap}</div>
-        <div class="foot"><button type="button" class="lnk" data-act="now">Now</button><button type="button" class="lnk" data-act="done">Done</button></div>`;
+        <div class="foot"><button type="button" class="lnk" data-act="now">${esc(T(this, 'Now'))}</button><button type="button" class="lnk" data-act="done">${esc(T(this, 'Done'))}</button></div>`;
       requestAnimationFrame(() => this.$$('.col .t.sel').forEach((b) => b.scrollIntoView({ block: 'center' })));
     }
     focusInitial() { (this.$('.t.sel') || this.$('.t')).focus({ preventScroll: true }); }
@@ -2759,7 +2835,7 @@
       :host(:focus-visible) .dot { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 2px; }
       /* segmented buttons: drawn like the segmented tabs (background on a layer that leans with the style, text upright) */
       :host([data-appearance="buttons"]) .dot { display: none; }
-      :host([data-appearance="buttons"]) .row { position: relative; isolation: isolate; align-items: center; justify-content: center; min-height: var(--_h); padding: 0 calc(var(--_h) * .42);
+      :host([data-appearance="buttons"]) .row { position: relative; isolation: isolate; align-items: center; justify-content: center; min-height: calc(var(--_h) - 6px - 2 * var(--sav-border-width)); /* with the 3px track and its border: as tall as a field or a button */ padding: 0 calc(var(--_h) * .42);
         border-radius: calc(var(--sav-radius) - 2px); font-weight: var(--sav-font-weight-semibold); color: var(--sav-color-text-muted); white-space: nowrap; transition: color calc(var(--sav-duration) * var(--sav-motion, 1)); }
       :host([data-appearance="buttons"]) .row::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_rb, transparent); background-image: var(--_rsh, none); box-shadow: var(--_rs, none);
         transform: rotate(${TILT}); transition: background calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.22s * var(--sav-motion, 1)) var(--sav-easing); }
@@ -2885,7 +2961,7 @@
     onValue() {
       this.internals.setFormValue(this._value || null);
       this.native.value = this._value || '';
-      if (this.required && !this._value) this.internals.setValidity({ valueMissing: true }, 'Please select an option.', this.radios[0] || this.native);
+      if (this.required && !this._value) this.internals.setValidity({ valueMissing: true }, T(this, 'Please select an option.'), this.radios[0] || this.native);
       else this.internals.setValidity({});
       if (this.hasAttribute('data-user-invalid')) this.markTouched();
     }
@@ -3068,8 +3144,8 @@
       const max = this.num(this.getAttribute('max'), this.isDate ? today + 90 : 100);
       const step = Number(this.getAttribute('step')) || 1;
       for (const el of [a, b]) { el.min = min; el.max = Math.max(min, max); el.step = step; el.disabled = this.isDisabled; }
-      a.setAttribute('aria-label', this.getAttribute('start-label') || 'Start');
-      b.setAttribute('aria-label', this.getAttribute('end-label') || 'End');
+      a.setAttribute('aria-label', this.getAttribute('start-label') || T(this, 'Start'));
+      b.setAttribute('aria-label', this.getAttribute('end-label') || T(this, 'End'));
       this.syncLabels(this.$('.w'));
       const labels = this.getAttribute('labels');
       this.$('.ticks').innerHTML = labels ? labels.split(',').map((l) => `<span>${esc(l.trim())}</span>`).join('') : '';
@@ -3148,12 +3224,12 @@
   class SavRating extends SavFormControl {
     static delegatesFocus = false;
     static styles = [FIELD, `
-      :host { display: inline-block; --size: 1.5rem; --color: oklch(from var(--sav-color-warning) calc(l * var(--sav-indicator-l, 1)) c h); --empty: var(--sav-color-border-strong); }
+      :host { display: inline-block; --size: 1.5rem; --color: oklch(from var(--sav-color-warning) calc(l * var(--sav-indicator-l, 1)) c h); --empty: var(--sav-rating-empty, var(--sav-color-border-strong)); }
       .stars { display: inline-flex; gap: .15rem; outline: none; border-radius: var(--sav-radius-sm); }
       .stars:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 3px; }
       .s { position: relative; width: var(--size); height: var(--size); cursor: pointer; color: var(--empty); transition: transform calc(var(--sav-duration) * var(--sav-motion, 1)) var(--sav-easing); }
       .s svg { width: 100%; height: 100%; }
-      .s svg * { fill: currentColor; stroke-width: 1.2; }
+      .s svg * { fill: currentColor; stroke: var(--sav-ink-border, currentColor); stroke-width: 1.2; } /* Brutal: inked outlines, so an empty shape stays light */
       .s .full { position: absolute; inset: 0; color: var(--color); clip-path: inset(0 calc(100% - var(--_f, 0%)) 0 0); }
       :host(:not([readonly]):not([disabled])) .s:hover { transform: scale(1.15); }
       :host([readonly]) .s, :host([disabled]) .s { cursor: default; }
@@ -3189,7 +3265,7 @@
       stars.innerHTML = Array.from({ length: max }, (_, k) => `<span class="s" data-i="${k + 1}">${svgIcon(icon)}${svgIcon(icon, 'full')}</span>`).join('');
       stars.tabIndex = this.isDisabled ? -1 : 0;
       stars.setAttribute('aria-valuemin', '0'); stars.setAttribute('aria-valuemax', String(max));
-      stars.setAttribute('aria-label', this.getAttribute('label') || 'Rating');
+      stars.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Rating'));
       this.readonly ? stars.setAttribute('aria-readonly', 'true') : stars.removeAttribute('aria-readonly');
       this.syncLabels(this.$('.w'));
       this.paint(this._value);
@@ -3308,7 +3384,7 @@
       const id = nextId('dlg');
       this.shadowRoot.innerHTML = `<dialog part="panel" aria-labelledby="${id}"><span class="grab" part="handle" aria-hidden="true"></span>
         <header class="head" part="header"><h2 class="title" part="title" id="${id}"><slot name="label"></slot><span class="lt"></span></h2><slot name="header-actions"></slot>
-          <button class="x" part="close-button" aria-label="Close">${svgIcon('x')}</button></header>
+          <button class="x" part="close-button" aria-label="${esc(T(this, 'Close'))}">${svgIcon('x')}</button></header>
         <div class="body" part="body"><slot></slot></div>
         <footer class="foot" part="footer"><slot name="footer"></slot></footer>
       </dialog>`;
@@ -3453,6 +3529,8 @@
       :host([appearance="pills"]) .ink { display: none; }
       :host([appearance="segmented"]) .nav { box-shadow: none; display: inline-flex; border: var(--sav-border-width) solid var(--sav-color-border); background: var(--sav-color-surface-2); padding: 3px; border-radius: var(--sav-radius); gap: 2px; max-width: 100%; }
       :host([appearance="segmented"]) .tab { border-radius: calc(var(--sav-radius) - 2px); padding: .45rem .95rem; }
+      /* across, the segmented bar is as tall as a field or a button (and as the segmented radio buttons) */
+      :host([appearance="segmented"]:not([data-vertical])) .tab { min-height: calc(var(--sav-control-md) - 6px - 2 * var(--sav-border-width)); padding-block: 0; }
       :host([appearance="segmented"]) .tab::before { inset: 0; }
       :host([appearance="segmented"]) .tab[aria-selected="true"] { color: var(--sav-color-text); --_tb: var(--sav-color-surface); --_tsh-img: var(--sav-sheen, none); --_ts: var(--sav-tab-segment-shadow, var(--sav-shadow-sm)); }
       :host([appearance="segmented"]) .ink { display: none; }
@@ -3582,7 +3660,7 @@
     syncFold() {
       const b = this.$('.fold'); if (!b) return;
       const c = this.collapsed && this.vertical, end = this.end;
-      const text = c ? this.getAttribute('expand-label') || 'Expand' : this.getAttribute('collapse-label') || 'Collapse';
+      const text = c ? this.getAttribute('expand-label') || T(this, 'Expand') : this.getAttribute('collapse-label') || T(this, 'Collapse');
       const edge = this.getAttribute('collapse-button') !== 'row'; // the handle on the border is the default; "row" puts a row at the bottom
       b.innerHTML = `${svgIcon(edge ? ((c !== end) ? 'chevrons-right' : 'chevrons-left') : `panel-${end ? 'right' : 'left'}-${c ? 'open' : 'close'}`)}<span class="fold-t">${esc(text)}</span><span class="tip" aria-hidden="true">${esc(text)}</span>`;
       b.setAttribute('aria-label', text);
@@ -3846,7 +3924,7 @@
     `];
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<slot name="trigger" part="trigger"></slot><div class="menu float" part="panel" role="menu" ${supportsPopover ? 'popover="auto"' : ''}><div class="sheet-head"><span class="sheet-title"></span><button class="done" type="button">Done</button></div><div class="items"><slot></slot></div></div>`;
+      this.shadowRoot.innerHTML = `<slot name="trigger" part="trigger"></slot><div class="menu float" part="panel" role="menu" ${supportsPopover ? 'popover="auto"' : ''}><div class="sheet-head"><span class="sheet-title"></span><button class="done" type="button">${esc(T(this, 'Done'))}</button></div><div class="items"><slot></slot></div></div>`;
       const menu = (this.menu = this.$('.menu'));
       tiltWatch(menu);
       this.$('.done').addEventListener('click', () => this.hide());
@@ -3975,7 +4053,7 @@
       if (this.shadowRoot.firstChild) return;
       const id = nextId('info');
       this.shadowRoot.innerHTML = `<button class="tr" part="trigger" type="button" aria-expanded="false" aria-controls="${id}"><slot name="trigger"></slot><span class="lab"></span></button>
-        <div class="tip float" part="body" id="${id}" role="dialog" ${supportsPopover ? 'popover="auto"' : ''}><div class="head"><div class="h" part="heading"></div><button class="x" type="button" aria-label="Close">${svgIcon('x')}</button></div><slot></slot><span class="txt"></span><span class="arr" aria-hidden="true"></span></div>`;
+        <div class="tip float" part="body" id="${id}" role="dialog" ${supportsPopover ? 'popover="auto"' : ''}><div class="head"><div class="h" part="heading"></div><button class="x" type="button" aria-label="${esc(T(this, 'Close'))}">${svgIcon('x')}</button></div><slot></slot><span class="txt"></span><span class="arr" aria-hidden="true"></span></div>`;
       // inside a <label> a click must not toggle the control it belongs to
       this.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
       this.$('.tr').addEventListener('click', () => (Date.now() - (this._closedAt || 0) < 150 ? 0 : this.open ? this.hide() : this.show()));
@@ -3993,7 +4071,7 @@
       if (!hasTrigger) tr.insertAdjacentHTML('afterbegin', svgIcon(icon));
       if (!hasTrigger && !ICONS[icon]) Sav.loadIcon(icon).then(() => this.isConnected && (tr.querySelector('svg').outerHTML = svgIcon(icon)));
       this.$('.lab').textContent = this.getAttribute('label') || '';
-      tr.setAttribute('aria-label', this.getAttribute('label') || this.getAttribute('heading') || 'More information');
+      tr.setAttribute('aria-label', this.getAttribute('label') || this.getAttribute('heading') || T(this, 'More information'));
       this.$('.h').textContent = this.getAttribute('heading') || '';
       this.$('.txt').textContent = this.getAttribute('content') || '';
     }
@@ -4105,7 +4183,7 @@
     `];
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<button type="button" part="base"><span class="ck" aria-hidden="true">${svgIcon('check')}</span><slot name="prefix"></slot><span part="label"><slot></slot></span><span class="x" part="remove-button" role="button" aria-label="${esc(this.getAttribute('remove-label') || 'Remove')}">${svgIcon('x')}</span></button>`;
+      this.shadowRoot.innerHTML = `<button type="button" part="base"><span class="ck" aria-hidden="true">${svgIcon('check')}</span><slot name="prefix"></slot><span part="label"><slot></slot></span><span class="x" part="remove-button" role="button" aria-label="${esc(this.getAttribute('remove-label') || T(this, 'Remove'))}">${svgIcon('x')}</span></button>`;
       const b = this.$('button');
       tiltWatch(b);
       b.addEventListener('click', (e) => {
@@ -4214,14 +4292,25 @@
     `;
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = '<div class="w" part="base" tabindex="0"><slot></slot></div>';
+      this.shadowRoot.innerHTML = '<div class="w" part="base"><slot></slot></div>';
       injectTableCss();
+      // the frame is a stop of the Tab key only while the table is wider than it (so the keyboard can scroll it); otherwise it is just a frame
+      this._ro = new ResizeObserver(() => this.scrollable());
+      this._ro.observe(this.$('.w'));
       this.$('slot').addEventListener('slotchange', () => this.setup());
       this.setup();
     }
     get table() { return this.querySelector('table'); }
+    scrollable() {
+      const w = this.$('.w'), t = this.table;
+      if (w.scrollWidth > w.clientWidth + 1) {
+        w.tabIndex = 0; w.setAttribute('role', 'region');
+        w.setAttribute('aria-label', this.getAttribute('label') || t?.caption?.textContent.trim() || T(this, 'Table'));
+      } else if (w.hasAttribute('tabindex')) { w.removeAttribute('tabindex'); w.removeAttribute('role'); w.removeAttribute('aria-label'); }
+    }
     setup() {
       const t = this.table; if (!t) return;
+      if (!this._seen) { this._seen = t; this._ro.observe(t); } else if (this._seen !== t) { this._ro.unobserve(this._seen); this._seen = t; this._ro.observe(t); }
       t.classList.add('sav-table-t');
       if (!this.hasAttribute('sortable')) return;
       t.querySelectorAll('thead th').forEach((th, i) => {
@@ -4318,7 +4407,7 @@
       const f = this.getAttribute('fit'); f ? this.style.setProperty('--fit', f) : this.style.removeProperty('--fit');
       this.$('.cap').textContent = this.getAttribute('caption') || '';
       this.$('.fr').setAttribute('role', this.zoom ? 'button' : 'presentation');
-      if (this.zoom) { this.$('.fr').tabIndex = 0; this.$('.fr').setAttribute('aria-label', 'Enlarge ' + (img.alt || 'image')); }
+      if (this.zoom) { this.$('.fr').tabIndex = 0; this.$('.fr').setAttribute('aria-label', T(this, 'Enlarge {name}', { name: img.alt || T(this, 'image') })); }
     }
   }
   props(SavImage, { zoom: Boolean });
@@ -4374,15 +4463,18 @@
   /** A one-time code split into boxes: numbers only, letters only, letters and numbers, or any character; any length. */
   class SavOtp extends SavFormControl {
     static styles = [FIELD, SIZES, `
-      .cells { display: flex; align-items: center; gap: var(--gap, .5rem); flex-wrap: wrap; }
-      .cell { position: relative; isolation: isolate; width: calc(var(--_h) * 1.05); height: calc(var(--_h) * 1.2); }
-      .cell::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius); background: var(--sav-color-input-bg); background-image: var(--sav-sheen, none);
-        border: var(--sav-border-width) solid var(--sav-color-border-strong); box-shadow: var(--sav-control-shadow, none); transform: rotate(${TILT});
+      /* the cells keep their size while they fit, then all shrink together (never onto a second line) */
+      .cells { display: flex; align-items: center; gap: var(--gap, clamp(.25rem, 1.6%, .5rem)); }
+      .cell { position: relative; isolation: isolate; flex: 0 1 calc(var(--_h) * 1.05); min-width: calc(var(--_fs) * 1.35); height: calc(var(--_h) * 1.2); }
+      .cell::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: min(var(--sav-radius), 30%); background: var(--sav-color-input-bg); background-image: var(--sav-field-sheen, var(--sav-sheen, none));
+        border: var(--sav-border-width) solid var(--sav-color-border-strong); box-shadow: var(--sav-field-shadow, var(--sav-control-shadow, inset 0 1px 2px rgb(20 24 40 / .05))); transform: rotate(${TILT});
+        -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
         transition: border-color calc(var(--sav-duration) * var(--sav-motion, 1)), box-shadow calc(var(--sav-duration) * var(--sav-motion, 1)), transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
-      .cell:focus-within::before { transform: none; border-color: var(--sav-color-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--sav-color-primary) 22%, transparent); }
+      .cell:focus-within::before { transform: none; background-color: var(--sav-field-bg-focus, var(--sav-color-input-bg)); border-color: var(--sav-field-focus-border, var(--sav-color-primary));
+        box-shadow: var(--sav-field-focus-shadow, 0 0 0 3px color-mix(in oklab, var(--sav-color-primary) 22%, transparent)), var(--sav-field-shadow, var(--sav-control-shadow, 0 0 transparent)); }
       .cell.on::before { border-color: color-mix(in oklab, var(--sav-color-primary) 55%, var(--sav-color-border-strong)); }
       :host([data-user-invalid]) .cell::before { border-color: var(--sav-color-danger); }
-      .cell input { width: 100%; height: 100%; padding: 0; margin: 0; border: 0; outline: 0; background: none; text-align: center; color: var(--sav-color-text);
+      .cell input { width: 100%; min-width: 0; height: 100%; padding: 0; margin: 0; border: 0; outline: 0; background: none; text-align: center; color: var(--sav-color-text);
         font: inherit; font-size: calc(var(--_fs) * 1.35); font-weight: var(--sav-font-weight-bold); font-variant-numeric: tabular-nums; text-transform: var(--_case, none); caret-color: var(--sav-color-primary); }
       .sep { color: var(--sav-color-text-muted); font-weight: var(--sav-font-weight-bold); }
       :host([disabled]) .cells { opacity: .55; }
@@ -4412,7 +4504,7 @@
       for (let i = 0; i < n; i++) {
         if (sep && i && i % sep === 0) html += '<span class="sep" aria-hidden="true">–</span>';
         html += `<span class="cell" part="cell"><input part="input" type="${this.hasAttribute('mask') ? 'password' : 'text'}" maxlength="1" inputmode="${k === 'numeric' ? 'numeric' : 'text'}"
-          ${i === 0 ? 'autocomplete="one-time-code"' : 'autocomplete="off"'} aria-label="Character ${i + 1} of ${n}" ${this.isDisabled ? 'disabled' : ''}></span>`;
+          ${i === 0 ? 'autocomplete="one-time-code"' : 'autocomplete="off"'} aria-label="${esc(T(this, 'Character {i} of {n}', { i: i + 1, n }))}" ${this.isDisabled ? 'disabled' : ''}></span>`;
       }
       box.innerHTML = html;
       this.$$('.cell input').forEach((inp, i) => {
@@ -4449,7 +4541,7 @@
       const v = this.value, full = v.length === this.length;
       this.$$('.cell').forEach((c) => c.classList.toggle('on', !!c.querySelector('input').value));
       this.internals.setFormValue(v);
-      if (this.required && !full) this.internals.setValidity({ valueMissing: true }, this.getAttribute('error-label') || `Enter all ${this.length} characters.`, this.$('.cell input') || undefined);
+      if (this.required && !full) this.internals.setValidity({ valueMissing: true }, this.getAttribute('error-label') || T(this, 'Enter all {n} characters.', { n: this.length }), this.$('.cell input') || undefined);
       else this.internals.setValidity({});
       if (!fire) return;
       this.emit('input', { value: v });
@@ -4485,9 +4577,9 @@
     /** The rules from the attributes: [key, how many, text]. */
     get rules() {
       const n = (a, d) => { const v = this.getAttribute(a); return v === null ? d : Number(v) || 0; };
-      return [['length', n('min-length', 8), (x) => `At least ${x} characters`], ['upper', n('min-uppercase', 1), (x) => `${x} upper-case letter${x > 1 ? 's' : ''}`],
-        ['lower', n('min-lowercase', 1), (x) => `${x} lower-case letter${x > 1 ? 's' : ''}`], ['digit', n('min-digits', 1), (x) => `${x} number${x > 1 ? 's' : ''}`],
-        ['symbol', n('min-symbols', 0), (x) => `${x} symbol${x > 1 ? 's' : ''} (like ! ? # @)`]].filter((r) => r[1] > 0);
+      return [['length', n('min-length', 8), (x) => T(this, 'At least {x} characters', { x })], ['upper', n('min-uppercase', 1), (x) => T(this, x > 1 ? '{x} upper-case letters' : '{x} upper-case letter', { x })],
+        ['lower', n('min-lowercase', 1), (x) => T(this, x > 1 ? '{x} lower-case letters' : '{x} lower-case letter', { x })], ['digit', n('min-digits', 1), (x) => T(this, x > 1 ? '{x} numbers' : '{x} number', { x })],
+        ['symbol', n('min-symbols', 0), (x) => T(this, x > 1 ? '{x} symbols (like ! ? # @)' : '{x} symbol (like ! ? # @)', { x })]].filter((r) => r[1] > 0);
     }
     /** Score 0–4 and which rules pass. */
     measure(pw) {
@@ -4520,16 +4612,16 @@
     onValue(fire) {
       const pw = this.value, { score, passed } = this.measure(pw);
       this._score = score;
-      const words = (this.getAttribute('labels') || 'Too weak,Weak,Fair,Good,Strong').split(',');
+      const words = (this.getAttribute('labels') || T(this, 'Too weak,Weak,Fair,Good,Strong')).split(',');
       const colors = ['var(--sav-color-danger)', 'var(--sav-color-danger)', 'var(--sav-color-warning)', 'oklch(from var(--sav-color-primary) calc(l * var(--sav-indicator-l, 1)) c h)', 'var(--sav-color-success)'];
       this.style.setProperty('--_sc', colors[score]);
       this.$$('.seg').forEach((s, i) => s.classList.toggle('on', pw && i < Math.max(1, score)));
-      this.$('.word').textContent = pw ? `Strength: ${words[score]}` : '';
-      this.$('.rules').innerHTML = this.rules.map(([, min, text], i) => `<li class="${passed[i] ? 'ok' : ''}">${svgIcon('check', 'ck')}${svgIcon('x', 'no')}<span>${esc(text(min))}<span class="sr">${passed[i] ? ' — done' : ''}</span></span></li>`).join('');
+      this.$('.word').textContent = pw ? T(this, 'Strength: {word}', { word: words[score] }) : '';
+      this.$('.rules').innerHTML = this.rules.map(([, min, text], i) => `<li class="${passed[i] ? 'ok' : ''}">${svgIcon('check', 'ck')}${svgIcon('x', 'no')}<span>${esc(text(min))}<span class="sr">${passed[i] ? ' — ' + esc(T(this, 'done')) : ''}</span></span></li>`).join('');
       this.internals.setFormValue(pw);
       const need = Number(this.getAttribute('min-strength')) || 0;
-      if (this.required && !pw) this.internals.setValidity({ valueMissing: true }, 'Enter a password.', this.$('sav-input'));
-      else if (pw && need && score < need) this.internals.setValidity({ customError: true }, this.getAttribute('error-label') || 'Choose a stronger password.', this.$('sav-input'));
+      if (this.required && !pw) this.internals.setValidity({ valueMissing: true }, T(this, 'Enter a password.'), this.$('sav-input'));
+      else if (pw && need && score < need) this.internals.setValidity({ customError: true }, this.getAttribute('error-label') || T(this, 'Choose a stronger password.'), this.$('sav-input'));
       else this.internals.setValidity({});
       if (fire) this.emit('input', { value: pw, score });
     }
@@ -4543,14 +4635,15 @@
   const THEMES = [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['auto', 'Auto', 'theme-auto']];
   /** Light, dark or automatic (follows the system), each with its icon: a menu or three buttons; no-auto leaves only light and dark. With apply it switches the page by itself. */
   class SavThemeChoice extends SavElement {
-    static styles = `
+    static styles = [SIZES, `
       :host { display: inline-block; vertical-align: middle; }
-      .seg { display: inline-flex; gap: 2px; padding: 3px; border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface-2); }
-      .seg button { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border: 0; border-radius: calc(var(--sav-radius) - 2px); background: none; color: var(--sav-color-text-muted); font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); cursor: pointer; }
+      /* as tall as a field or a button of the same size */
+      .seg { display: inline-flex; gap: 2px; height: var(--_h); padding: 3px; border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface-2); }
+      .seg button { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .4rem; padding: 0 .7rem; border: 0; border-radius: calc(var(--sav-radius) - 2px); background: none; color: var(--sav-color-text-muted); font: inherit; font-size: var(--sav-font-size-sm); font-weight: var(--sav-font-weight-semibold); cursor: pointer; }
       .seg button::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--_b, transparent); background-image: var(--_bi, none); box-shadow: var(--_s, none); transform: rotate(${TILT}); }
       .seg button[aria-checked="true"] { color: var(--sav-color-text); --_b: var(--sav-color-surface); --_bi: var(--sav-sheen, none); --_s: var(--sav-tab-segment-shadow, var(--sav-shadow-sm)); }
       :host([icons-only]) .seg .t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-    `;
+    `];
     static get observedAttributes() { return ['value', 'appearance', 'icons-only', 'apply', 'size', 'no-auto']; }
     /** The choices: light, dark and auto, or only light and dark with no-auto. */
     get themes() { return this.hasAttribute('no-auto') ? THEMES.filter(([k]) => k !== 'auto') : THEMES; }
@@ -4565,7 +4658,7 @@
     render() {
       const v = this.value;
       if (this.getAttribute('appearance') === 'buttons') {
-        this.shadowRoot.innerHTML = `<div class="seg" role="radiogroup" part="base" aria-label="${esc(this.getAttribute('label') || 'Theme')}">${this.themes.map(([k, l, ic]) => `<button type="button" role="radio" data-v="${k}" aria-checked="${k === v}" tabindex="${k === v ? 0 : -1}" title="${l}"><sav-icon name="${ic}"></sav-icon><span class="t">${l}</span></button>`).join('')}</div>`;
+        this.shadowRoot.innerHTML = `<div class="seg" role="radiogroup" part="base" aria-label="${esc(this.getAttribute('label') || T(this, 'Theme'))}">${this.themes.map(([k, l, ic]) => `<button type="button" role="radio" data-v="${k}" aria-checked="${k === v}" tabindex="${k === v ? 0 : -1}" title="${esc(T(this, l))}"><sav-icon name="${ic}"></sav-icon><span class="t">${esc(T(this, l))}</span></button>`).join('')}</div>`;
         this.$$('.seg button').forEach((b) => { tiltWatch(b); b.addEventListener('click', () => this.pick(b.dataset.v)); });
         this.$('.seg').addEventListener('keydown', (e) => {
           const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]; if (!d) return;
@@ -4573,9 +4666,9 @@
         });
       } else {
         const cur = this.themes.find(([k]) => k === v) || this.themes[this.themes.length - 1];
-        this.shadowRoot.innerHTML = `<sav-dropdown part="base" label="${esc(this.getAttribute('label') || 'Theme')}">
-          <sav-button slot="trigger" size="${esc(this.getAttribute('size') || 'md')}" appearance="outline" variant="neutral" ${this.hasAttribute('icons-only') ? `label="Theme: ${cur[1]}"` : ''}><sav-icon slot="prefix" name="${cur[2]}"></sav-icon>${this.hasAttribute('icons-only') ? '' : cur[1]}<sav-icon slot="suffix" name="chevron-down"></sav-icon></sav-button>
-          ${this.themes.map(([k, l, ic]) => `<sav-menu-item type="checkbox" value="${k}" ${k === v ? 'checked' : ''}><sav-icon slot="prefix" name="${ic}"></sav-icon>${l}</sav-menu-item>`).join('')}</sav-dropdown>`;
+        this.shadowRoot.innerHTML = `<sav-dropdown part="base" label="${esc(this.getAttribute('label') || T(this, 'Theme'))}">
+          <sav-button slot="trigger" size="${esc(this.getAttribute('size') || 'md')}" appearance="outline" variant="neutral" ${this.hasAttribute('icons-only') ? `label="${esc(T(this, 'Theme: {name}', { name: T(this, cur[1]) }))}"` : ''}><sav-icon slot="prefix" name="${cur[2]}"></sav-icon>${this.hasAttribute('icons-only') ? '' : esc(T(this, cur[1]))}<sav-icon slot="suffix" name="chevron-down"></sav-icon></sav-button>
+          ${this.themes.map(([k, l, ic]) => `<sav-menu-item type="checkbox" value="${k}" ${k === v ? 'checked' : ''}><sav-icon slot="prefix" name="${ic}"></sav-icon>${esc(T(this, l))}</sav-menu-item>`).join('')}</sav-dropdown>`;
         this.$('sav-dropdown').addEventListener('sav-select', (e) => this.pick(e.detail.value));
       }
     }
@@ -4671,7 +4764,7 @@
           <div class="flow"><span class="terms" part="terms" role="list"></span>
           <input class="ctl" part="input" id="${id}" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-l" autocomplete="off" enterkeyhint="search"></div>
           <slot name="suffix"></slot>
-          <button type="button" class="ibtn x" part="clear-button" aria-label="Clear">${svgIcon('x')}</button>
+          <button type="button" class="ibtn x" part="clear-button" aria-label="${esc(T(this, 'Clear'))}">${svgIcon('x')}</button>
         </div>
         <div class="help" part="help-text"><slot name="help"></slot><span class="help-text"></span></div>
         <span class="sr" aria-live="polite"></span>
@@ -4712,11 +4805,11 @@
       const i = this.native; if (!i) return;
       const full = this.multiple && this.terms.length >= this.maxTerms;
       // with chips the hint would crowd them: it shows only while the field is empty, or says the limit is reached
-      i.placeholder = full ? this.getAttribute('max-label') || `Up to ${this.maxTerms} terms` : this.multiple && this.terms.length ? '' : this.getAttribute('placeholder') || 'Search';
+      i.placeholder = full ? this.getAttribute('max-label') || T(this, 'Up to {n} terms', { n: this.maxTerms }) : this.multiple && this.terms.length ? '' : this.getAttribute('placeholder') || T(this, 'Search');
       i.readOnly = full;
       i.disabled = this.isDisabled; i.name = this.getAttribute('name') || '';
       this.syncLabels(this.$('.w'));
-      if (!this.getAttribute('label')) i.setAttribute('aria-label', this.getAttribute('placeholder') || 'Search');
+      if (!this.getAttribute('label')) i.setAttribute('aria-label', this.getAttribute('placeholder') || T(this, 'Search'));
       this.$$('.rm').forEach((b) => { b.disabled = this.isDisabled; });
       this.onValue(false);
     }
@@ -4736,17 +4829,17 @@
       const t = String(raw ?? '').trim(); const list = (this._terms ||= []);
       if (!t) return false;
       const dup = list.findIndex((x) => x.toLowerCase() === t.toLowerCase());
-      if (dup >= 0) { if (!quiet) { const el = this.$$('.term')[dup]; el?.classList.remove('dup'); void el?.offsetWidth; el?.classList.add('dup'); this.say(`${t} is already there`); } return false; }
-      if (list.length >= this.maxTerms) { if (!quiet) this.say(this.getAttribute('max-label') || `Up to ${this.maxTerms} terms`); return false; }
+      if (dup >= 0) { if (!quiet) { const el = this.$$('.term')[dup]; el?.classList.remove('dup'); void el?.offsetWidth; el?.classList.add('dup'); this.say(T(this, '{name} is already there', { name: t })); } return false; }
+      if (list.length >= this.maxTerms) { if (!quiet) this.say(this.getAttribute('max-label') || T(this, 'Up to {n} terms', { n: this.maxTerms })); return false; }
       if (!quiet && !this.emit('sav-term-add', { term: t }, true)) return false;
       list.push(t);
-      if (!quiet) { this.renderTerms(); this.sync(); this.say(`${t} added`); this.emit('change', { value: this.value }); this.liveSearch(); }
+      if (!quiet) { this.renderTerms(); this.sync(); this.say(T(this, '{name} added', { name: t })); this.emit('change', { value: this.value }); this.liveSearch(); }
       return true;
     }
     removeTerm(n, focusInput) {
       const list = this._terms || []; const t = list[n]; if (t === undefined || this.isDisabled) return;
       if (!this.emit('sav-term-remove', { term: t }, true)) return;
-      list.splice(n, 1); this.renderTerms(); this.sync(); this.say(`${t} removed`);
+      list.splice(n, 1); this.renderTerms(); this.sync(); this.say(T(this, '{name} removed', { name: t }));
       if (focusInput) this.native.focus();
       this.emit('change', { value: this.value });
       // a term taken away changes what is searched: search again now (live or not), so the results follow
@@ -4757,7 +4850,7 @@
     renderTerms() {
       const box = this.$('.terms'); if (!box) return;
       const list = this.multiple ? this._terms || [] : [];
-      box.innerHTML = list.map((t, n) => `<span class="term" part="term" role="listitem"><span class="tt" title="${esc(t)}">${esc(t)}</span><button type="button" class="rm" part="term-remove" data-i="${n}" aria-label="Remove ${esc(t)}">${svgIcon('x')}</button></span>`).join('');
+      box.innerHTML = list.map((t, n) => `<span class="term" part="term" role="listitem"><span class="tt" title="${esc(t)}">${esc(t)}</span><button type="button" class="rm" part="term-remove" data-i="${n}" aria-label="${esc(T(this, 'Remove {name}', { name: t }))}">${svgIcon('x')}</button></span>`).join('');
       box.querySelectorAll('.term').forEach((el) => tiltWatch(el));
     }
     /** what is typed holds a separator (typed on a phone keyboard, or pasted): the parts before it become terms */
@@ -4821,7 +4914,7 @@
         if ((it.group || '') !== group) { group = it.group || ''; if (group) html += `<div class="grp" role="presentation">${esc(group)}</div>`; }
         html += `<div class="opt" role="option" id="${this.native.id}-o${n}" data-i="${n}" aria-selected="false">${it.icon ? `<sav-icon name="${esc(it.icon)}"></sav-icon>` : ''}<span class="ol"><span>${hl(it.label)}</span><span class="od">${esc(it.description || '')}</span></span></div>`;
       });
-      if (!items.length) html = `<div class="empty">${esc(this.getAttribute('empty-label') || 'No results')}</div>`;
+      if (!items.length) html = `<div class="empty">${esc(this.getAttribute('empty-label') || T(this, 'No results'))}</div>`;
       list.innerHTML = html;
       this._active = -1;
       list.querySelectorAll('.opt').forEach((o) => tiltWatch(o));
@@ -4922,7 +5015,7 @@
     addTerm(raw, o = {}) {
       const t = this.tidy(raw);
       if (t === null) {
-        if (!o.quiet) { const b = this.$('.box'); b?.classList.remove('bad'); void b?.offsetWidth; b?.classList.add('bad'); this.say(this.getAttribute('kind') === 'color' ? `${String(raw).trim()} is not a colour code` : `${String(raw).trim()} is not a number`); }
+        if (!o.quiet) { const b = this.$('.box'); b?.classList.remove('bad'); void b?.offsetWidth; b?.classList.add('bad'); this.say(this.getAttribute('kind') === 'color' ? T(this, '{name} is not a colour code', { name: String(raw).trim() }) : T(this, '{name} is not a number', { name: String(raw).trim() })); }
         return false;
       }
       return super.addTerm(t, o);
@@ -4940,7 +5033,7 @@
       const i = this.native; if (!i) return;
       // the hint for an empty field: what to type (the field shows none once it has chips)
       if (!this.getAttribute('placeholder') && !(this._terms || []).length && !i.readOnly) i.placeholder = this.getAttribute('kind') === 'color' ? '#3b82f6, then Enter' : 'Type, then Enter';
-      if (!this.getAttribute('label') && !this.getAttribute('aria-label')) i.setAttribute('aria-label', 'Values');
+      if (!this.getAttribute('label') && !this.getAttribute('aria-label')) i.setAttribute('aria-label', T(this, 'Values'));
     }
   }
   define('sav-chip-input', SavChipInput);
@@ -4985,10 +5078,10 @@
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.setAttribute('role', 'region'); this.setAttribute('aria-roledescription', 'carousel');
-      if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', this.getAttribute('label') || 'Carousel');
+      if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Carousel'));
       this.shadowRoot.innerHTML = `<div class="vp" part="viewport" tabindex="0"><slot></slot></div>
-        <button type="button" class="nav prev" part="previous" aria-label="Previous slide">${svgIcon('chevron-left')}</button>
-        <button type="button" class="nav next" part="next" aria-label="Next slide">${svgIcon('chevron-right')}</button>
+        <button type="button" class="nav prev" part="previous" aria-label="${esc(T(this, 'Previous slide'))}">${svgIcon('chevron-left')}</button>
+        <button type="button" class="nav next" part="next" aria-label="${esc(T(this, 'Next slide'))}">${svgIcon('chevron-right')}</button>
         <div class="hint" part="hint" aria-hidden="true"></div><div class="dots" part="dots"></div><div class="live" aria-live="polite"></div>`;
       const vp = (this.vp = this.$('.vp'));
       this.$('.prev').addEventListener('click', () => this.go(this.index - 1));
@@ -5060,8 +5153,8 @@
     get positions() { return Math.max(1, this.slides.length - this.perView + 1); }
     build() {
       const n = this.slides.length, per = this.perView;
-      this.slides.forEach((s, i) => { s.setAttribute('role', 'group'); s.setAttribute('aria-roledescription', 'slide'); s.setAttribute('aria-label', `${i + 1} of ${n}`); });
-      this.$('.dots').innerHTML = Array.from({ length: this.positions }, (_, i) => `<button type="button" class="dot" aria-label="${per > 1 ? `Slides ${i + 1} to ${Math.min(n, i + per)}` : `Slide ${i + 1}`}" data-i="${i}"></button>`).join('');
+      this.slides.forEach((s, i) => { s.setAttribute('role', 'group'); s.setAttribute('aria-roledescription', 'slide'); s.setAttribute('aria-label', T(this, '{i} of {n}', { i: i + 1, n })); });
+      this.$('.dots').innerHTML = Array.from({ length: this.positions }, (_, i) => `<button type="button" class="dot" aria-label="${esc(per > 1 ? T(this, 'Slides {a} to {b}', { a: i + 1, b: Math.min(n, i + per) }) : T(this, 'Slide {i}', { i: i + 1 }))}" data-i="${i}"></button>`).join('');
       this.$$('.dot').forEach((d) => d.addEventListener('click', () => this.go(Number(d.dataset.i))));
       this.index = Math.min(this.index || 0, this.positions - 1); this.syncIndex();
     }
@@ -5088,7 +5181,7 @@
       this.$('.prev').disabled = !loop && this.index <= 0;
       this.$('.next').disabled = !loop && this.index >= p - 1;
       this.$('.dots').hidden = p < 2; this.$$('.nav').forEach((b) => b.toggleAttribute('data-none', p < 2));
-      this.$('.live').textContent = per > 1 ? `Slides ${this.index + 1} to ${Math.min(n, this.index + per)} of ${n}` : `Slide ${this.index + 1} of ${n}`;
+      this.$('.live').textContent = per > 1 ? T(this, 'Slides {a} to {b} of {n}', { a: this.index + 1, b: Math.min(n, this.index + per), n }) : T(this, 'Slide {i} of {n}', { i: this.index + 1, n });
     }
   }
   define('sav-carousel', SavCarousel);
@@ -5298,21 +5391,21 @@
       this.shadowRoot.innerHTML = `<figure part="base"><div class="fr" part="frame" tabindex="-1"><video part="video" preload="metadata" playsinline><slot></slot></video>
         <button type="button" class="play" part="play-button">${svgIcon('play')}</button><span class="again" part="replay-label" aria-hidden="true"></span>
         <div class="bar" part="controls">
-          <button type="button" class="pp" aria-label="Play">${svgIcon('play')}</button>
-          <button type="button" class="skip back" aria-label="Back 10 seconds">${svgIcon('rewind')}<span class="sn" aria-hidden="true">10</span></button>
-          <button type="button" class="skip fwd" aria-label="Forward 10 seconds"><span class="sn" aria-hidden="true">10</span>${svgIcon('fast-forward')}</button>
+          <button type="button" class="pp" aria-label="${esc(T(this, 'Play'))}">${svgIcon('play')}</button>
+          <button type="button" class="skip back" aria-label="${esc(T(this, 'Back 10 seconds'))}">${svgIcon('rewind')}<span class="sn" aria-hidden="true">10</span></button>
+          <button type="button" class="skip fwd" aria-label="${esc(T(this, 'Forward 10 seconds'))}"><span class="sn" aria-hidden="true">10</span>${svgIcon('fast-forward')}</button>
           <span class="time"><span class="cur">0:00</span> / <span class="dur">0:00</span></span>
-          <input class="seek mr" type="range" min="0" max="100" step="0.1" value="0" aria-label="Position">
-          <button type="button" class="mute" aria-label="Mute" aria-pressed="false">${ic('volume-2')}</button>
-          <input class="vol mr" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
-          <button type="button" class="speed" aria-label="Speed 1×">1×</button>
-          <button type="button" class="loop" aria-label="Loop" aria-pressed="false"><sav-icon name="repeat"></sav-icon></button>
-          <button type="button" class="cc" aria-label="Captions" aria-pressed="false" hidden>${ic('captions')}</button>
-          <button type="button" class="pip" aria-label="Picture in picture" hidden>${ic('picture-in-picture-2')}</button>
-          <button type="button" class="fs" aria-label="Full screen">${svgIcon('maximize')}</button>
-          <button type="button" class="more" aria-label="More controls" aria-haspopup="true" aria-expanded="false" hidden>${svgIcon('more-horizontal')}</button>
-        </div><div class="mm float" part="more-menu" role="group" aria-label="More controls" ${supportsPopover ? 'popover="manual"' : ''}></div>
-        <div class="vp float" part="volume-popup" role="group" aria-label="Volume" ${supportsPopover ? 'popover="manual"' : ''}><button type="button" class="vmute" aria-label="Mute" aria-pressed="false">${ic('volume-2')}</button></div></div><figcaption part="caption"></figcaption></figure>`;
+          <input class="seek mr" type="range" min="0" max="100" step="0.1" value="0" aria-label="${esc(T(this, 'Position'))}">
+          <button type="button" class="mute" aria-label="${esc(T(this, 'Mute'))}" aria-pressed="false">${ic('volume-2')}</button>
+          <input class="vol mr" type="range" min="0" max="1" step="0.05" value="1" aria-label="${esc(T(this, 'Volume'))}">
+          <button type="button" class="speed" aria-label="${esc(T(this, 'Speed {r}', { r: '1×' }))}">1×</button>
+          <button type="button" class="loop" aria-label="${esc(T(this, 'Loop'))}" aria-pressed="false"><sav-icon name="repeat"></sav-icon></button>
+          <button type="button" class="cc" aria-label="${esc(T(this, 'Captions'))}" aria-pressed="false" hidden>${ic('captions')}</button>
+          <button type="button" class="pip" aria-label="${esc(T(this, 'Picture in picture'))}" hidden>${ic('picture-in-picture-2')}</button>
+          <button type="button" class="fs" aria-label="${esc(T(this, 'Full screen'))}">${svgIcon('maximize')}</button>
+          <button type="button" class="more" aria-label="${esc(T(this, 'More controls'))}" aria-haspopup="true" aria-expanded="false" hidden>${svgIcon('more-horizontal')}</button>
+        </div><div class="mm float" part="more-menu" role="group" aria-label="${esc(T(this, 'More controls'))}" ${supportsPopover ? 'popover="manual"' : ''}></div>
+        <div class="vp float" part="volume-popup" role="group" aria-label="${esc(T(this, 'Volume'))}" ${supportsPopover ? 'popover="manual"' : ''}><button type="button" class="vmute" aria-label="${esc(T(this, 'Mute'))}" aria-pressed="false">${ic('volume-2')}</button></div></div><figcaption part="caption"></figcaption></figure>`;
       const v = (this.video = this.$('video')), fr = this.$('.fr'), $ = (q) => this.$(q);
       for (const a of ['autoplay', 'muted', 'loop']) if (this.hasAttribute(a)) v[a] = true;
       mediaLoop(this, v, this.$('.loop'));
@@ -5330,7 +5423,7 @@
       $('.mute').addEventListener('click', () => { v.muted = !v.muted; if (!v.muted && v.volume === 0) v.volume = .5; });
       const speeds = [1, 1.25, 1.5, 2, 0.5, 0.75];
       $('.speed').addEventListener('click', () => { const i = (speeds.indexOf(v.playbackRate) + 1) % speeds.length; v.playbackRate = speeds[i]; });
-      v.addEventListener('ratechange', () => { const r = `${v.playbackRate}×`; $('.speed').textContent = r; $('.speed').setAttribute('aria-label', `Speed ${r}`); });
+      v.addEventListener('ratechange', () => { const r = `${v.playbackRate}×`; $('.speed').textContent = r; $('.speed').setAttribute('aria-label', T(this, 'Speed {r}', { r })); });
       $('.cc').addEventListener('click', () => { const t = v.textTracks[0]; if (!t) return; t.mode = t.mode === 'showing' ? 'hidden' : 'showing'; $('.cc').setAttribute('aria-pressed', String(t.mode === 'showing')); });
       $('.pip').addEventListener('click', () => (document.pictureInPictureElement ? document.exitPictureInPicture() : v.requestPictureInPicture?.()).catch?.(() => {}));
       // iPhone has no full screen for elements: there only the video itself goes full screen, with the iOS controls
@@ -5338,15 +5431,15 @@
         if (!fr.requestFullscreen && v.webkitEnterFullscreen) { v.webkitEnterFullscreen(); return; }
         (document.fullscreenElement ? document.exitFullscreen() : fr.requestFullscreen?.())?.catch?.(() => {});
       });
-      this._fs = () => { const on = document.fullscreenElement === fr; $('.fs').innerHTML = svgIcon(on ? 'minimize' : 'maximize'); $('.fs').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); };
+      this._fs = () => { const on = document.fullscreenElement === fr; $('.fs').innerHTML = svgIcon(on ? 'minimize' : 'maximize'); $('.fs').setAttribute('aria-label', on ? T(this, 'Exit full screen') : T(this, 'Full screen')); };
       document.addEventListener('fullscreenchange', this._fs);
       const paint = () => {
         const playing = !v.paused && !v.ended, again = v.ended;
-        $('.pp').innerHTML = again ? '<sav-icon name="rotate-ccw"></sav-icon>' : svgIcon(playing ? 'pause' : 'play'); $('.pp').setAttribute('aria-label', again ? this.replayLabel : playing ? 'Pause' : 'Play');
+        $('.pp').innerHTML = again ? '<sav-icon name="rotate-ccw"></sav-icon>' : svgIcon(playing ? 'pause' : 'play'); $('.pp').setAttribute('aria-label', again ? this.replayLabel : playing ? T(this, 'Pause') : T(this, T(this, 'Play')));
         const pop = this.hasAttribute('data-vol-pop'), icon = ic(v.muted || v.volume === 0 ? 'volume-x' : 'volume-2');
-        $('.mute').innerHTML = icon; $('.mute').setAttribute('aria-label', pop ? 'Volume' : v.muted ? 'Unmute' : 'Mute');
+        $('.mute').innerHTML = icon; $('.mute').setAttribute('aria-label', pop ? 'Volume' : v.muted ? T(this, 'Unmute') : T(this, 'Mute'));
         pop ? ($('.mute').removeAttribute('aria-pressed'), $('.mute').setAttribute('aria-haspopup', 'true')) : ($('.mute').setAttribute('aria-pressed', String(v.muted)), $('.mute').removeAttribute('aria-haspopup'), $('.mute').removeAttribute('aria-expanded'));
-        $('.vmute').innerHTML = icon; $('.vmute').setAttribute('aria-pressed', String(v.muted)); $('.vmute').setAttribute('aria-label', v.muted ? 'Unmute' : 'Mute');
+        $('.vmute').innerHTML = icon; $('.vmute').setAttribute('aria-pressed', String(v.muted)); $('.vmute').setAttribute('aria-label', v.muted ? T(this, 'Unmute') : T(this, 'Mute'));
         if (!this._seeking) vol.value = v.muted ? 0 : v.volume;
         mediaFill(vol);
       };
@@ -5371,7 +5464,7 @@
       this._vol = mediaVolume(this, $('.mute'), $('.vp'), v); this._paint = paint;
       $('.mm').addEventListener('click', (e) => { if (e.target.closest('.fs, .pip, .cc')) close(false); });
       this._ro = new ResizeObserver(() => this.fit()); this._ro.observe($('.bar'));
-      v.addEventListener('timeupdate', () => { if (!this._seeking) seek.value = v.currentTime; mediaFill(seek); $('.cur').textContent = fmtTime(v.currentTime); seek.setAttribute('aria-valuetext', `${fmtTime(v.currentTime)} of ${fmtTime(v.duration)}`); });
+      v.addEventListener('timeupdate', () => { if (!this._seeking) seek.value = v.currentTime; mediaFill(seek); $('.cur').textContent = fmtTime(v.currentTime); seek.setAttribute('aria-valuetext', T(this, '{a} of {b}', { a: fmtTime(v.currentTime), b: fmtTime(v.duration) })); });
       // the bar hides while playing and comes back on movement, touch or focus
       fr.addEventListener('pointermove', () => this.wake());
       fr.addEventListener('focusin', () => this.wake());
@@ -5425,9 +5518,9 @@
       v.loop = this.hasAttribute('loop'); this._loopPaint?.();
       const r = this.getAttribute('ratio'); r ? this.style.setProperty('--ratio', r.replace(':', ' / ')) : this.style.removeProperty('--ratio');
       this.$('figcaption').textContent = this.getAttribute('caption') || '';
-      this.$('.play').setAttribute('aria-label', 'Play ' + (this.getAttribute('label') || 'video'));
+      this.$('.play').setAttribute('aria-label', T(this, 'Play {name}', { name: this.getAttribute('label') || T(this, 'video') }));
     }
-    get replayLabel() { return this.getAttribute('replay-label') || 'Replay'; }
+    get replayLabel() { return this.getAttribute('replay-label') || T(this, 'Replay'); }
     play() { return this.video?.play(); } pause() { this.video?.pause(); }
     disconnectedCallback() { if (this._fs) document.removeEventListener('fullscreenchange', this._fs); hidePop(this.$('.mm')); }
   }
@@ -5438,7 +5531,7 @@
 
   /** the Loop button of the players: pressed when the media starts again by itself (the loop attribute); a press turns it on or off */
   function mediaLoop(host, media, btn) {
-    const paint = () => { const on = media.loop; btn.setAttribute('aria-pressed', String(on)); btn.title = on ? 'Loop: on' : 'Loop: off'; };
+    const paint = () => { const on = media.loop; btn.setAttribute('aria-pressed', String(on)); btn.title = on ? T(btn, 'Loop: on') : T(btn, 'Loop: off'); };
     btn.addEventListener('click', () => { host.toggleAttribute('loop', !media.loop); });
     host._loopPaint = paint; paint();
   }
@@ -5499,17 +5592,17 @@
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       const ic = (n) => `<sav-icon name="${n}"></sav-icon>`;
-      this.shadowRoot.innerHTML = `<div class="p" part="base" role="group" aria-label="Audio player"><img class="cv" part="cover" alt="">
-        <button type="button" class="pp" part="play-button" aria-label="Play">${svgIcon('play')}</button>
+      this.shadowRoot.innerHTML = `<div class="p" part="base" role="group" aria-label="${esc(T(this, 'Audio player'))}"><img class="cv" part="cover" alt="">
+        <button type="button" class="pp" part="play-button" aria-label="${esc(T(this, 'Play'))}">${svgIcon('play')}</button>
         <div class="head"><span class="ti" part="title"></span><span class="ar" part="artist"></span></div>
-        <div class="bar" part="controls"><button type="button" class="ib skip back" aria-label="Back 10 seconds">${svgIcon('rewind')}<span class="sn" aria-hidden="true">10</span></button>
-          <span class="t cur">0:00</span><input class="seek mr" type="range" min="0" max="100" step="0.1" value="0" aria-label="Position"><span class="t dur">0:00</span>
-          <button type="button" class="ib skip fwd" aria-label="Forward 10 seconds"><span class="sn" aria-hidden="true">10</span>${svgIcon('fast-forward')}</button><button type="button" class="ib speed" aria-label="Speed 1×">1×</button>
-          <button type="button" class="ib loop" aria-label="Loop" aria-pressed="false"><sav-icon name="repeat"></sav-icon></button>
-          <button type="button" class="ib mute" part="mute-button" aria-label="Mute" aria-pressed="false">${ic('volume-2')}</button><input class="vol mr" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
-          <button type="button" class="ib more" aria-label="More controls" aria-haspopup="true" aria-expanded="false" hidden>${svgIcon('more-horizontal')}</button></div>
-        <div class="mm float" part="more-menu" role="group" aria-label="More controls" ${supportsPopover ? 'popover="manual"' : ''}></div>
-        <div class="vp float" part="volume-popup" role="group" aria-label="Volume" ${supportsPopover ? 'popover="manual"' : ''}><button type="button" class="vmute" aria-label="Mute" aria-pressed="false">${ic('volume-2')}</button></div>
+        <div class="bar" part="controls"><button type="button" class="ib skip back" aria-label="${esc(T(this, 'Back 10 seconds'))}">${svgIcon('rewind')}<span class="sn" aria-hidden="true">10</span></button>
+          <span class="t cur">0:00</span><input class="seek mr" type="range" min="0" max="100" step="0.1" value="0" aria-label="${esc(T(this, 'Position'))}"><span class="t dur">0:00</span>
+          <button type="button" class="ib skip fwd" aria-label="${esc(T(this, 'Forward 10 seconds'))}"><span class="sn" aria-hidden="true">10</span>${svgIcon('fast-forward')}</button><button type="button" class="ib speed" aria-label="${esc(T(this, 'Speed {r}', { r: '1×' }))}">1×</button>
+          <button type="button" class="ib loop" aria-label="${esc(T(this, 'Loop'))}" aria-pressed="false"><sav-icon name="repeat"></sav-icon></button>
+          <button type="button" class="ib mute" part="mute-button" aria-label="${esc(T(this, 'Mute'))}" aria-pressed="false">${ic('volume-2')}</button><input class="vol mr" type="range" min="0" max="1" step="0.05" value="1" aria-label="${esc(T(this, 'Volume'))}">
+          <button type="button" class="ib more" aria-label="${esc(T(this, 'More controls'))}" aria-haspopup="true" aria-expanded="false" hidden>${svgIcon('more-horizontal')}</button></div>
+        <div class="mm float" part="more-menu" role="group" aria-label="${esc(T(this, 'More controls'))}" ${supportsPopover ? 'popover="manual"' : ''}></div>
+        <div class="vp float" part="volume-popup" role="group" aria-label="${esc(T(this, 'Volume'))}" ${supportsPopover ? 'popover="manual"' : ''}><button type="button" class="vmute" aria-label="${esc(T(this, 'Mute'))}" aria-pressed="false">${ic('volume-2')}</button></div>
       </div><audio part="audio" preload="metadata"><slot></slot></audio>`;
       const a = (this.audio = this.$('audio')), $ = (q) => this.$(q), pp = $('.pp'), seek = $('.seek'), vol = $('.vol');
       tiltWatch($('.p'));
@@ -5523,15 +5616,15 @@
       $('.mute').addEventListener('click', () => { a.muted = !a.muted; if (!a.muted && a.volume === 0) a.volume = .5; });
       const speeds = [1, 1.25, 1.5, 2, 0.5, 0.75];
       $('.speed').addEventListener('click', () => { const i = (speeds.indexOf(a.playbackRate) + 1) % speeds.length; a.playbackRate = speeds[i]; });
-      a.addEventListener('ratechange', () => { const r = `${a.playbackRate}×`; $('.speed').textContent = r; $('.speed').setAttribute('aria-label', `Speed ${r}`); });
+      a.addEventListener('ratechange', () => { const r = `${a.playbackRate}×`; $('.speed').textContent = r; $('.speed').setAttribute('aria-label', T(this, 'Speed {r}', { r })); });
       const paint = () => {
         const playing = !a.paused && !a.ended;
         const again = a.ended;
-        pp.innerHTML = again ? '<sav-icon name="rotate-ccw"></sav-icon>' : svgIcon(playing ? 'pause' : 'play'); pp.setAttribute('aria-label', again ? (this.getAttribute('replay-label') || 'Replay') : playing ? 'Pause' : 'Play');
+        pp.innerHTML = again ? '<sav-icon name="rotate-ccw"></sav-icon>' : svgIcon(playing ? 'pause' : 'play'); pp.setAttribute('aria-label', again ? (this.getAttribute('replay-label') || T(this, 'Replay')) : playing ? T(this, 'Pause') : T(this, 'Play'));
         const pop = this.hasAttribute('data-vol-pop'), icon = ic(a.muted || a.volume === 0 ? 'volume-x' : 'volume-2');
-        $('.mute').innerHTML = icon; $('.mute').setAttribute('aria-label', pop ? 'Volume' : a.muted ? 'Unmute' : 'Mute');
+        $('.mute').innerHTML = icon; $('.mute').setAttribute('aria-label', pop ? 'Volume' : a.muted ? T(this, 'Unmute') : T(this, 'Mute'));
         pop ? ($('.mute').removeAttribute('aria-pressed'), $('.mute').setAttribute('aria-haspopup', 'true')) : ($('.mute').setAttribute('aria-pressed', String(a.muted)), $('.mute').removeAttribute('aria-haspopup'), $('.mute').removeAttribute('aria-expanded'));
-        $('.vmute').innerHTML = icon; $('.vmute').setAttribute('aria-pressed', String(a.muted)); $('.vmute').setAttribute('aria-label', a.muted ? 'Unmute' : 'Mute');
+        $('.vmute').innerHTML = icon; $('.vmute').setAttribute('aria-pressed', String(a.muted)); $('.vmute').setAttribute('aria-label', a.muted ? T(this, 'Unmute') : T(this, 'Mute'));
         vol.value = a.muted ? 0 : a.volume; mediaFill(vol);
       };
       a.addEventListener('play', () => { paint(); this.emit('play'); });
@@ -5539,7 +5632,7 @@
       a.addEventListener('ended', () => { paint(); this.emit('ended'); });
       a.addEventListener('volumechange', paint);
       a.addEventListener('loadedmetadata', () => { $('.dur').textContent = fmtTime(a.duration); seek.max = a.duration || 100; mediaFill(seek); });
-      a.addEventListener('timeupdate', () => { if (!this._seeking) seek.value = a.currentTime; mediaFill(seek); $('.cur').textContent = fmtTime(a.currentTime); seek.setAttribute('aria-valuetext', `${fmtTime(a.currentTime)} of ${fmtTime(a.duration)}`); });
+      a.addEventListener('timeupdate', () => { if (!this._seeking) seek.value = a.currentTime; mediaFill(seek); $('.cur').textContent = fmtTime(a.currentTime); seek.setAttribute('aria-valuetext', T(this, '{a} of {b}', { a: fmtTime(a.currentTime), b: fmtTime(a.duration) })); });
       // keys with the focus anywhere in the player (the bars keep their own arrows)
       $('.p').addEventListener('keydown', (e) => {
         if (e.target.matches('input[type=range]') && /Arrow|Home|End|Page/.test(e.key)) return;
@@ -5589,7 +5682,7 @@
       this._loopPaint?.();
       const t = this.getAttribute('title') || '', ar = this.getAttribute('artist') || '';
       this.$('.ti').textContent = t; this.$('.ar').textContent = ar;
-      this.$('.p').setAttribute('aria-label', t ? `Audio: ${t}${ar ? ', ' + ar : ''}` : 'Audio player');
+      this.$('.p').setAttribute('aria-label', t ? `Audio: ${t}${ar ? ', ' + ar : ''}` : T(this, 'Audio player'));
       const c = this.getAttribute('cover'); if (c) this.$('.cv').src = c;
     }
     play() { return this.audio?.play(); } pause() { this.audio?.pause(); }
@@ -5621,7 +5714,7 @@
     static get observedAttributes() { return ['collapsed', 'orientation', 'label', 'auto-text']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<div class="m" part="base" role="${this.slot === 'submenu' ? 'menu' : this.getAttribute('orientation') === 'horizontal' ? 'menubar' : 'menu'}"><slot></slot><button type="button" class="tog" part="collapse-button" aria-label="Fold the menu">${svgIcon('chevrons-left')}<span>Fold</span></button></div>`;
+      this.shadowRoot.innerHTML = `<div class="m" part="base" role="${this.slot === 'submenu' ? 'menu' : this.getAttribute('orientation') === 'horizontal' ? 'menubar' : 'menu'}"><slot></slot><button type="button" class="tog" part="collapse-button" aria-label="${esc(T(this, 'Fold the menu'))}">${svgIcon('chevrons-left')}<span>${esc(T(this, 'Fold'))}</span></button></div>`;
       if (this.getAttribute('label')) this.$('.m').setAttribute('aria-label', this.getAttribute('label'));
       this.$('.m').setAttribute('aria-orientation', this.horizontal ? 'horizontal' : 'vertical');
       this.$('.tog').addEventListener('click', () => { this.toggleAttribute('collapsed'); this.emit('sav-toggle', { collapsed: this.hasAttribute('collapsed') }); });
@@ -5643,7 +5736,7 @@
     disconnectedCallback() { document.removeEventListener('click', this._out); }
     changed(name, v) {
       if (name === 'label') this.$('.m')?.setAttribute('aria-label', v || '');
-      if (name === 'collapsed') this.$('.tog')?.setAttribute('aria-label', v === null ? 'Fold the menu' : 'Unfold the menu');
+      if (name === 'collapsed') this.$('.tog')?.setAttribute('aria-label', v === null ? T(this, 'Fold the menu') : T(this, 'Unfold the menu'));
       this.sync();
     }
     get horizontal() { return this.getAttribute('orientation') === 'horizontal'; }
@@ -5702,7 +5795,7 @@
     `;
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<nav part="base" aria-label="${esc(this.getAttribute('label') || 'Main')}"><slot></slot></nav>`;
+      this.shadowRoot.innerHTML = `<nav part="base" aria-label="${esc(this.getAttribute('label') || T(this, 'Main'))}"><slot></slot></nav>`;
       this.addEventListener('click', (e) => {
         const it = e.target.closest('sav-bottom-nav-item'); if (!it) return;
         if (!it.hasAttribute('href')) { this.querySelectorAll('sav-bottom-nav-item').forEach((x) => x.toggleAttribute('current', x === it)); }
@@ -5800,11 +5893,11 @@
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = `<header class="bar" part="base">
-          <button type="button" class="ib burger" part="menu-button" aria-label="Open the menu" aria-expanded="false" aria-controls="nav">${svgIcon('menu')}</button>
+          <button type="button" class="ib burger" part="menu-button" aria-label="${esc(T(this, 'Open the menu'))}" aria-expanded="false" aria-controls="nav">${svgIcon('menu')}</button>
           <div class="logo" part="logo"><slot name="logo"></slot></div>
-          <nav class="nav" id="nav" part="nav" aria-label="${esc(this.getAttribute('label') || 'Main')}"><slot></slot></nav>
-          <div class="search" part="search" role="search"><slot name="search"></slot><button type="button" class="ib close" part="search-close" aria-label="Close the search">${svgIcon('x')}</button></div>
-          <button type="button" class="ib search-btn" part="search-button" aria-label="Search" aria-expanded="false">${svgIcon('search')}</button>
+          <nav class="nav" id="nav" part="nav" aria-label="${esc(this.getAttribute('label') || T(this, 'Main'))}"><slot></slot></nav>
+          <div class="search" part="search" role="search"><slot name="search"></slot><button type="button" class="ib close" part="search-close" aria-label="${esc(T(this, 'Close the search'))}">${svgIcon('x')}</button></div>
+          <button type="button" class="ib search-btn" part="search-button" aria-label="${esc(T(this, 'Search'))}" aria-expanded="false">${svgIcon('search')}</button>
           <div class="actions" part="actions"><slot name="actions"></slot></div>
         </header>`;
       tiltWatch(this.$('.bar'));
@@ -5826,7 +5919,7 @@
     }
     disconnectedCallback() { this._ro?.disconnect(); document.removeEventListener('click', this._out); }
     changed(name, v) {
-      if (name === 'label') this.$('.nav')?.setAttribute('aria-label', v || 'Main');
+      if (name === 'label') this.$('.nav')?.setAttribute('aria-label', v || T(this, 'Main'));
       this.measure();
     }
     sync() {
@@ -5861,7 +5954,7 @@
       if (open === this.hasAttribute('data-open')) return;
       if (open) this.toggleSearch(false);
       this.toggleAttribute('data-open', open);
-      const b = this.$('.burger'); b.setAttribute('aria-expanded', String(open)); b.setAttribute('aria-label', open ? 'Close the menu' : 'Open the menu');
+      const b = this.$('.burger'); b.setAttribute('aria-expanded', String(open)); b.setAttribute('aria-label', open ? T(this, 'Close the menu') : T(this, 'Open the menu'));
       this.emit('sav-toggle', { part: 'menu', open });
     }
     /** Opens the folded search across the header (and moves the focus into it) or closes it. */
@@ -5898,7 +5991,7 @@
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = '<slot></slot><div class="live" aria-live="assertive"></div>';
       this.setAttribute('role', 'list');
-      const prep = () => { this.items.forEach((el) => { el.setAttribute('role', 'listitem'); if (!el.hasAttribute('tabindex')) el.tabIndex = 0; el.setAttribute('aria-roledescription', 'sortable item'); el.setAttribute('aria-describedby', ''); }); this.grips(); };
+      const prep = () => { this.items.forEach((el) => { el.setAttribute('role', 'listitem'); if (!el.hasAttribute('tabindex')) el.tabIndex = 0; el.setAttribute('aria-roledescription', T(this, 'sortable item')); el.setAttribute('aria-describedby', ''); }); this.grips(); };
       this.$('slot').addEventListener('slotchange', prep); prep();
       this.addEventListener('pointerdown', (e) => this.down(e));
       this.addEventListener('keydown', (e) => this.key(e));
@@ -5951,7 +6044,7 @@
         const eat = (c) => { c.preventDefault(); c.stopPropagation(); };
         el.addEventListener('click', eat, { capture: true, once: true });
         setTimeout(() => el.removeEventListener('click', eat, { capture: true }), 0);
-        if (to !== from) { this.say(`${this.name(el)} moved to position ${to + 1} of ${this.items.length}.`); this.emit('sav-sort', { item: el, from, to, order: this.items.map((x) => x.dataset.id ?? this.name(x)) }); }
+        if (to !== from) { this.say(T(this, '{name} moved to position {i} of {n}.', { name: this.name(el), i: to + 1, n: this.items.length })); this.emit('sav-sort', { item: el, from, to, order: this.items.map((x) => x.dataset.id ?? this.name(x)) }); }
       };
       addEventListener('pointermove', move, { passive: false }); addEventListener('pointerup', up); addEventListener('pointercancel', up);
     }
@@ -5960,18 +6053,18 @@
       const items = this.items, i = items.indexOf(el); const horiz = this.getAttribute('direction') === 'horizontal';
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
-        if (this._grab) { el.removeAttribute('data-sav-grabbed'); const to = i; this.say(`${this.name(el)} dropped at position ${to + 1} of ${items.length}.`); if (to !== this._grabFrom) this.emit('sav-sort', { item: el, from: this._grabFrom, to, order: items.map((x) => x.dataset.id ?? this.name(x)) }); this._grab = null; }
-        else { this._grab = el; this._grabFrom = i; el.setAttribute('data-sav-grabbed', ''); this.say(`${this.name(el)} picked up, position ${i + 1} of ${items.length}. Use the arrow keys to move, Space to drop, Escape to cancel.`); }
+        if (this._grab) { el.removeAttribute('data-sav-grabbed'); const to = i; this.say(T(this, '{name} dropped at position {i} of {n}.', { name: this.name(el), i: to + 1, n: items.length })); if (to !== this._grabFrom) this.emit('sav-sort', { item: el, from: this._grabFrom, to, order: items.map((x) => x.dataset.id ?? this.name(x)) }); this._grab = null; }
+        else { this._grab = el; this._grabFrom = i; el.setAttribute('data-sav-grabbed', ''); this.say(T(this, '{name} picked up, position {i} of {n}. Use the arrow keys to move, Space to drop, Escape to cancel.', { name: this.name(el), i: i + 1, n: items.length })); }
         return;
       }
       if (!this._grab) return;
       const d = { ArrowDown: 1, ArrowUp: -1, ArrowRight: horiz ? 1 : 0, ArrowLeft: horiz ? -1 : 0 }[e.key];
-      if (e.key === 'Escape') { e.preventDefault(); const back = items[this._grabFrom]; if (back !== el) this.insertBefore(el, this._grabFrom > i ? back.nextElementSibling : back); el.removeAttribute('data-sav-grabbed'); this._grab = null; el.focus(); this.say('Move cancelled.'); return; }
+      if (e.key === 'Escape') { e.preventDefault(); const back = items[this._grabFrom]; if (back !== el) this.insertBefore(el, this._grabFrom > i ? back.nextElementSibling : back); el.removeAttribute('data-sav-grabbed'); this._grab = null; el.focus(); this.say(T(this, 'Move cancelled.')); return; }
       if (!d) return;
       e.preventDefault();
       const j = i + d; if (j < 0 || j >= items.length) return;
       d > 0 ? items[j].after(el) : items[j].before(el);
-      el.focus(); this.say(`${this.name(el)}, position ${j + 1} of ${items.length}.`);
+      el.focus(); this.say(T(this, '{name}, position {i} of {n}.', { name: this.name(el), i: j + 1, n: items.length }));
     }
   }
   define('sav-sortable', SavSortable);
@@ -6026,7 +6119,7 @@
       const inp = this.$('input'); if (!inp) return;
       inp.accept = this.getAttribute('accept') || ''; inp.multiple = this.hasAttribute('multiple');
       const k = this.kind;
-      this.$('.t').textContent = this.getAttribute('label') || (k === 'data' ? 'Drop text or links here, or paste them' : k === 'any' ? 'Drop files, text or links here' : this.hasAttribute('multiple') ? 'Drop files here or click to choose' : 'Drop a file here or click to choose');
+      this.$('.t').textContent = this.getAttribute('label') || (k === 'data' ? T(this, 'Drop text or links here, or paste them') : k === 'any' ? T(this, 'Drop files, text or links here') : this.hasAttribute('multiple') ? T(this, 'Drop files here or click to choose') : T(this, 'Drop a file here or click to choose'));
       this.$('.z sav-icon').setAttribute('name', k === 'data' ? 'clipboard' : 'upload');
       this.$('.h').textContent = this.getAttribute('help') || '';
       this.$('.z').setAttribute('aria-label', this.$('.t').textContent);
@@ -6056,8 +6149,8 @@
     add(list) {
       const max = Number(this.getAttribute('max-size')) || 0; const bad = [];
       for (const f of list) {
-        if (!this.accepts(f)) { bad.push(`${f.name}: this type is not accepted`); continue; }
-        if (max && f.size > max) { bad.push(`${f.name}: larger than ${fmtSize(max)}`); continue; }
+        if (!this.accepts(f)) { bad.push(T(this, '{name}: this type is not accepted', { name: f.name })); continue; }
+        if (max && f.size > max) { bad.push(T(this, '{name}: larger than {size}', { name: f.name, size: fmtSize(max) })); continue; }
         if (this.hasAttribute('multiple')) this.files.push(f); else this.files = [f];
       }
       this.$('.err').textContent = bad.join(' · ');
@@ -6065,14 +6158,14 @@
     }
     update(fire) {
       this.dropped ||= [];
-      this.$('ul').innerHTML = this.files.map((f, i) => `<li><sav-icon name="file"></sav-icon><span>${esc(f.name)}</span><small>${fmtSize(f.size)}</small><button type="button" data-i="${i}" aria-label="Remove ${esc(f.name)}">${svgIcon('x')}</button></li>`).join('')
-        + this.dropped.map((d, i) => `<li><sav-icon name="${d.kind === 'url' ? 'link' : 'type'}"></sav-icon><span>${esc(d.kind === 'url' ? d.url : d.text)}</span><small>${d.kind === 'url' ? 'link' : 'text'}</small><button type="button" data-d="${i}" aria-label="Remove">${svgIcon('x')}</button></li>`).join('');
+      this.$('ul').innerHTML = this.files.map((f, i) => `<li><sav-icon name="file"></sav-icon><span>${esc(f.name)}</span><small>${fmtSize(f.size)}</small><button type="button" data-i="${i}" aria-label="${esc(T(this, 'Remove {name}', { name: f.name }))}">${svgIcon('x')}</button></li>`).join('')
+        + this.dropped.map((d, i) => `<li><sav-icon name="${d.kind === 'url' ? 'link' : 'type'}"></sav-icon><span>${esc(d.kind === 'url' ? d.url : d.text)}</span><small>${d.kind === 'url' ? T(this, 'link') : T(this, 'text')}</small><button type="button" data-d="${i}" aria-label="${esc(T(this, 'Remove'))}">${svgIcon('x')}</button></li>`).join('');
       const fd = new FormData(); const name = this.getAttribute('name') || 'files';
       this.files.forEach((f) => fd.append(name, f));
       this.dropped.forEach((d) => fd.append(name, d.kind === 'url' ? d.url : d.text));
       const any = this.files.length + this.dropped.length;
       this.internals.setFormValue(any ? fd : null);
-      if (this.required && !any) this.internals.setValidity({ valueMissing: true }, 'Choose a file.', this.$('.z')); else this.internals.setValidity({});
+      if (this.required && !any) this.internals.setValidity({ valueMissing: true }, T(this, 'Choose a file.'), this.$('.z')); else this.internals.setValidity({});
       if (fire) this.emit('change', { files: [...this.files], items: [...this.dropped] });
     }
     formResetCallback() { this.files = []; this.dropped = []; this.update(false); }
@@ -6086,7 +6179,7 @@
       desktop and mobile take one address or several separated by spaces; their -alt attributes describe them, separated by |. */
   class SavShowcase extends SavElement {
     static styles = `
-      :host { display: block; width: 100%; min-width: 0; }
+      :host { display: block; width: 100%; min-width: 0; container-type: inline-size; }
       .s { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(1.5rem, 5vw, 4rem); align-items: center; }
       :host([reverse]) .media { order: 2; }
       .media { position: relative; isolation: isolate; min-height: 10rem; }
@@ -6123,7 +6216,8 @@
       .p { margin: 0; color: var(--sav-color-text-muted); font-size: 1.05rem; line-height: 1.6; }
       .p:empty { display: none; }
       .act { display: flex; flex-wrap: wrap; gap: .6rem; }
-      @media (max-width: 760px) { .s { grid-template-columns: 1fr; } :host([reverse]) .media { order: 0; } }
+      /* one column when the showcase itself is narrow (a phone, but also a narrow column on a wide screen) */
+      @container (max-width: 760px) { .s { grid-template-columns: 1fr; } :host([reverse]) .media { order: 0; } }
     `;
     static get observedAttributes() { return ['desktop', 'mobile', 'desktop-alt', 'mobile-alt', 'heading', 'text', 'eyebrow']; }
     connectedCallback() { this.render(); }
@@ -6154,7 +6248,8 @@
       --sav-chart-4: var(--sav-color-warning); --sav-chart-5: var(--sav-color-danger); --sav-chart-6: #14b8a6; --sav-chart-7: #ec4899; --sav-chart-8: var(--sav-color-neutral); }
     .w { position: relative; }
     svg { display: block; width: 100%; height: auto; overflow: visible; }
-    .grid line { stroke: var(--sav-color-border); stroke-width: 1; }
+    /* grid lines stay quiet in every style (in Brutal the borders are ink: the grid takes a light ink instead) */
+    .grid line, .grid polygon { stroke: var(--sav-chart-grid, var(--sav-color-border)); stroke-width: 1; }
     .axis text, .lbl { fill: var(--sav-color-text-muted); }
     .val { fill: var(--sav-color-text); font-weight: 600; }
     .legend { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin-top: .6rem; font-size: .8rem; color: var(--sav-color-text-muted); }
@@ -6203,7 +6298,7 @@
     get W() { return Math.max(240, this._w || this.getBoundingClientRect().width || 480); }
     get H() { return Number(this.getAttribute('height')) || Math.round(Math.min(360, Math.max(200, this.W * 0.55))); }
     /** Series as [{ name, values }]: also accepts { values } (one series) or plain numbers. */
-    series() { const d = this.data; if (Array.isArray(d.series)) return d.series.map((s, i) => ({ name: s.name ?? `Series ${i + 1}`, values: s.values || [], color: s.color })); if (Array.isArray(d.values)) return [{ name: d.name || this.getAttribute('label') || 'Values', values: d.values }]; return []; }
+    series() { const d = this.data; if (Array.isArray(d.series)) return d.series.map((s, i) => ({ name: s.name ?? T(this, 'Series {i}', { i: i + 1 }), values: s.values || [], color: s.color })); if (Array.isArray(d.values)) return [{ name: d.name || this.getAttribute('label') || T(this, 'Values'), values: d.values }]; return []; }
     draw() {
       if (!this.$('.svg')) return;
       const svg = this.render(), box = this.$('.svg');
@@ -6215,16 +6310,16 @@
         box.classList.add('enter'); clearTimeout(this._et);
         this._et = setTimeout(() => box.classList.remove('enter'), 900 * motion(this) + 50);
       }
-      const s = this.$('svg'); s.setAttribute('role', 'img'); s.setAttribute('aria-label', (this.getAttribute('label') || 'Chart') + '. ' + this.summary());
+      const s = this.$('svg'); s.setAttribute('role', 'img'); s.setAttribute('aria-label', (this.getAttribute('label') || T(this, 'Chart')) + '. ' + this.summary());
       this.$('.legend').innerHTML = this.legendItems().map(([n, c]) => `<span><i style="background:${c}"></i>${esc(n)}</span>`).join('');
       this.$('.legend').setAttribute('aria-hidden', 'true');
       this.$('table').innerHTML = this.tableHtml();
     }
     legendItems() { const ss = this.series(); return ss.length > 1 ? ss.map((s, i) => [s.name, s.color || col(i)]) : []; }
-    summary() { const ss = this.series(); return ss.map((s) => `${s.name}: ${s.values.length} values, highest ${nfmt(Math.max(...s.values))}`).join('; '); }
+    summary() { const ss = this.series(); return ss.map((s) => T(this, '{name}: {n} values, highest {max}', { name: s.name, n: s.values.length, max: nfmt(Math.max(...s.values)) })).join('; '); }
     tableHtml() {
       const labels = this.data.labels || [], ss = this.series();
-      return `<caption>${esc(this.getAttribute('label') || 'Chart data')}</caption><tr><th></th>${ss.map((s) => `<th>${esc(s.name)}</th>`).join('')}</tr>` + labels.map((l, i) => `<tr><th>${esc(l)}</th>${ss.map((s) => `<td>${s.values[i] ?? ''}</td>`).join('')}</tr>`).join('');
+      return `<caption>${esc(this.getAttribute('label') || T(this, 'Chart data'))}</caption><tr><th></th>${ss.map((s) => `<th>${esc(s.name)}</th>`).join('')}</tr>` + labels.map((l, i) => `<tr><th>${esc(l)}</th>${ss.map((s) => `<td>${s.values[i] ?? ''}</td>`).join('')}</tr>`).join('');
     }
   }
 
@@ -6275,7 +6370,7 @@
     defaultData() { return { labels: [], values: [] }; }
     legendItems() { const d = this.data; return (d.labels || []).map((l, i) => [`${l} (${nfmt(d.values[i] || 0)})`, col(i)]); }
     summary() { const d = this.data, tot = (d.values || []).reduce((a, b) => a + b, 0); return (d.labels || []).map((l, i) => `${l} ${Math.round(((d.values[i] || 0) / tot) * 100)}%`).join(', '); }
-    tableHtml() { const d = this.data; return `<caption>${esc(this.getAttribute('label') || 'Chart data')}</caption>` + (d.labels || []).map((l, i) => `<tr><th>${esc(l)}</th><td>${d.values[i]}</td></tr>`).join(''); }
+    tableHtml() { const d = this.data; return `<caption>${esc(this.getAttribute('label') || T(this, 'Chart data'))}</caption>` + (d.labels || []).map((l, i) => `<tr><th>${esc(l)}</th><td>${d.values[i]}</td></tr>`).join(''); }
     render() {
       const d = this.data, vals = (d.values || []).map((v) => Math.max(0, v)), tot = vals.reduce((a, b) => a + b, 0); if (!tot) return '<svg></svg>';
       const S = Math.min(this.W, Number(this.getAttribute('height')) || 260), R = S / 2 - 4, cx = S / 2, cy = S / 2;
@@ -6327,7 +6422,7 @@
       const max = Number(this.getAttribute('max')) || niceMax(Math.max(...ss.flatMap((s) => s.values))), lv = Number(this.getAttribute('levels')) || 4;
       const pt = (i, r) => { const a = (Math.PI * 2 * i) / n - Math.PI / 2; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
       let g = '<g class="grid">';
-      for (let k = 1; k <= lv; k++) g += `<polygon points="${labels.map((_, i) => pt(i, (R * k) / lv).join(',')).join(' ')}" style="fill:none;stroke:var(--sav-color-border)"/>`;
+      for (let k = 1; k <= lv; k++) g += `<polygon points="${labels.map((_, i) => pt(i, (R * k) / lv).join(',')).join(' ')}" style="fill:none"/>`;
       labels.forEach((_, i) => { const [x, y] = pt(i, R); g += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}"/>`; });
       g += '</g><g class="axis">';
       labels.forEach((l, i) => { const [x, y] = pt(i, R + 16); g += `<text x="${x}" y="${y + 4}" text-anchor="${Math.abs(x - cx) < 4 ? 'middle' : x > cx ? 'start' : 'end'}">${esc(l)}</text>`; });
@@ -6386,9 +6481,9 @@
       const out = []; for (let t = new Date(first); t <= end; t.setDate(t.getDate() + 1)) { const k = t.toISOString().slice(0, 10); out.push({ date: new Date(t), key: k, value: t < start ? null : Number(map.get(k) ?? 0) }); }
       return out;
     }
-    summary() { const ds = this.days().filter((d) => d.value); return `${ds.length} active days, highest ${Math.max(0, ...ds.map((d) => d.value))}`; }
+    summary() { const ds = this.days().filter((d) => d.value); return T(this, '{n} active days, highest {max}', { n: ds.length, max: Math.max(0, ...ds.map((d) => d.value)) }); }
     legendItems() { return []; }
-    tableHtml() { return `<caption>${esc(this.getAttribute('label') || 'Activity')}</caption>` + this.days().filter((d) => d.value).map((d) => `<tr><th>${d.key}</th><td>${d.value}</td></tr>`).join(''); }
+    tableHtml() { return `<caption>${esc(this.getAttribute('label') || T(this, 'Activity'))}</caption>` + this.days().filter((d) => d.value).map((d) => `<tr><th>${d.key}</th><td>${d.value}</td></tr>`).join(''); }
     render() {
       const ds = this.days(), weeks = Math.ceil(ds.length / 7), lv = Number(this.getAttribute('levels')) || 5;
       const loc = safeLocale(this.getAttribute('locale')) || safeLocale(document.documentElement.lang);
@@ -6474,8 +6569,8 @@
     /** Values keyed by alpha-2 (alpha-3 keys are converted). */
     values() { const out = {}; for (const [k, v] of Object.entries(this.data || {})) { if (this.byContinent) { const c = contKey(k); if (c) out[c] = Number(v); continue; } const K = k.toUpperCase(); const c = K.length === 3 ? ISO_COUNTRIES.find((x) => x.a3 === K)?.a2 : K; if (c) out[c] = Number(v); } return out; }
     legendItems() { return []; }
-    summary() { const v = Object.entries(this.values()).sort((a, b) => b[1] - a[1]); return v.length ? `${v.length} ${this.byContinent ? 'continents' : 'countries'}, highest ${this.areaName(v[0][0])} ${nfmt(v[0][1])}` : 'World map'; }
-    tableHtml() { const loc = safeLocale(this.getAttribute('locale')); return `<caption>${esc(this.getAttribute('label') || 'Map data')}</caption>` + Object.entries(this.values()).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><th>${esc(this.areaName(c) || displayName(loc, 'region', c))}</th><td>${v}</td></tr>`).join(''); }
+    summary() { const v = Object.entries(this.values()).sort((a, b) => b[1] - a[1]); return v.length ? T(this, this.byContinent ? '{n} continents, highest {name} {max}' : '{n} countries, highest {name} {max}', { n: v.length, name: this.areaName(v[0][0]), max: nfmt(v[0][1]) }) : T(this, 'World map'); }
+    tableHtml() { const loc = safeLocale(this.getAttribute('locale')); return `<caption>${esc(this.getAttribute('label') || T(this, 'Map data'))}</caption>` + Object.entries(this.values()).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><th>${esc(this.areaName(c) || displayName(loc, 'region', c))}</th><td>${v}</td></tr>`).join(''); }
     render() {
       const w = this._world; if (!w) return '<svg viewBox="0 0 1000 520"></svg>';
       const vals = this.values(), by = this.byContinent;
@@ -6582,7 +6677,7 @@
     static get observedAttributes() { return ['max-items', 'separator', 'auto-text']; }
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<nav part="base" aria-label="${esc(this.getAttribute('label') || 'Breadcrumb')}"><slot name="first"></slot><button type="button" class="more" part="more" aria-label="Show the whole path" hidden>…</button><span class="sep" aria-hidden="true" hidden>${svgIcon('chevron-right')}</span><slot></slot></nav>`;
+      this.shadowRoot.innerHTML = `<nav part="base" aria-label="${esc(this.getAttribute('label') || T(this, 'Breadcrumb'))}"><slot name="first"></slot><button type="button" class="more" part="more" aria-label="${esc(T(this, 'Show the whole path'))}" hidden>…</button><span class="sep" aria-hidden="true" hidden>${svgIcon('chevron-right')}</span><slot></slot></nav>`;
       this.$('slot:not([name])').addEventListener('slotchange', () => this.sync());
       this.$('.more').addEventListener('click', () => { this._expanded = true; this.sync(); });
       tiltWatch(this.$('nav'));
@@ -6639,7 +6734,7 @@
     `];
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<button part="button" type="button" aria-label="${esc(this.getAttribute('copy-label') || 'Copy')}"><span class="ic">${svgIcon('copy')}</span><span class="txt"><slot></slot></span><span class="sr" aria-live="polite"></span></button>`;
+      this.shadowRoot.innerHTML = `<button part="button" type="button" aria-label="${esc(this.getAttribute('copy-label') || T(this, 'Copy'))}"><span class="ic">${svgIcon('copy')}</span><span class="txt"><slot></slot></span><span class="sr" aria-live="polite"></span></button>`;
       this.$('button').addEventListener('click', () => this.copy());
       tiltWatch(this.$('button'));
       const sync = () => this.$('button').classList.toggle('has-text', this.hasSlot());
@@ -6663,7 +6758,7 @@
       clearTimeout(this._t);
       b.classList.toggle('ok', ok); b.classList.toggle('err', !ok);
       ic.innerHTML = svgIcon(ok ? 'check' : 'x');
-      live.textContent = ok ? (this.getAttribute('success-label') || 'Copied') : (this.getAttribute('error-label') || 'Copy failed');
+      live.textContent = ok ? (this.getAttribute('success-label') || T(this, 'Copied')) : (this.getAttribute('error-label') || T(this, 'Copy failed'));
       this.emit(ok ? 'sav-copy' : 'sav-error', { value: text });
       this._t = setTimeout(() => { b.classList.remove('ok', 'err'); ic.innerHTML = svgIcon('copy'); live.textContent = ''; }, 1600);
     }
@@ -6898,7 +6993,7 @@
       if (this.shadowRoot.firstChild) return;
       if (this._code === undefined) this._code = dedent(this.textContent);
       this.shadowRoot.innerHTML = `<div class="cb" part="base"><div class="head" part="header"><span class="lang"></span><span class="title"></span><span class="sp"></span>
-        <button class="copy" part="copy-button" type="button">${svgIcon('copy')}<span class="ct">Copy</span></button></div>
+        <button class="copy" part="copy-button" type="button">${svgIcon('copy')}<span class="ct">${esc(T(this, 'Copy'))}</span></button></div>
         <div class="scroll" part="body"><pre><code></code></pre></div></div>`;
       this.$('.copy').addEventListener('click', () => this.copy());
       this.render();
@@ -6927,10 +7022,10 @@
       const b = this.$('.copy');
       try { await navigator.clipboard.writeText(this._code); }
       catch { const ta = Object.assign(document.createElement('textarea'), { value: this._code }); ta.style.cssText = 'position:fixed;opacity:0'; document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
-      b.classList.add('ok'); b.querySelector('.ct').textContent = 'Copied'; b.querySelector('svg').outerHTML = svgIcon('check');
+      b.classList.add('ok'); b.querySelector('.ct').textContent = T(this, 'Copied'); b.querySelector('svg').outerHTML = svgIcon('check');
       this.emit('sav-copy', { value: this._code });
       clearTimeout(this._t);
-      this._t = setTimeout(() => { b.classList.remove('ok'); b.querySelector('.ct').textContent = 'Copy'; b.querySelector('svg').outerHTML = svgIcon('copy'); }, 1600);
+      this._t = setTimeout(() => { b.classList.remove('ok'); b.querySelector('.ct').textContent = T(this, 'Copy'); b.querySelector('svg').outerHTML = svgIcon('copy'); }, 1600);
     }
   }
   define('sav-code-block', SavCodeBlock);
@@ -6993,17 +7088,17 @@
     render() {
       const nav = this.$('nav'); if (!nav) return;
       const n = this.pages, cur = this.page, tpl = this.getAttribute('href');
-      nav.setAttribute('aria-label', this.getAttribute('label') || 'Pages');
+      nav.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Pages'));
       const one = (p, inner, extra = '') => {
         const off = p < 1 || p > n;
         if (tpl && !off) return `<a class="p" part="page" href="${esc(tpl.replace(/\{page\}/g, p))}" data-p="${p}" ${extra}>${inner}</a>`;
         return `<button type="button" class="p" part="page" data-p="${p}" ${off ? 'disabled' : ''} ${extra}>${inner}</button>`;
       };
-      const prev = one(cur - 1, `${svgIcon('chevron-left')}<span class="t">Previous</span>`, `part="page previous" aria-label="Previous page"`);
-      const next = one(cur + 1, `<span class="t">Next</span>${svgIcon('chevron-right')}`, `part="page next" aria-label="Next page"`);
+      const prev = one(cur - 1, `${svgIcon('chevron-left')}<span class="t">${esc(T(this, 'Previous'))}</span>`, `part="page previous" aria-label="${esc(T(this, 'Previous page'))}"`);
+      const next = one(cur + 1, `<span class="t">${esc(T(this, 'Next'))}</span>${svgIcon('chevron-right')}`, `part="page next" aria-label="${esc(T(this, 'Next page'))}"`);
       const mid = this.getAttribute('appearance') === 'simple'
         ? `<span class="of" part="summary" aria-live="polite">${cur} of ${n}</span>`
-        : this.items().map((p) => (p === '…' ? '<span class="gap" aria-hidden="true">…</span>' : one(p, String(p), `aria-label="Page ${p}" ${p === cur ? 'aria-current="page"' : ''}`))).join('');
+        : this.items().map((p) => (p === '…' ? '<span class="gap" aria-hidden="true">…</span>' : one(p, String(p), `aria-label="${esc(T(this, 'Page {n}', { n: p }))}" ${p === cur ? 'aria-current="page"' : ''}`))).join('');
       nav.innerHTML = prev + mid + next;
       this.$$('.p').forEach((b) => tiltWatch(b));
     }
@@ -7040,7 +7135,7 @@
     set current(v) { this.setAttribute('current', String(v)); }
     sync() {
       const all = this.steps, cur = this.current, vert = this.getAttribute('orientation') === 'vertical';
-      this.$('ol')?.setAttribute('aria-label', this.getAttribute('label') || 'Steps');
+      this.$('ol')?.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Steps'));
       passAutoText(this, all);
       all.forEach((s, i) => {
         s.setAttribute('data-state', i + 1 < cur ? 'done' : i + 1 === cur ? 'current' : 'upcoming');
@@ -7101,7 +7196,7 @@
       const st = this.getAttribute('data-state') || 'upcoming', n = this.getAttribute('data-n') || '', icon = this.getAttribute('icon'), err = this.getAttribute('status') === 'error';
       const mark = err ? svgIcon('x') : st === 'done' ? svgIcon('check') : icon ? svgIcon(icon) : esc(n);
       const tag = this.hasAttribute('data-clickable') ? 'button' : 'div';
-      const state = err ? 'error' : st === 'done' ? 'done' : st === 'current' ? 'current step' : 'not done yet';
+      const state = T(this, err ? 'error' : st === 'done' ? 'done' : st === 'current' ? 'current step' : 'not done yet');
       this.shadowRoot.innerHTML = `<${tag} class="s" part="base" ${tag === 'button' ? 'type="button"' : ''} ${st === 'current' ? 'aria-current="step"' : ''}><span class="m" part="marker" aria-hidden="true">${mark}</span>`
         + `<span class="tx"><span class="l" part="label">${esc(this.getAttribute('label') || '')}<slot></slot></span><span class="d" part="description">${esc(this.getAttribute('description') || '')}</span><span class="sr">, ${state}</span></span></${tag}><span class="ln" part="line" aria-hidden="true"></span>`;
     }
@@ -7148,8 +7243,8 @@
     get current() { return Math.max(1, Number(this.getAttribute('current')) || 1); }
     set current(v) { this.setAttribute('current', String(v)); }
     sync() {
-      const all = this.levels, cur = this.current, open = this.hasAttribute('open'), go = this.getAttribute('current-label') ?? 'Start';
-      this.setAttribute('aria-label', this.getAttribute('label') || 'Levels');
+      const all = this.levels, cur = this.current, open = this.hasAttribute('open'), go = this.getAttribute('current-label') ?? T(this, 'Start');
+      this.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Levels'));
       all.forEach((lv, i) => {
         // a level may say its own state (status); otherwise it comes from current
         const own = lv.getAttribute('status');
@@ -7274,8 +7369,8 @@
       const mark = locked ? svgIcon('lock') : icon ? svgIcon(icon) : st === 'done' ? svgIcon('check') : esc(n);
       const sv = this.getAttribute('stars'), stars = sv === null || locked ? -1 : Math.max(0, Math.min(3, Number(sv) || 0));
       const starHtml = stars < 0 ? '' : `<span class="st" part="stars" aria-hidden="true">${[1, 2, 3].map((i) => svgIcon('star', i <= stars ? 'on' : 'off')).join('')}</span>`;
-      const state = { done: 'done', current: 'current level', locked: 'locked', open: '' }[st];
-      const name = [label || `Level ${n}`, of ? `level ${n} of ${of}` : '', state, stars >= 0 ? `${stars} of 3 stars` : ''].filter(Boolean).join(', ');
+      const state = T(this, { done: 'done', current: 'current level', locked: 'locked', open: '' }[st]);
+      const name = [label || T(this, 'Level {n}', { n }), of ? T(this, 'level {n} of {of}', { n, of }) : '', state, stars >= 0 ? T(this, '{n} of 3 stars', { n: stars }) : ''].filter(Boolean).join(', ');
       const href = this.getAttribute('href'), target = this.getAttribute('target');
       const open = href !== null && !locked
         ? `<a class="c" part="base" href="${esc(href)}"${target ? ` target="${esc(target)}"${target === '_blank' ? ' rel="noopener"' : ''}` : ''}`
@@ -7349,7 +7444,7 @@
         spark = `<svg class="sp" part="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="--_sc:${col}" aria-hidden="true"><path class="ar" d="${d} L${w} ${h} L0 ${h} Z"/><path class="ln" pathLength="1" d="${d}"/><circle class="dt" cx="${lx}" cy="${ly}" r="2.4" vector-effect="non-scaling-stroke"/></svg>`;
       }
       const icon = A('icon');
-      const said = `${A('label')}: ${A('prefix')}${A('value')}${A('unit') ? ' ' + A('unit') : ''}${ch ? `, ${good === 'good' ? 'better' : good === 'bad' ? 'worse' : 'changed'} by ${ch}` : ''}`;
+      const said = `${A('label')}: ${A('prefix')}${A('value')}${A('unit') ? ' ' + A('unit') : ''}${ch ? ', ' + T(this, good === 'good' ? 'better by {n}' : good === 'bad' ? 'worse by {n}' : 'changed by {n}', { n: ch }) : ''}`;
       this.shadowRoot.innerHTML = `<div class="c" part="base" role="group" aria-label="${esc(said)}">
         <div class="top"><span part="label">${esc(A('label'))}</span><span class="ic" part="icon">${icon ? svgIcon(icon) : ''}</span></div>
         <div class="row"><div><div class="v" part="value">${esc(A('prefix'))}${esc(A('value'))}<span class="u">${esc(A('unit'))}</span></div>
@@ -7433,7 +7528,7 @@
       if (this.shadowRoot.firstChild) return;
       const id = nextId('pop');
       this.shadowRoot.innerHTML = `<slot name="trigger"></slot><div class="pop float" part="body" id="${id}" role="dialog" ${supportsPopover ? 'popover="auto"' : ''}>`
-        + `<div class="head"><div class="h" part="heading"></div><button class="x" type="button" part="close-button" aria-label="Close">${svgIcon('x')}</button></div><slot></slot></div>`;
+        + `<div class="head"><div class="h" part="heading"></div><button class="x" type="button" part="close-button" aria-label="${esc(T(this, 'Close'))}">${svgIcon('x')}</button></div><slot></slot></div>`;
       this._id = id;
       const trig = this.$('slot[name="trigger"]');
       trig.addEventListener('click', () => (Date.now() - (this._closedAt || 0) < 150 ? 0 : this.open ? this.hide() : this.show()));
@@ -7451,7 +7546,7 @@
       const pop = this.$('.pop'); if (!pop) return;
       this.$('.h').textContent = this.getAttribute('heading') || '';
       this.$('.x').hidden = this.hasAttribute('no-close');
-      pop.setAttribute('aria-label', this.getAttribute('heading') || this.getAttribute('label') || 'Details');
+      pop.setAttribute('aria-label', this.getAttribute('heading') || this.getAttribute('label') || T(this, 'Details'));
       const t = this.trigger; if (t) { t.setAttribute('aria-haspopup', 'dialog'); t.setAttribute('aria-expanded', String(this.open)); }
     }
     get open() { return this.hasAttribute('open'); }
@@ -7497,7 +7592,7 @@
     }
     changed() { this.sync(); }
     sync() {
-      this.$('ol')?.setAttribute('aria-label', this.getAttribute('label') || 'Timeline');
+      this.$('ol')?.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Timeline'));
       const items = [...this.querySelectorAll(':scope > sav-timeline-item')];
       items.forEach((it, i) => it.toggleAttribute('data-last', i === items.length - 1));
       passAutoText(this, items);
@@ -7561,7 +7656,7 @@
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       this.shadowRoot.innerHTML = '<div class="t" part="base" role="tree"><slot></slot></div>';
-      this.$('.t').setAttribute('aria-label', this.getAttribute('label') || 'Tree');
+      this.$('.t').setAttribute('aria-label', this.getAttribute('label') || T(this, 'Tree'));
       this.$('slot').addEventListener('slotchange', () => this.sync());
       this.addEventListener('keydown', (e) => this.key(e));
       this.addEventListener('click', (e) => {
@@ -7572,7 +7667,7 @@
       });
       this.sync();
     }
-    changed(name, v) { if (name === 'label') this.$('.t')?.setAttribute('aria-label', v || 'Tree'); if (name === 'auto-text') this.sync(); }
+    changed(name, v) { if (name === 'label') this.$('.t')?.setAttribute('aria-label', v || T(this, 'Tree')); if (name === 'auto-text') this.sync(); }
     get items() { return [...this.querySelectorAll('sav-tree-item')]; }
     /** the items you can see right now (their parents are open) */
     get visible() { return this.items.filter((it) => { for (let p = it.parentElement; p && p !== this; p = p.parentElement) if (p.localName === 'sav-tree-item' && !p.hasAttribute('expanded')) return false; return true; }); }
@@ -7710,8 +7805,8 @@
     connectedCallback() {
       if (!this.shadowRoot.firstChild) {
         const id = nextId('cmd');
-        this.shadowRoot.innerHTML = `<dialog part="dialog" aria-label="Commands"><div class="pnl" part="base"><div class="q">${svgIcon('search')}<input part="input" role="combobox" aria-expanded="true" aria-controls="${id}" aria-autocomplete="list" autocomplete="off" spellcheck="false"><button class="esc" type="button" part="close-button" aria-label="Close">Esc</button></div>`
-          + `<div class="list" part="list" id="${id}" role="listbox"></div><div class="foot" aria-hidden="true"><span><b>↑↓</b> move</span><span><b>↵</b> open</span><span><b>Esc</b> close</span></div></div></dialog>`;
+        this.shadowRoot.innerHTML = `<dialog part="dialog" aria-label="${esc(T(this, 'Commands'))}"><div class="pnl" part="base"><div class="q">${svgIcon('search')}<input part="input" role="combobox" aria-expanded="true" aria-controls="${id}" aria-autocomplete="list" autocomplete="off" spellcheck="false"><button class="esc" type="button" part="close-button" aria-label="${esc(T(this, 'Close'))}">Esc</button></div>`
+          + `<div class="list" part="list" id="${id}" role="listbox"></div><div class="foot" aria-hidden="true"><span><b>↑↓</b> ${esc(T(this, 'move'))}</span><span><b>↵</b> ${esc(T(this, 'open'))}</span><span><b>Esc</b> ${esc(T(this, 'close'))}</span></div></div></dialog>`;
         const dlg = this.$('dialog'), inp = this.$('input');
         inp.addEventListener('input', () => { this._a = 0; this.paint(); });
         inp.addEventListener('keydown', (e) => {
@@ -7736,7 +7831,7 @@
     }
     disconnectedCallback() { document.removeEventListener('keydown', this._key); }
     changed() { this.sync(); }
-    sync() { const inp = this.$('input'); if (!inp) return; inp.placeholder = this.getAttribute('placeholder') || 'Type a command or search…'; inp.setAttribute('aria-label', this.getAttribute('label') || 'Search commands'); this.$('dialog').setAttribute('aria-label', this.getAttribute('label') || 'Commands'); }
+    sync() { const inp = this.$('input'); if (!inp) return; inp.placeholder = this.getAttribute('placeholder') || T(this, 'Type a command or search…'); inp.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Search commands')); this.$('dialog').setAttribute('aria-label', this.getAttribute('label') || T(this, 'Commands')); }
     /** the commands: from <option> children (in <optgroup>s for groups) or set with this property */
     get commands() {
       return this._cmds ?? [...this.querySelectorAll('option')].map((o) => ({ label: o.textContent.trim(), value: o.value || o.textContent.trim(), icon: o.dataset.icon || '', shortcut: o.dataset.shortcut || '',
@@ -7766,7 +7861,7 @@
         if ((c.group || '') !== group) { group = c.group || ''; if (group) html += `<div class="grp" role="presentation">${esc(group)}</div>`; }
         html += `<div class="it" role="option" id="${this.$('.list').id}-${i}" data-i="${i}" aria-selected="${i === this._a}"><span class="i">${c.icon ? svgIcon(c.icon) : ''}</span><span class="t"><b>${hl(c.label)}</b><small>${esc(c.description || '')}</small></span>${keys(c.shortcut)}</div>`;
       });
-      this.$('.list').innerHTML = html || `<div class="none">${esc(this.getAttribute('empty-label') || 'Nothing found')}</div>`;
+      this.$('.list').innerHTML = html || `<div class="none">${esc(this.getAttribute('empty-label') || T(this, 'Nothing found'))}</div>`;
       this.mark(false);
     }
     mark(scroll = true) {
@@ -7830,8 +7925,8 @@
     static styles = [SIZES, `
       :host { display: inline-flex; vertical-align: middle; }
       .z { position: relative; isolation: isolate; display: inline-flex; align-items: center; height: var(--_h); font-size: var(--_fs); color: var(--sav-color-text); }
-      .z::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius); background: var(--sav-color-input-bg); background-image: var(--sav-sheen, none);
-                   border: var(--sav-border-width) solid var(--sav-color-border-strong); box-shadow: var(--sav-control-shadow, none); transform: rotate(${TILT});
+      .z::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius); background: var(--sav-color-input-bg); background-image: var(--sav-field-sheen, var(--sav-sheen, none));
+                   border: var(--sav-border-width) solid var(--sav-color-border-strong); box-shadow: var(--sav-field-shadow, var(--sav-control-shadow, inset 0 1px 2px rgb(20 24 40 / .05))); transform: rotate(${TILT});
                    -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); }
       button { position: relative; display: inline-grid; place-items: center; height: calc(100% - 6px); min-width: calc(var(--_h) - 6px); margin: 3px; padding: 0 .4rem; border: 0;
                border-radius: calc(var(--sav-radius) - 2px); background: none; color: inherit; font: inherit; cursor: pointer;
@@ -7894,8 +7989,8 @@
       const v = this.value, r = this.resetValue, A = (n, d) => this.getAttribute(n) || d;
       this.$('.z').setAttribute('aria-label', A('label', 'Zoom'));
       this.$('.v').textContent = `${v}%`;
-      this.$('.v').setAttribute('aria-label', `${v}%. ${A('reset-label', `Back to ${r}%`)}`);
-      this.$('.v').title = A('reset-label', `Back to ${r}%`);
+      this.$('.v').setAttribute('aria-label', `${v}%. ${A('reset-label', T(this, 'Back to {r}%', { r }))}`);
+      this.$('.v').title = A('reset-label', T(this, 'Back to {r}%', { r }));
       this.$('.m').setAttribute('aria-label', A('decrease-label', 'Zoom out')); this.$('.m').title = A('decrease-label', 'Zoom out');
       this.$('.p').setAttribute('aria-label', A('increase-label', 'Zoom in')); this.$('.p').title = A('increase-label', 'Zoom in');
       this.$('.m').disabled = v <= this.min; this.$('.p').disabled = v >= this.max;
@@ -7965,7 +8060,7 @@
         this.shadowRoot.innerHTML = `<div part="base"><slot></slot></div><div class="end" part="footer">
             <span class="ld" part="loading" hidden><sav-spinner aria-hidden="true"></sav-spinner><span class="ldt"></span></span>
             <sav-button class="more" part="more-button" appearance="outline" variant="neutral" hidden></sav-button>
-            <span class="err" part="error" role="alert" hidden><span class="errt"></span><sav-button class="retry" size="sm" appearance="soft" variant="neutral"><sav-icon slot="prefix" name="refresh-cw"></sav-icon><span class="rt">Try again</span></sav-button></span>
+            <span class="err" part="error" role="alert" hidden><span class="errt"></span><sav-button class="retry" size="sm" appearance="soft" variant="neutral"><sav-icon slot="prefix" name="refresh-cw"></sav-icon><span class="rt">${esc(T(this, 'Try again'))}</span></sav-button></span>
             <span class="line" part="end" hidden><span class="endt"></span></span>
           </div><span class="sentinel" aria-hidden="true" style="display:block;height:1px"></span><span class="sr" aria-live="polite"></span>`;
         this.$('.more').addEventListener('click', () => this.load());
@@ -7990,11 +8085,11 @@
     sync() {
       if (!this.shadowRoot.firstChild) return;
       const st = this._state || 'idle', button = this.getAttribute('mode') === 'button';
-      this.$('.ldt').textContent = this.getAttribute('loading-label') || 'Loading…';
-      this.$('.more').textContent = this.getAttribute('more-label') || 'Load more';
-      this.$('.errt').textContent = this.getAttribute('error-label') || 'It did not load.';
-      this.$('.rt').textContent = this.getAttribute('retry-label') || 'Try again';
-      this.$('.endt').textContent = this.getAttribute('end-label') || 'That’s all';
+      this.$('.ldt').textContent = this.getAttribute('loading-label') || T(this, 'Loading…');
+      this.$('.more').textContent = this.getAttribute('more-label') || T(this, 'Load more');
+      this.$('.errt').textContent = this.getAttribute('error-label') || T(this, 'It did not load.');
+      this.$('.rt').textContent = this.getAttribute('retry-label') || T(this, 'Try again');
+      this.$('.endt').textContent = this.getAttribute('end-label') || T(this, 'That’s all');
       this.$('.ld').hidden = st !== 'loading';
       // the button: mode="button", or a browser that cannot watch the end of the list (no IntersectionObserver)
       this.$('.more').hidden = !((button || typeof IntersectionObserver === 'undefined') && st === 'idle');
@@ -8015,7 +8110,7 @@
     done(more = true) {
       this.page++;
       const added = this.querySelectorAll(':scope > *').length - (this._before || 0);
-      this.$('.sr').textContent = added > 0 ? `${added} more loaded` : '';
+      this.$('.sr').textContent = added > 0 ? T(this, '{n} more loaded', { n: added }) : '';
       this._state = more ? 'idle' : 'end'; this.sync();
       // still room on screen (short pages): ask again
       if (more && this._io) requestAnimationFrame(() => { this._io?.disconnect(); this.watch(); });

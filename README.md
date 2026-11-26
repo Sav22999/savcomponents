@@ -8,14 +8,28 @@ No framework, no build step. Themes with CSS custom properties and five styles (
 ## Use it on any site
 
 ```html
-<link rel="stylesheet" href="https://savcomponents.com/v/1.0.0/sav.css">
-<script src="https://savcomponents.com/v/1.0.0/sav.js" defer></script>
+<link rel="stylesheet" href="https://savcomponents.com/v/1.1.0/sav.css">
+<script src="https://savcomponents.com/v/1.1.0/sav.js" defer></script>
 
 <sav-button>Hello</sav-button>
 ```
 
 The address contains the version: a site keeps working the same way when a newer release comes out.
 A theme saved with an account has its own link: `https://savcomponents.com/theme/<id>.css`.
+
+## Languages
+
+From version 1.1.0.
+
+The words the components write by themselves follow the language of the page (`<html lang="it">`, or the closest `lang`):
+English and Italian are built in. Add a language, or change some words, right after `sav.js` (the English text is the key):
+
+```js
+Sav.addStrings('fr', { Done: 'Terminé', 'Page {n}': 'Page {n}' });
+```
+
+`Sav.strings.it` has the whole list. A `*-label` attribute of a component always wins. Components already on the page keep
+their words until they are drawn again.
 
 ## Repository
 

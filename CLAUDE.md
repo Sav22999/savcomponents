@@ -19,8 +19,10 @@
   - Never copy icons (or other shared assets) into `v/<version>/`.
   - The only intended copy is `dist/` ↔ the newest `v/<version>/`.
 - **Changelog and Versions page**
-  - Every release goes in `CHANGELOG.md`.
-  - Only major-version changes (1.x → 2.x) go on the docs Versions page (`MAJORS` in `docs/docs.js`).
+  - Every release goes in `CHANGELOG.md` (`## x.y.z — YYYY-MM-DD`, then `- ` items).
+  - The docs Versions page reads `CHANGELOG.md` and lists every release under its major version: never copy release notes into `docs/docs.js`.
+  - Only major versions (1.x → 2.x) get a card in `MAJORS` in `docs/docs.js`, with what to migrate.
+  - The version menu next to the logo lists `window.SAVC_RELEASES` in `index.html` (`tools/release.sh` adds each release); `?v=x.y.z` runs the site on that release.
 
 ## Accounts API
 

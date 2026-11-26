@@ -33,7 +33,10 @@ if (!preg_match('/^\d+\.\d+\.\d+$/', $v) || !in_array($f, ['sav.js', 'sav.css'],
 }
 $file = __DIR__ . "/v/$v/$f";
 
-try { count_site($dir, $v); } catch (Throwable $e) { /* counting never stops the library */ }
+try {
+    count_site($dir, $v);
+} catch (Throwable $e) { /* counting never stops the library */
+}
 
 // the same answer as the static file: a released version never changes, so it is cached for a year
 $size = filesize($file);
@@ -86,8 +89,16 @@ function count_site(string $dir, string $version): void
         // one line per site, day and version: "2026-11-22 <hash> 1.0.0"
         $line = "$day $id $version";
         $seen = false;
-        while (($l = fgets($fh)) !== false) { if (rtrim($l) === $line) { $seen = true; break; } }
-        if (!$seen) { fseek($fh, 0, SEEK_END); fwrite($fh, $line . "\n"); }
+        while (($l = fgets($fh)) !== false) {
+            if (rtrim($l) === $line) {
+                $seen = true;
+                break;
+            }
+        }
+        if (!$seen) {
+            fseek($fh, 0, SEEK_END);
+            fwrite($fh, $line . "\n");
+        }
         flock($fh, LOCK_UN);
     }
     fclose($fh);

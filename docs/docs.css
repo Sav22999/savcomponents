@@ -66,6 +66,7 @@ kbd { font-family: var(--sav-font-mono); font-size: .75em; padding: .1em .4em; b
 .brand:hover .logo { transform: rotate(-10deg); }
 .ver-pick { margin-left: -.4rem; }
 .ver-btn { font-variant-numeric: tabular-nums; }
+.ver-old { margin-bottom: 1.5rem; }
 .top-actions { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
 /* the search box is drawn like the library's fields: a layer that follows the style (leans in Tilt and straightens while typing, ink in Brutal, glass in Glass) */
 .menu-btn { display: none; }
@@ -386,6 +387,11 @@ html.sav-style-glass body { background: radial-gradient(circle at 8% 8%, color-m
 .ver-title { margin: 0; font-size: 1.35rem; }
 .ver-card h3 { margin: .8rem 0 .2rem; font-size: 1rem; }
 .ver-list { margin: 0; padding-left: 1.2rem; display: grid; gap: .3rem; line-height: 1.55; }
+.ver-rel { border-top: var(--sav-border-width) solid var(--sav-color-border); }
+.ver-rel-sum { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.ver-rel-sum code { font-size: .8rem; }
+.ver-rel p { margin: .2rem 0 .6rem; }
+.ver-rel .ver-list { margin-bottom: .6rem; }
 
 /* ---------- accessibility section */
 .a11y-sum { display: flex; align-items: center; gap: .5rem; margin: .4rem 0 .8rem; font-weight: 600; color: var(--sav-color-success); }

@@ -11,6 +11,10 @@ RedirectMatch 404 ^/(tools|cache|academy-android|\.git|\.idea)(/|$)
 <FilesMatch "^\.|\.(md|sh)$">
   Require all denied
 </FilesMatch>
+# except the changelog: the Versions page of the site reads it
+<Files "CHANGELOG.md">
+  Require all granted
+</Files>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On

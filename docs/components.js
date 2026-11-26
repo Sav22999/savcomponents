@@ -978,7 +978,8 @@ window.SAVC_DOCS = [
 </sav-table>` },
     ],
     attrs: [['sortable', 'boolean', 'Click a header to sort (numbers as numbers); data-no-sort on a th skips it, data-value on a td sorts by that value.'], ['striped', 'boolean', ''], ['hover', 'boolean', 'Highlights the row under the pointer.'],
-      ['compact', 'boolean', 'Less padding.'], ['appearance', 'card · plain', 'Default card.'], ['class="num"', 'th · td', 'Right-aligned numbers.']],
+      ['compact', 'boolean', 'Less padding.'], ['appearance', 'card · plain', 'Default card.'], ['class="num"', 'th · td', 'Right-aligned numbers.'],
+      ['label', 'string', 'Name of the scroll area for screen readers when the table is wider than its frame (then the frame can be reached with Tab and scrolled with the arrows). Default: the caption, or "Table".']],
     events: [['sav-sort', 'After sorting. detail.column, detail.direction']],
     methods: [['sort(index)', 'Sorts by a column.']],
   },
@@ -1149,7 +1150,7 @@ window.SAVC_DOCS = [
   </div>
 </sav-popover>` },
       { title: 'Placement, without a close button', html: `<sav-popover placement="top" no-close label="Profile">
-  <sav-avatar slot="trigger" initials="AL" label="Ada Lovelace" style="cursor: pointer" tabindex="0"></sav-avatar>
+  <sav-avatar slot="trigger" initials="AL" label="Ada Lovelace" button></sav-avatar>
   <b>Ada Lovelace</b><br><span style="color: var(--sav-color-text-muted)">Editor · online</span>
 </sav-popover>
 <sav-popover placement="right-start" heading="Filters" sheet-on-mobile>

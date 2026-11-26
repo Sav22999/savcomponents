@@ -157,7 +157,7 @@
     chip: [[KEY, 'ok', 'Each chip is a button: Tab to reach it, Enter or Space to switch it.'], [NAME, 'ok', 'aria-pressed tells whether it is on; the group has role="group" with its label.'], [TARGET, 'partial', 'The × of a removable chip is small: keep chips spaced apart.']],
     heading: [[NAME, 'ok', 'A real h1–h6: it appears in the page outline. Keep the levels in order (no jumps from h2 to h4).'], ['1.3.1 Info and relationships', 'ok', 'size changes only the look, level stays what the structure needs.']],
     grid: [['1.3.2 Meaningful sequence', 'you', 'The reading order is the order in the HTML: do not rely on the columns to change the meaning.']],
-    table: [[NAME, 'ok', 'Your table stays a real table; sortable headers are buttons with aria-sort.'], [KEY, 'ok', 'The scroll area can be reached with Tab on small screens.'], ['1.3.1 Info and relationships', 'you', 'Use th for headers (and caption when it helps).']],
+    table: [[NAME, 'ok', 'Your table stays a real table; sortable headers are buttons with aria-sort.'], [KEY, 'ok', 'Only when the table is wider than its frame, the frame is a named region reached with Tab and scrolled with the arrows; otherwise it is not a stop of the Tab key.'], ['1.3.1 Info and relationships', 'you', 'Use th for headers (and caption when it helps).']],
     image: [[ALT, 'you', 'Write an alt that says what the image shows, or leave it empty when it is only decoration.'], [KEY, 'ok', 'With zoom the image is a button; the enlarged view closes with Escape or a click.']],
     list: [[NAME, 'ok', 'role="list" and "listitem"; rows with href are links, with button are buttons.'], [KEY, 'ok', 'Linked rows are reached with Tab.']],
     breadcrumb: [[NAME, 'ok', 'A nav landmark labelled "Breadcrumb"; the current page has aria-current="page".']],
@@ -206,7 +206,7 @@
     const cell = (v, min) => `<span class="a11y-r ${v >= min ? 'pass' : 'fail'}" title="${v.toFixed(2)}:1 (needs ${min}:1)">${v.toFixed(1)}</span>`;
     box.innerHTML = `<p class="a11y-sum ${fails ? 'has-fail' : ''}"><sav-icon name="${fails ? 'alert-triangle' : 'check'}"></sav-icon>
         ${fails ? `${fails} of ${total} combinations below the WCAG AA contrast` : `All ${total} combinations meet the WCAG AA contrast`} — measured now, with the current theme.</p>
-      <sav-table hover compact class="a11y-tw"><table class="a11y-t"><thead><tr><th>What</th><th>Needs</th>${Sav.styles.map((s) => `<th>${s[0].toUpperCase() + s.slice(1)}<small>light · dark</small></th>`).join('')}</tr></thead><tbody>
+      <sav-table hover compact class="a11y-tw" label="Colour contrast by style and mode"><table class="a11y-t"><thead><tr><th>What</th><th>Needs</th>${Sav.styles.map((s) => `<th>${s[0].toUpperCase() + s.slice(1)}<small>light · dark</small></th>`).join('')}</tr></thead><tbody>
       ${res.map((r) => `<tr><td>${esc(r.label)}</td><td>${r.min}:1</td>${Sav.styles.map((s) => `<td>${cell(r.cells[s + '-light'], r.min)}${cell(r.cells[s + '-dark'], r.min)}</td>`).join('')}</tr>`).join('')}
       </tbody></table></sav-table>
       <p class="muted small">Text needs 4.5:1, borders, icons and states 3:1 (WCAG 1.4.3 and 1.4.11). Glass is measured over the plain page colour: over a busy background check it yourself.</p>`;

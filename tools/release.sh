@@ -16,6 +16,11 @@ rm -rf "$DEST"
 mkdir -p "$DEST"
 cp dist/sav.css dist/sav.js "$DEST/"
 echo "released $DEST"
+# the version menu of the site lists every release (window.SAVC_RELEASES in index.html, newest first)
+if ! grep -q "SAVC_RELEASES = \[.*'$VERSION'" index.html; then
+  sed "s/SAVC_RELEASES = \[/SAVC_RELEASES = ['$VERSION', /" index.html > index.html.tmp && mv index.html.tmp index.html
+  echo "added $VERSION to the version menu (index.html)"
+fi
 # icons are not copied: every version uses the shared set icons/<Sav.iconsVersion>/ (see tools/release-icons.sh)
 ICONS=$(sed -n "s/.*Sav.iconsVersion = '\([0-9][0-9.]*\)'.*/\1/p" dist/sav.js | head -1)
 [ -d "icons/$ICONS" ] || echo "warning: icons/$ICONS does not exist (Sav.iconsVersion in dist/sav.js)"
