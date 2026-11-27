@@ -360,7 +360,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
      for changes. Add the newest major version at the top. Its releases (1.0, 1.1…) are listed from CHANGELOG.md (mountChangelog). */
   const MAJORS = [
     {
-      v: '1', title: 'Version 1', when: 'December 2026', current: true,
+      v: '1', title: 'Version 1', when: 'November 2026', current: true,
       intro: 'The first public version: the library, the 5 styles and the customiser. Nothing to migrate from.',
       added: [
         'More than 50 components: buttons, favourite buttons, charts, carousels, media players, OTP and password fields, fields, pickers (select, date, time), dialogs, drawers, tabs, menus, alerts, progress, code blocks and more.',

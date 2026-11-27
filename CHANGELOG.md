@@ -2,6 +2,17 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.1.3 — 2026-11-27
+
+- Themes: the text on the primary colour follows it. A site that sets only `--sav-color-primary` used to keep the dark text made
+  for the default light blue, so a violet or a dark green button had dark text on it (2.98:1 on #7845f4, below WCAG AA). Now
+  `--sav-color-on-primary` is worked out from the primary colour: white or near-black (#041722), whichever has the higher
+  contrast. Set `--sav-color-on-primary` yourself to choose another colour; it always wins. The choice is made on `:root` or on
+  the element with a `sav-theme-*` class, so an element that changes the primary colour only for itself still sets its own
+  `--sav-color-on-primary`. Browsers without relative colours keep the written values.
+- Command palette: the search ignores accents, so "citta" finds "Città", and a command whose name matches comes before one that
+  matches only in its description, keywords or group.
+
 ## 1.1.2 — 2026-11-26
 
 - Details (`appearance="plain"`): the last one has no line under it. The line separates one row from the next, so the last of an
@@ -44,7 +55,7 @@ Every version is published at `https://savcomponents.com/v/<version>/` and never
   ink instead of crossing the bars (`--sav-rating-empty`, `--sav-chart-grid`).
 - Showcase: one column when the showcase itself is narrow, not only on narrow screens.
 
-## 1.0.0 — 2026-12-15
+## 1.0.0 — 2026-11-17
 
 The first public version.
 

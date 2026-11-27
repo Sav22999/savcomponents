@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.1.2 — web components, no dependencies
+ * SavComponents v1.1.3 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.1.2' });
+  const Sav = (window.Sav = { version: '1.1.3' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -7897,10 +7897,13 @@
     }
     hide() { this.$('dialog')?.open && this.$('dialog').close(); }
     paint() {
-      const q = this.$('input').value.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+      // accents do not count ("citta" finds "Città"); every word must be somewhere in the label, description, keywords or group
+      const fold = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const q = fold(this.$('input').value.trim()), words = q.split(/\s+/).filter(Boolean);
       const all = this.commands.filter((c) => !c.disabled);
-      const hit = (c) => { const hay = `${c.label} ${c.description || ''} ${c.keywords || ''} ${c.group || ''}`.toLowerCase(); return words.every((w) => hay.includes(w)); };
-      const shown = (this._shown = words.length ? all.filter(hit).sort((a, b) => (b.label.toLowerCase().startsWith(q) - a.label.toLowerCase().startsWith(q))) : all);
+      const hit = (c) => { const hay = fold(`${c.label} ${c.description || ''} ${c.keywords || ''} ${c.group || ''}`); return words.every((w) => hay.includes(w)); };
+      const rank = (c) => (fold(c.label).startsWith(q) ? 2 : words.every((w) => fold(c.label).includes(w)) ? 1 : 0); // the label first, then the rest
+      const shown = (this._shown = words.length ? all.filter(hit).sort((a, b) => rank(b) - rank(a)) : all);
       this._a = Math.min(this._a || 0, Math.max(0, shown.length - 1));
       const keys = (s) => s ? `<span class="kb">${s.split('+').map((k) => `<span>${esc(keyName(k, this))}</span>`).join('')}</span>` : '';
       const hl = (t) => { let h = esc(t); for (const w of words) h = h.replace(new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig'), '<mark>$1</mark>'); return h; };
