@@ -1,0 +1,138 @@
+# SavComponents
+
+> SavComponents (www.savcomponents.com) is a free, open-source (MIT) library of 81 web components for websites and web apps, by Saverio Morelli: buttons, fields, pickers, dialogs, tabs, tables, charts and more, written as plain HTML tags (<sav-button>, <sav-input>, <sav-dialog>…). No framework and no build step: one stylesheet and one script. Themes with CSS custom properties, light and dark modes and five styles (Soft, Tilt, Sharp, Brutal, Glass). Accessible (keyboard, screen readers), English and Italian built in.
+
+## Use it on any site
+
+```html
+<link rel="stylesheet" href="https://www.savcomponents.com/v/1.1.2/sav.css">
+<script src="https://www.savcomponents.com/v/1.1.2/sav.js" defer></script>
+
+<sav-button>Hello</sav-button>
+```
+
+- The address contains the version (1.1.2 is the latest): a site keeps working the same way when a newer release comes out.
+- Styles: add a class to <html>: sav-style-tilt, sav-style-sharp, sav-style-brutal or sav-style-glass (Soft is the default). Modes: sav-theme-light, sav-theme-dark or sav-theme-auto.
+- Theming: override CSS custom properties such as --sav-color-primary, --sav-color-bg, --sav-radius, --sav-font after sav.css; the customiser on the site exports them, and a theme saved with an account has its own link (/theme/<id>.css).
+- Languages: the words the components write follow <html lang>; add one with Sav.addStrings(lang, {English: translation}).
+- Icons: <sav-icon name="…"> with about 2,000 icons (mostly Lucide, ISC licence).
+
+## Actions
+
+- [Button](https://www.savcomponents.com/#button): `<sav-button>` Buttons start an action or navigate. Five semantic colours, five appearances, three sizes; a button with href renders a link.
+- [Button group](https://www.savcomponents.com/#button-group): `<sav-button-group>` Joins buttons together. Works with any appearance and with dropdowns.
+- [Copy button](https://www.savcomponents.com/#copy-button): `<sav-copy-button>` Copies text to the clipboard and confirms with a check mark.
+- [Favourite button](https://www.savcomponents.com/#favourite-button): `<sav-favourite-button>` A toggle for favourites, likes and bookmarks: a star, a heart or a bookmark that fills with its colour when pressed.
+
+## Feedback
+
+- [Alert](https://www.savcomponents.com/#alert): `<sav-alert>` Shows an important message inline. The icon follows the variant.
+- [Toast](https://www.savcomponents.com/#toast): `Sav.toast()` Short notifications that stack in a corner and close themselves. Hovering pauses the timer.
+- [Badge](https://www.savcomponents.com/#badge): `<sav-badge>` Small labels for counts and statuses.
+- [New label](https://www.savcomponents.com/#new-label): `<sav-new-label>` Marks something as new: a badge (with sparkles and a passing shine if you like), a diagonal ribbon or a tab in the corner of a card, a pulsing dot, or just the coloured word. It can take care of itself: until hides it after a date, seen-key hides it for good once the person has clicked what it marks.
+- [Tag](https://www.savcomponents.com/#tag): `<sav-tag>` Keywords, filters and choices; removable tags fire an event and remove themselves.
+- [Spinner](https://www.savcomponents.com/#spinner): `<sav-spinner>` An indeterminate loading indicator. It takes the font size of its parent. Its look follows the style: a ring (square in Sharp, rounded square in Brutal) or, in Tilt, the four leaning tiles of the logo lighting up in turn.
+- [Progress](https://www.savcomponents.com/#progress): `<sav-progress-bar · sav-progress-ring>` Show how far a task has gone.
+- [Skeleton](https://www.savcomponents.com/#skeleton): `<sav-skeleton>` Placeholders that hold the layout while content loads.
+- [Empty state](https://www.savcomponents.com/#empty-state): `<sav-empty-state>` What to show when there is nothing yet — no results, an empty inbox, a new project: a drawing made of the icon on leaning tiles (they lean the way the style does), a heading, a line of text and what to do next.
+
+## Forms
+
+- [Input](https://www.savcomponents.com/#input): `<sav-input>` A text field with label, help text, icons, clear button and password toggle. It takes part in native forms and validation.
+- [Number input](https://www.savcomponents.com/#number-input): `<sav-number-input>` A number field with a − button on the left and a + on the right. The buttons switch off at the minimum and maximum; hold one to keep counting. After a wrong entry it says why (too small, too large, which steps fit); with limits="always" it also shows the allowed range beforehand. It takes part in native forms and validation.
+- [Zoom](https://www.savcomponents.com/#zoom): `<sav-zoom>` A zoom control: “−”, the percentage, “+”. A click on the percentage goes back to 100%. With for it zooms an element of the page by itself; otherwise listen to change.
+- [Colour picker](https://www.savcomponents.com/#color-picker): `<sav-color-picker>` A colour field: a swatch, the hex code you can type, and suggested colours. The swatch opens the library’s own colour panel, in the style and theme of the page (saturation and brightness, hue, opacity with alpha, the code, an eyedropper); where the browser cannot offer all of it (Safari, Firefox) the system colour picker opens instead; picker="custom" always uses the panel, picker="native" always the system picker. The value is "#rrggbb" ("#rrggbbaa" with alpha); with clearable it can be empty. compact keeps only the swatch.
+- [Textarea](https://www.savcomponents.com/#textarea): `<sav-textarea>` Multi-line text, with an optional counter and automatic height.
+- [Select](https://www.savcomponents.com/#select): `<sav-select>` A select with its own list: search, multiple choice, groups and descriptions. Put normal <option> and <optgroup> elements inside. On phones it can open as a sheet from the bottom, or use the phone’s own picker.
+- [Date picker](https://www.savcomponents.com/#date-picker): `<sav-date-picker>` Picks a day, a month or a year from a calendar in the language of the page. The value is always ISO (2026-11-16), whatever is shown. Keyboard: arrows, Page Up / Down, Enter.
+- [Time picker](https://www.savcomponents.com/#time-picker): `<sav-time-picker>` Picks a time from hour and minute columns, in 24 or 12 hours following the language. The value is always 24-hour (18:30).
+- [Checkbox & Switch](https://www.savcomponents.com/#checkbox): `<sav-checkbox · sav-switch>` On/off choices. Checkboxes also support the indeterminate state.
+- [Radio group](https://www.savcomponents.com/#radio): `<sav-radio-group · sav-radio>` One choice among several, with arrow-key navigation. appearance="buttons" turns it into a segmented control; appearance="cards" into a grid of cards, each with a picture of its own (looks, layouts, templates, plans).
+- [Chip](https://www.savcomponents.com/#chip): `<sav-chip · sav-chip-group>` A small choice you can switch on and off — filters, options, interests. In a sav-chip-group the chips become a single or multiple choice. (A tag only labels; a chip is chosen.)
+- [OTP input](https://www.savcomponents.com/#otp): `<sav-otp>` A one-time code in separate boxes. Choose how many characters and which: numbers only, letters only, letters and numbers, or anything. Pasting a whole code fills every box; phones offer the code from an SMS.
+- [Password](https://www.savcomponents.com/#password): `<sav-password>` A password field with a strength meter and a checklist of rules you set: minimum length, upper-case and lower-case letters, numbers, symbols. It can refuse to submit a password that is too weak.
+- [Search](https://www.savcomponents.com/#search): `<sav-search>` A search field that suggests as you type: highlighted matches, arrows and Enter to choose. Suggestions come from children, or from the page on every "sav-query" (for a server search). With multiple every term becomes a chip inside the field (on comma, semicolon, Enter or Space, as you set); with live it searches while you type instead of only on Enter.
+- [Chip input](https://www.savcomponents.com/#chip-input): `<sav-chip-input>` A field whose values are chips: type one and press Enter, a comma or a semicolon, or paste a list; × or Backspace removes them. With kind="color" each chip is a colour with its swatch; with kind="number" only numbers go in. The value is the list.
+- [Language choice](https://www.savcomponents.com/#language-choice): `<sav-language-choice>` Choose a language from a complete list (about 140, already there): flag on the left, ISO 639-3 code on the right, search, one or many. Variants have their own flag (British and American English); several languages can share one (India, Spain, Switzerland). Names are in the page language, or in each language itself.
+- [Country choice](https://www.savcomponents.com/#country-choice): `<sav-country-choice>` Choose a country from the complete ISO list (249, already there): flag on the left, ISO 3166 code on the right (alpha-3 by default), search by name or code, one or many. Names follow the page language.
+- [Theme choice](https://www.savcomponents.com/#theme-choice): `<sav-theme-choice>` Light, Dark or Auto (follows the system), each with its icon: a menu or buttons. no-auto leaves only Light and Dark. With apply it switches the page by itself.
+- [Drop zone](https://www.savcomponents.com/#dropzone): `<sav-dropzone>` An area that accepts things dragged from outside the page: files (upload), or text, links and HTML from other pages and apps — also pasted with Cmd/Ctrl+V. Accepted types, maximum size, one or many, a list of what was dropped. It belongs to forms.
+- [Range](https://www.savcomponents.com/#range): `<sav-range>` A slider for numbers within a range.
+- [Double range](https://www.savcomponents.com/#range-dual): `<sav-range-dual>` A slider with two handles for a span: a start and an end, such as a price band, an age group or a period between two dates. Each handle works with the keyboard like a normal slider.
+- [Rating](https://www.savcomponents.com/#rating): `<sav-rating>` Stars (or any icon) for ratings. Keyboard: arrows, Home, End.
+
+## Layout
+
+- [Card](https://www.savcomponents.com/#card): `<sav-card>` A surface for grouped content, with optional media, header and footer.
+- [Avatar](https://www.savcomponents.com/#avatar): `<sav-avatar>` A picture, initials or an icon for a person.
+- [Divider](https://www.savcomponents.com/#divider): `<sav-divider>` Separates content, horizontally or vertically, with an optional label.
+- [Container](https://www.savcomponents.com/#container): `<sav-container>` A centred column with a maximum width and side padding: the frame of a page or of a section. It can also be a surface with a background.
+- [Grid](https://www.savcomponents.com/#grid): `<sav-grid>` Puts its children in columns: a fixed number, or as many as fit with a minimum width. On phones fixed columns fall back to one (mobile-columns sets another number).
+- [Sortable (drag and drop)](https://www.savcomponents.com/#sortable): `<sav-sortable>` Reorder things by dragging them (mouse, touch, pen) — or with the keyboard: Space picks up, arrows move, Space drops, Escape cancels. Any element can be an item.
+- [Icon](https://www.savcomponents.com/#icon): `<sav-icon>` More than 2,000 stroked icons that follow the colour and size of the text. About a hundred are built into the library; the others load by themselves the first time they are used. Search them below and click one to copy it. Most icons come from Lucide (ISC licence).
+- [Code](https://www.savcomponents.com/#code): `<sav-code-block · sav-code>` Code with syntax highlighting: a block with its language, optional file name, copy button and line numbers (they are never copied), or a short piece inside a sentence.
+
+## Content
+
+- [Heading](https://www.savcomponents.com/#heading): `<sav-heading>` A real h1–h6 with the look of the style: an optional marker before it (a leaning tile in Tilt), a label above and a subtitle below.
+- [Stat card](https://www.savcomponents.com/#stat): `<sav-stat>` A number that matters, for dashboards: its name, the value, how it changed — green when it goes the good way, red when not (invert for numbers that should go down) — a caption and a small trend line.
+- [Timeline](https://www.savcomponents.com/#timeline): `<sav-timeline · sav-timeline-item>` Things that happened, in order: an order on its way, the history of a document, the steps of a project. Each item has a time, a heading and any content, on a line with a dot or an icon — coloured with a variant; the dots take the shape of the style.
+- [Keyboard key](https://www.savcomponents.com/#kbd): `<sav-kbd>` Keys to press, drawn as keycaps that follow the style: mod+K shows ⌘ K on a Mac and Ctrl K elsewhere; several shortcuts with commas, or “then” for one after the other. Screen readers hear “Control + K”.
+- [Relative time](https://www.savcomponents.com/#relative-time): `<sav-relative-time>` A moment written the way people say it — “3 minutes ago”, “yesterday”, “in 2 weeks” — in the page language, and kept up to date while the page is open; the full date shows on hover. Or the date itself with format.
+- [Label](https://www.savcomponents.com/#label): `<sav-label>` A short caption that names a section or a category — the small "eyebrow" above a title. Unlike a tag it is not removable and does not filter; unlike a badge it is not a status or a count.
+- [Image](https://www.savcomponents.com/#image): `<sav-image>` An image with a fixed ratio, the corners of the style (with the tinted plate behind it in Tilt), lazy loading, a caption and an optional zoom.
+- [Flag](https://www.savcomponents.com/#flag): `<sav-flag>` The flag of a country (ISO alpha-2) or of a region (gb-sct, es-ct…), from a set of 270 SVG flags that is versioned on its own like the icons. Decorative unless it has a label.
+- [List](https://www.savcomponents.com/#list): `<sav-list · sav-list-item>` Rows with something at the start (icon, avatar), a title and description, and something at the end. A row with href is a link, with button a button.
+- [Table](https://www.savcomponents.com/#table): `<sav-table>` Styles the normal table you put inside: borders, stripes and hover from the style, a scroll area on small screens, and sorting by clicking a header.
+
+## Media
+
+- [Carousel](https://www.savcomponents.com/#carousel): `<sav-carousel · sav-slide>` Slides that scroll sideways — only images, or image and text. Arrow buttons, dots, swipe with fingers, drag with the mouse, arrow keys (each can be turned off), more than one slide at a time, loop and an autoplay that stops on hover, on focus and with reduced motion.
+- [Video](https://www.savcomponents.com/#video): `<sav-video>` A video in a frame with the corners of the style, a fixed ratio and a poster with a big play button, then its own control bar: play, the progress bar and the time, mute and volume, full screen — and on request back and forward 10 seconds, speed, loop, captions and picture in picture. The bar hides while playing; keys: Space, arrows, M, F, C. When the player is small, the controls that do not fit move into a ⋯ menu; controls chooses which ones show, native-controls uses the browser’s bar.
+- [Audio](https://www.savcomponents.com/#audio): `<sav-audio>` A player in the style with the controls of the video player: play/pause, the progress bar and the time, mute and volume — and on request back and forward 10 seconds, speed and loop; title, artist and cover. Keys: Space or K play, ← → 5 seconds, ↑ ↓ volume, M mute. When the player is small, the controls that do not fit move into a ⋯ menu (and in a very small one the cover steps aside); controls chooses which ones show, native-controls uses the browser’s own player.
+
+## Overlays
+
+- [Dialog](https://www.savcomponents.com/#dialog): `<sav-dialog>` A modal window built on the native <dialog>: focus trap, Esc and click outside to close. With sheet-on-mobile it becomes an action sheet on phones (the first demo has it: try it at phone width).
+- [Drawer](https://www.savcomponents.com/#drawer): `<sav-drawer>` A panel that slides in from an edge. Same API as the dialog.
+- [Dropdown](https://www.savcomponents.com/#dropdown): `<sav-dropdown · sav-menu-item>` A menu that opens from a trigger. Arrow keys, type-ahead, Esc; closes when clicking outside.
+- [Info tip](https://www.savcomponents.com/#info-tip): `<sav-info-tip>` A small button (an icon, or an icon with text) that opens a box of information when pressed: for help next to a field, a title or a setting. Unlike the tooltip it opens on click, so it works on phones and can hold links.
+- [Tooltip](https://www.savcomponents.com/#tooltip): `<sav-tooltip>` A short hint on hover or focus. It flips when there is no room.
+- [Popover](https://www.savcomponents.com/#popover): `<sav-popover>` A panel next to a button with anything inside — text, a small form, a list. A click on the trigger opens it, Esc or a click outside closes it, and the focus goes into the panel and back. Bigger than a tooltip or an info tip, lighter than a dialog; it leans in Tilt and turns to glass in Glass.
+- [Command palette](https://www.savcomponents.com/#command): `<sav-command>` A search box over the page with everything you can do or open: type a few letters, move with the arrows, Enter. It opens with a shortcut from anywhere (⌘K on a Mac, Ctrl+K elsewhere), groups commands, shows their icons and shortcuts and highlights what matches.
+
+## Navigation
+
+- [Tabs](https://www.savcomponents.com/#tabs): `<sav-tabs · sav-tab>` Switch between panels. Each sav-tab is both the button label and its panel.
+- [Accordion](https://www.savcomponents.com/#accordion): `<sav-accordion · sav-details>` Expandable sections with a smooth height animation. exclusive keeps only one open.
+- [Menu](https://www.savcomponents.com/#menu): `<sav-menu · sav-menu-item>` A menu that stays on the page, in several kinds: a list (a sidebar, a settings page), a bar across the top whose submenus drop down, and a rail of icons whose labels become tooltips and whose submenus fly out to the side — collapsible folds a list into a rail and back. Any item can hold a submenu; the current item is highlighted the way the style says. Same items as the dropdown, with arrow keys.
+- [Header](https://www.savcomponents.com/#header): `<sav-header>` The top bar of a site or app: logo, links, search and actions (an avatar, buttons). When the header is too narrow for everything — its own width, so it works in any layout — the links fold behind a menu button and the search folds into a button that opens the field across the whole header, with an X to close it. The current link is highlighted like the breadcrumb: a tint, a leaning tile, an underline, an inked block or glass, by style.
+- [Bottom navigation](https://www.savcomponents.com/#bottom-nav): `<sav-bottom-nav · sav-bottom-nav-item>` The bar at the bottom of a phone app: 3–5 destinations with icon and label, a badge, the current one marked. With fixed it sticks to the bottom; with mobile-only it hides on wide screens.
+- [Breadcrumb](https://www.savcomponents.com/#breadcrumb): `<sav-breadcrumb>` Shows where the page sits in the site. The current page (the last item) is highlighted the way the style says: a tint in Soft, a leaning tile in Tilt, an underline in Sharp, an inked block in Brutal, glass in Glass. Long paths can fold the middle behind “…”.
+- [Pagination](https://www.savcomponents.com/#pagination): `<sav-pagination>` Page numbers for long lists and tables: always the first and the last, the pages around the current one and “…” in between, previous and next. The current page is highlighted like the breadcrumb, by style. Links (href="?page={page}") or buttons that fire sav-page.
+- [Steps](https://www.savcomponents.com/#steps): `<sav-steps · sav-step>` The steps of a task — sign-up, checkout, a set-up: the done ones with a tick and a coloured line, the current one marked, the next ones waiting. Across or down; with clickable people go back to a step already done. The markers take the shape and lean of the style.
+- [Level path](https://www.savcomponents.com/#level-path): `<sav-level-path · sav-level>` The map of a course, as in learning apps and games: levels on a winding line. The ones done are coloured, with a tick or their icon and their stars; the current one breathes and says what to do (Start); the next ones are locked. The nodes take the shape of the style: round, square, a leaning tile in Tilt. A heading, a divider or a card inside starts a new stretch, across the whole width.
+- [Tree](https://www.savcomponents.com/#tree): `<sav-tree · sav-tree-item>` Items inside items that open and close — folders and files, sections and pages. The arrow keys move, → opens or goes in, ← closes or goes to the parent, Enter chooses. The chosen item is highlighted like the current page of the breadcrumb.
+- [Infinite scroll](https://www.savcomponents.com/#infinite-scroll): `<sav-infinite-scroll>` Loads more as you reach the end of a list. When the end comes near it fires sav-load; you add the items and call done() — or done(false) when there is nothing more, or fail() on an error. Meanwhile a spinner (the style’s own), at the end a line, on an error “Try again”. It watches the page, or itself when it scrolls; mode="button" waits for a “Load more” button instead.
+
+## Charts
+
+- [Bar chart](https://www.savcomponents.com/#chart-bar): `<sav-chart-bar>` Bars, vertical or horizontal, one series or several side by side, or stacked; spacing, values on the bars, a hover tooltip and a hidden table for screen readers. Colours come from --sav-chart-1…8.
+- [Pie chart](https://www.savcomponents.com/#chart-pie): `<sav-chart-pie>` A pie or a donut: gaps between slices, percentages, a text in the centre of the donut.
+- [Radar chart](https://www.savcomponents.com/#chart-radar): `<sav-chart-radar>` A spider web: one axis per label, one shape per series — to compare profiles on several qualities at once.
+- [Area and line chart](https://www.savcomponents.com/#chart-line): `<sav-chart-line>` Values over time as a filled area or a line only: smooth curves, points, stacked areas.
+- [Activity chart](https://www.savcomponents.com/#chart-activity): `<sav-chart-activity>` A calendar heatmap: one column per week, a square per day, darker when the value (1–100) is higher. Good for streaks, contributions, workouts.
+- [Map chart](https://www.savcomponents.com/#chart-map): `<sav-chart-map>` The world coloured by value (a choropleth), or with some countries highlighted; it can zoom on one or more countries. Countries are named in the page language; a click tells which one.
+
+## Sections
+
+- [Showcase](https://www.savcomponents.com/#showcase): `<sav-showcase>` A section for a product page: screenshots on one side — one or two desktops, one to three phones, or a desktop with phones — and label, title, text and buttons on the other. The buttons here are only examples: on your page they link where you want.
+
+## Optional
+
+- [Full version](https://www.savcomponents.com/llms-full.txt): every component with its attributes, slots, events, methods and examples
+- [Documentation](https://www.savcomponents.com/): the site, with a live playground and a customiser
+- [Academy](https://www.savcomponents.com/academy/): lessons, quizzes and challenges for every component
+- [What's new](https://www.savcomponents.com/CHANGELOG.md)
+- [Source code](https://github.com/Sav22999/savcomponents)
+- [Saverio Morelli](https://www.saveriomorelli.com/): the author (https://www.saveriomorelli.com/llms.txt)

@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.1.1 — web components, no dependencies
+ * SavComponents v1.1.2 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.1.1' });
+  const Sav = (window.Sav = { version: '1.1.2' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -3799,6 +3799,7 @@
       .d { border: var(--sav-border-width) solid var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface); background-image: var(--sav-sheen, none); overflow: hidden; box-shadow: var(--sav-details-shadow, none); -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none);
            -webkit-backdrop-filter: var(--sav-backdrop, none); backdrop-filter: var(--sav-backdrop, none); }
       :host([appearance="plain"]) .d { border: 0; border-bottom: var(--sav-border-width) solid var(--sav-color-border); border-radius: 0; background: none; }
+      :host([appearance="plain"]:last-child) .d { border-bottom: 0; } /* the line separates rows: the last one has nothing under it */
       .sum { display: flex; align-items: center; gap: .75rem; width: 100%; margin: 0; padding: .9rem 1rem; border: 0; background: none; color: var(--sav-color-text);
              font: inherit; font-size: var(--sav-font-size-md); font-weight: var(--sav-font-weight-semibold); text-align: left; cursor: pointer; }
       :host([appearance="plain"]) .sum { padding-inline: var(--sav-details-plain-inline, 0); } /* Glass gives plain rows a little room on the sides */

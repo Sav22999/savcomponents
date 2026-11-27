@@ -16,7 +16,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   e.respondWith(fetch(req).then((res) => {
-    if (res.ok && (url.pathname.startsWith('/academy/') || /^\/(dist|docs|icons|flags|maps|v)\//.test(url.pathname))) {
+    // single-use codes in the address (back from SavAccount, email links) are never kept
+    if (res.ok && !/[?&](sav|sav_error|verify|reset)=/.test(url.search) && (url.pathname.startsWith('/academy/') || /^\/(dist|docs|icons|flags|maps|v)\//.test(url.pathname))) {
       const copy = res.clone();
       caches.open(CACHE).then((c) => c.put(req, copy));
     }

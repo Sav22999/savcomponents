@@ -37,3 +37,6 @@ if [ -d "$API_DIR/lib" ]; then
 else
   echo "API folder not found ($API_DIR): copy dist/sav.css to projects/savcomponents/lib/sav.css on saveriomorelli.com"
 fi
+
+# what search engines and language models read (llms.txt, llms-full.txt, sitemap.xml, the structured data of index.html)
+if command -v node >/dev/null 2>&1; then node tools/seo.mjs; else echo "node not found: run node tools/seo.mjs before uploading"; fi

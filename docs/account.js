@@ -18,10 +18,14 @@
     not_yourself: 'You cannot do this to your own account.', is_master: 'Remove this address from the master admins first (credentials.php).',
     already_verified: 'This email is already confirmed.', not_found: 'Not found.', not_installed: 'Accounts are not available.', server: 'Something went wrong. Try again.',
     network: 'No connection. Check your network and try again.',
+    sav_off: 'SavAccount sign-in is not available right now.', sav_expired: 'This SavAccount sign-in expired. Start it again.',
+    sav_taken: 'This SavAccount is already linked to another SavComponents account.', sav_failed: 'SavAccount could not confirm who you are. Try again.',
+    sav_code_expired: 'The code expired or was tried too many times: ask for a new one.', sav_code_wrong: 'The code is not right.',
+    sav_last_method: 'Choose a password first: your account needs at least one way to sign in.', cancelled: 'You cancelled the sign-in with SavAccount.',
   };
   const errText = (code) => ERR[code] || ERR.server;
 
-  const A = { installed: false, user: null, csrf: '', favs: new Set(), items: [], ready: false };
+  const A = { installed: false, savaccount: false, user: null, csrf: '', favs: new Set(), items: [], ready: false };
 
   // The accounts API lives on saveriomorelli.com (it has the database); this site is static.
   // A developer can point the docs to another API with localStorage "savc-api".
@@ -98,6 +102,69 @@
     toast('Signed out', 'neutral', 'log-out');
   }
 
+  /* ------------------------------------------------------------ SavAccount ("Continue with SavAccount", savaccount.eu) */
+
+  // the SavAccount mark: a leaning square with a person cut out and a small tile; coloured from the theme
+  const SAV_MARK = `<svg class="sav-mark" viewBox="0 0 512 512" aria-hidden="true"><path fill-rule="evenodd" d="M104 63.2 448.7 124 388 468.700 43.300 407.900ZM246 162a60 60 0 0 0-34 109c-32 13-51 46-58 95h184c-7-49-26-82-58-95a60 60 0 0 0-34-109Z"/><rect x="352" y="52" width="104" height="104" transform="rotate(24 404 104)"/></svg>`;
+  const savButton = (label = 'Continue with SavAccount', id = '') => `<sav-button type="button" block appearance="outline" variant="neutral" class="sav-btn" ${id ? `id="${id}"` : 'data-sav-start'}><span slot="prefix" class="sav-mark-wrap">${SAV_MARK}</span>${esc(label)}</sav-button>`;
+  // no cookies cross from this site to the API: a random key kept in this tab binds the sign-in to this browser
+  const savKey = {
+    make() { const b = new Uint8Array(32); crypto.getRandomValues(b); const k = [...b].map((x) => x.toString(16).padStart(2, '0')).join(''); try { sessionStorage.setItem('savc-sav-key', k); } catch {} return k; },
+    get() { try { return sessionStorage.getItem('savc-sav-key') || ''; } catch { return ''; } },
+    clear() { try { sessionStorage.removeItem('savc-sav-key'); sessionStorage.removeItem('savc-sav-back'); } catch {} },
+  };
+
+  /** Goes to SavAccount; it comes back to this site with ?sav=… (or ?sav_error=…). connect: links the signed-in account. */
+  async function startSav(mode = 'login', btn) {
+    if (btn) btn.loading = true;
+    try {
+      const key = savKey.make();
+      try { sessionStorage.setItem('savc-sav-back', location.hash); } catch {}
+      const r = await api('auth.sav.start', { mode, key, back: 'docs' });
+      location.assign(r.url);
+    } catch (e) { if (btn) btn.loading = false; fail(e); }
+  }
+
+  /** Back from SavAccount: signed in, linked, or a last step (a new account, or proving an account that already exists). */
+  async function finishSav(handoff) {
+    const key = savKey.get();
+    let back = '';
+    try { back = sessionStorage.getItem('savc-sav-back') || ''; } catch {}
+    if (back && back !== location.hash) location.hash = back;
+    const body = $('#authBody') || (authDialog(), $('#authBody'));
+    if (!key) { savKey.clear(); return toast(errText('sav_expired'), 'danger'); }
+    let r;
+    try { r = await api('auth.sav.finish', { handoff, key }); } catch (e) { savKey.clear(); return fail(e); }
+    if (r.user && r.token) { savKey.clear(); return signedIn(r); }
+    if (r.connected) { savKey.clear(); A.user = r.user; renderTop(); toast('SavAccount linked: you can now sign in with it', 'success', 'link'); if (location.hash === '#account') D.route(); return; }
+    const d = authDialog();
+    if (r.signup) {
+      body.innerHTML = `<form class="stack" id="fSavNew">
+        <div class="sav-head">${SAV_MARK}<div><h3>Create your account</h3><p class="muted small">SavAccount confirmed <b>${esc(r.signup.email)}</b>. No password needed: you sign in with SavAccount.</p></div></div>
+        <sav-input name="name" label="Name" autocomplete="name" required minlength="2" value="${esc(r.signup.name || '')}"></sav-input>
+        <sav-checkbox name="privacy" required size="sm">I accept the terms and have read the <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a></sav-checkbox>
+        <div class="form-err"></div><sav-button type="submit" block>Create account</sav-button></form>`;
+      bindForm('#fSavNew', async (f) => { const x = await api('auth.sav.create', { handoff, key, name: f.get('name'), acceptPrivacy: !!f.get('privacy') }); savKey.clear(); await signedIn(x); });
+    } else if (r.link) {
+      const pw = r.link.hasPassword;
+      body.innerHTML = `<div class="stack" id="savLink">
+        <div class="sav-head">${SAV_MARK}<div><h3>This is your account?</h3><p class="muted small">A SavComponents account with <b>${esc(r.link.email)}</b> already exists. Prove it is yours once, and from then on SavAccount signs you in to it.</p></div></div>
+        ${pw ? `<form class="stack" id="fSavPw"><sav-input name="password" type="password" label="Password of your SavComponents account" required autocomplete="current-password" password-toggle></sav-input>
+          <div class="form-err"></div><sav-button type="submit" block>Join and sign in</sav-button></form><sav-divider>or</sav-divider>` : ''}
+        <form class="stack" id="fSavCode"><p class="small" style="margin:0">We send a code to <b>${esc(r.link.email)}</b>.</p>
+          <sav-button type="button" appearance="${pw ? 'outline' : 'solid'}" ${pw ? 'variant="neutral"' : ''} block id="savSendCode" icon="mail">Send me a code</sav-button>
+          <div id="savCodeBox" class="stack" style="display: none"><sav-otp name="code" length="6" label="Code from the email" required></sav-otp><div class="form-err"></div><sav-button type="submit" block>Join and sign in</sav-button></div></form></div>`;
+      if (pw) bindForm('#fSavPw', async (f) => { const x = await api('auth.sav.link', { handoff, key, password: f.get('password') }); savKey.clear(); await signedIn(x); });
+      $('#savSendCode').addEventListener('click', async (e) => {
+        const b = e.currentTarget; b.loading = true;
+        try { await api('auth.sav.code', { handoff, key }); $('#savCodeBox').style.display = ''; b.textContent = 'Send a new code'; toast('Code sent: check your email', 'success', 'mail'); $('#savCodeBox sav-otp')?.focus(); }
+        catch (ex) { fail(ex); } finally { b.loading = false; }
+      });
+      bindForm('#fSavCode', async (f) => { const x = await api('auth.sav.link', { handoff, key, code: f.get('code') }); savKey.clear(); await signedIn(x); });
+    } else return;
+    d.show();
+  }
+
   /* ------------------------------------------------------------ sign in / register / forgot */
 
   let afterAuth = null; // what to do once signed in (e.g. the save that asked for it)
@@ -124,20 +191,23 @@
             <sav-button type="submit" block>Sign in</sav-button>
             <sav-button appearance="link" size="sm" id="toForgot">Forgot your password?</sav-button>
           </form>
+          ${A.savaccount ? `<sav-divider>or</sav-divider>${savButton()}` : ''}
         </sav-tab>
         <sav-tab label="Create account" name="register">
           <form class="stack" id="fRegister">
             <sav-input name="name" label="Name" autocomplete="name" required minlength="2"></sav-input>
             <sav-input name="email" type="email" label="Email" autocomplete="email" required help="We send you a link to confirm it."></sav-input>
             <sav-input name="password" type="password" label="Password" autocomplete="new-password" required minlength="8" password-toggle help="At least 8 characters."></sav-input>
-            <sav-checkbox name="privacy" required size="sm">I have read the <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a></sav-checkbox>
+            <sav-checkbox name="privacy" required size="sm">I accept the terms and have read the <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a></sav-checkbox>
             <div class="form-err"></div>
             <sav-button type="submit" block>Create account</sav-button>
           </form>
+          ${A.savaccount ? `<sav-divider>or</sav-divider>${savButton()}` : ''}
         </sav-tab>
       </sav-tabs>
       <p class="muted small">An account only keeps your favourite components and your saved themes and components.</p>`;
       $('#toForgot').addEventListener('click', () => openAuth('forgot'));
+      body.querySelectorAll('[data-sav-start]').forEach((b) => b.addEventListener('click', () => startSav('login', b)));
       bindForm('#fSignin', async (f) => {
         const r = await api('auth.login', { email: f.get('email'), password: f.get('password') });
         await signedIn(r);
@@ -199,9 +269,16 @@
 
   function handleLinks() {
     const q = new URLSearchParams(location.search);
-    const verify = q.get('verify'), reset = q.get('reset');
-    if (!verify && !reset) return;
-    history.replaceState(null, '', location.pathname + location.hash);
+    const verify = q.get('verify'), reset = q.get('reset'), sav = q.get('sav'), savErr = q.get('sav_error');
+    if (!verify && !reset && !sav && !savErr) return;
+    const keep = new URLSearchParams(); if (q.get('v')) keep.set('v', q.get('v')); // the version of the library the site runs on stays
+    history.replaceState(null, '', location.pathname + (keep.size ? `?${keep}` : '') + location.hash);
+    if (savErr) {
+      let back = ''; try { back = sessionStorage.getItem('savc-sav-back') || ''; } catch {}
+      savKey.clear(); if (back && back !== location.hash) location.hash = back;
+      return toast(errText(savErr === 'cancelled' ? 'cancelled' : savErr === 'expired' ? 'sav_expired' : 'sav_failed'), savErr === 'cancelled' ? 'neutral' : 'danger');
+    }
+    if (sav) return finishSav(sav);
     const d = authDialog();
     const body = $('#authBody');
     if (verify) {
@@ -366,8 +443,11 @@
           <div class="settings-grid">
             <sav-card><strong slot="header">Profile</strong><form class="stack" id="fProfile"><sav-input name="name" label="Name" required minlength="2" value="${esc(u.name)}"></sav-input>
               <sav-input label="Email" value="${esc(u.email)}" readonly disabled help="The email of an account cannot be changed."></sav-input><div class="form-err"></div><div><sav-button type="submit" size="sm">Save</sav-button></div></form></sav-card>
-            <sav-card><strong slot="header">Password</strong><form class="stack" id="fPassword"><sav-input name="current" type="password" label="Current password" required autocomplete="current-password"></sav-input>
-              <sav-input name="password" type="password" label="New password" required minlength="8" password-toggle autocomplete="new-password" help="Other devices will be signed out."></sav-input><div class="form-err"></div><div><sav-button type="submit" size="sm">Change password</sav-button></div></form></sav-card>
+            <sav-card><strong slot="header">Password</strong><form class="stack" id="fPassword">${u.hasPassword === false ? '<p class="muted small" style="margin:0">You sign in with SavAccount. Choose a password to sign in with your email too.</p>' : '<sav-input name="current" type="password" label="Current password" required autocomplete="current-password"></sav-input>'}
+              <sav-input name="password" type="password" label="New password" required minlength="8" password-toggle autocomplete="new-password" help="Other devices will be signed out."></sav-input><div class="form-err"></div><div><sav-button type="submit" size="sm">${u.hasPassword === false ? 'Choose password' : 'Change password'}</sav-button></div></form></sav-card>
+            ${A.savaccount || u.savaccount ? `<sav-card><strong slot="header">SavAccount</strong>
+              <div class="sav-head">${SAV_MARK}<p class="muted small" style="margin:0">${u.savaccount ? 'Linked: you can sign in with SavAccount.' : 'Sign in with your SavAccount (savaccount.eu) instead of a password.'}</p></div>
+              <div>${u.savaccount ? `<sav-button size="sm" appearance="outline" variant="neutral" icon="unlink" id="savUnlink" ${u.hasPassword === false ? 'disabled' : ''}>Unlink SavAccount</sav-button>${u.hasPassword === false ? '<p class="muted small">Choose a password first: your account needs a way to sign in.</p>' : ''}` : `<sav-button size="sm" appearance="outline" variant="neutral" id="savLinkBtn"><span slot="prefix" class="sav-mark-wrap">${SAV_MARK}</span>Link SavAccount</sav-button>`}</div></sav-card>` : ''}
             <sav-card><strong slot="header">Delete the account</strong><p class="muted small" style="margin-top:0">Your favourites, themes and components are deleted for good, and your theme links stop working.</p>
               <div><sav-button size="sm" variant="danger" appearance="outline" icon="trash" id="delAccount">Delete my account</sav-button></div></sav-card>
           </div>
@@ -389,7 +469,12 @@
       card.querySelector('sav-dropdown')?.addEventListener('sav-select', (e) => itemAction(item, e.detail.value));
     });
     bindForm('#fProfile', async (f) => { const r = await api('auth.profile', { name: f.get('name') }); A.user = r.user; renderTop(); toast('Profile saved'); D.route(); });
-    bindForm('#fPassword', async (f) => { await api('auth.password', { current: f.get('current'), password: f.get('password') }); $('#fPassword').reset(); toast('Password changed', 'success', 'lock'); });
+    bindForm('#fPassword', async (f) => { const first = A.user.hasPassword === false; await api('auth.password', { current: f.get('current') || '', password: f.get('password') }); $('#fPassword').reset(); if (first) { A.user.hasPassword = true; D.route(); } toast(first ? 'Password saved' : 'Password changed', 'success', 'lock'); });
+    $('#savLinkBtn')?.addEventListener('click', (e) => startSav('connect', e.currentTarget));
+    $('#savUnlink')?.addEventListener('click', async () => {
+      if (!await confirmDanger('Unlink SavAccount?', 'You will sign in with your email and password only.', 'Unlink')) return;
+      try { const r = await api('auth.sav.unlink', {}); A.user = r.user; D.route(); toast('SavAccount unlinked', 'neutral', 'unlink'); } catch (e) { fail(e); }
+    });
     $('#delAccount')?.addEventListener('click', deleteAccount);
   }
 
@@ -449,11 +534,12 @@
   }
 
   function deleteAccount() {
-    const d = infoDialog('Delete your account?', `<form class="stack" id="fDelete"><p>Favourites, themes and components are deleted for good. Write your password to confirm.</p>
-      <sav-input name="password" type="password" label="Password" required autocomplete="current-password"></sav-input><div class="form-err"></div></form>
+    const noPw = A.user?.hasPassword === false;
+    const d = infoDialog('Delete your account?', `<form class="stack" id="fDelete"><p>Favourites, themes and components are deleted for good. ${noPw ? 'Write your email address to confirm.' : 'Write your password to confirm.'}</p>
+      ${noPw ? `<sav-input name="confirm" type="email" label="Email" required autocomplete="off" placeholder="${esc(A.user.email)}"></sav-input>` : '<sav-input name="password" type="password" label="Password" required autocomplete="current-password"></sav-input>'}<div class="form-err"></div></form>
       <sav-button slot="footer" appearance="ghost" variant="neutral" data-sav-close>Cancel</sav-button><sav-button slot="footer" variant="danger" id="delOk" icon="trash">Delete for good</sav-button>`, '26rem');
     bindForm('#fDelete', async (f) => {
-      await api('auth.delete', { password: f.get('password') });
+      await api('auth.delete', noPw ? { confirm: f.get('confirm') } : { password: f.get('password') });
       d.hide(); tokenStore.set(''); A.user = null; A.favs.clear(); A.items = []; renderTop(); location.hash = ''; toast('Your account has been deleted', 'neutral', 'trash');
     });
     $('#delOk').addEventListener('click', () => $('#fDelete').requestSubmit());
@@ -571,6 +657,7 @@
     try {
       const c = await api('auth.config');
       A.installed = !!c.installed;
+      A.savaccount = !!c.savaccount;
     } catch { A.installed = false; }
     if (A.installed) {
       try {

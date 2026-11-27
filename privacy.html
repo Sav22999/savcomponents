@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en" class="sav-theme-auto sav-style-tilt">
+<html lang="it" class="sav-theme-auto sav-style-tilt">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Privacy — SavComponents</title>
+  <title>Privacy e termini — SavComponents</title>
   <meta name="robots" content="noindex">
   <link rel="icon" href="docs/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="dist/sav.css">
@@ -21,29 +21,94 @@
     main { max-width: 680px; margin: 0 auto; padding: 32px 16px 48px; line-height: 1.65; }
     h1 { letter-spacing: -.02em; }
     h2 { font-size: 1.1rem; margin-top: 1.8rem; }
+    .note { padding: .8rem 1rem; border-left: 4px solid var(--sav-color-primary, #66cbff); background: color-mix(in oklab, var(--sav-color-primary, #66cbff) 12%, transparent); }
+    .en { margin-top: 3.5rem; padding-top: 1rem; border-top: 1px solid var(--sav-color-border, rgba(127,127,127,.3)); }
   </style>
 </head>
 <body class="sav-base">
 <main>
   <sav-button href="./" appearance="ghost" variant="neutral" icon="arrow-left">SavComponents</sav-button>
-  <h1>Privacy</h1>
+  <h1>Privacy e termini</h1>
+  <p>Ultimo aggiornamento: 27 novembre 2026</p>
+  <p class="note"><strong>Valore legale: solo il testo in italiano.</strong> La <a href="#en">versione in inglese</a> è una copia di cortesia, senza valore legale: in caso di differenze o dubbi prevale sempre l’italiano.</p>
+
+  <h2>Titolare del trattamento</h2>
+  <p>Saverio Morelli, persona fisica, che fornisce SavComponents gratuitamente e senza scopo commerciale. Per qualsiasi richiesta, anche per esercitare i tuoi diritti: <a href="https://www.saveriomorelli.com/contact-me/">saveriomorelli.com/contact-me</a>. Questa informativa è resa ai sensi degli artt. 13 e 14 del Regolamento UE 2016/679 (GDPR) e del Codice privacy (D.Lgs. 196/2003).</p>
+  <p>Un account è facoltativo: i componenti e la documentazione funzionano senza. Serve solo a conservare i componenti preferiti, le configurazioni salvate e i progressi nell’Academy.</p>
+
+  <h2>Cosa viene conservato</h2>
+  <p>Nome, indirizzo email, password (solo come impronta non reversibile), quando hai creato l’account e quando l’hai usato l’ultima volta, i componenti preferiti, i temi e i componenti che salvi. Nient’altro, e nulla viene venduto o ceduto.</p>
+  <p><b>SavComponents Academy</b> (savcomponents.com/academy, anche su Google Play) conserva, per un account connesso, i progressi di apprendimento (lezioni, punteggi dei quiz, sfide, giorni di pratica, distintivi, punti e livello). Se scegli un nome utente ed entri in classifica, quel nome con livello, punti e giorni consecutivi è visibile a tutti; nient’altro di te lo è. Puoi uscire dalla classifica o cancellare il nome utente in qualsiasi momento dal profilo dell’Academy.</p>
+  <p>Gli account sono conservati sul server di saveriomorelli.com, dello stesso autore; savcomponents.com non conserva nulla su di te.</p>
+
+  <h2>Accesso con SavAccount</h2>
+  <p>Puoi accedere anche con <a href="https://www.savaccount.eu">SavAccount</a>, servizio di accesso dello stesso autore. SavAccount ti chiede prima il permesso, poi dà a SavComponents nome, indirizzo email confermato e un identificativo diverso per ogni servizio; SavComponents conserva quell’identificativo per riconoscerti la volta successiva, e nessuna password. Se esiste già un account con il tuo indirizzo, viene collegato al tuo SavAccount solo dopo che hai dimostrato che è tuo (con la sua password o con un codice inviato all’indirizzo). Puoi scollegare SavAccount dalle impostazioni dell’account, quando l’account ha una password. SavAccount ha la sua informativa.</p>
+
+  <h2>Cookie e memoria del browser</h2>
+  <p>Non ci sono cookie, statistiche o pubblicità. Quando accedi, una chiave di accesso casuale resta nella memoria locale del browser fino a 30 giorni ed è inviata solo al server degli account; uscendo si cancella. Mentre accedi con SavAccount, un’altra chiave casuale resta nella memoria della scheda e si cancella al ritorno. Il personalizzatore ricorda lì le tue scelte, e l’Academy i tuoi progressi e il codice delle sfide (su questo dispositivo; nel tuo account solo se accedi). Sono strumenti tecnici strettamente necessari, che non richiedono consenso (art. 122 del Codice privacy; Linee guida del Garante sui cookie del 10 giugno 2021).</p>
+
+  <h2>Quanti siti usano la libreria</h2>
+  <p>Quando una pagina carica una versione pubblicata della libreria (<code>/v/&lt;versione&gt;/sav.js</code> o <code>sav.css</code>) da savcomponents.com, il server annota a quale sito appartiene la pagina (solo il suo indirizzo, come lo invia il browser), trasformato in un codice non reversibile con una chiave segreta, una volta al giorno, con la versione. Di chi visita non resta nulla: nessun indirizzo IP, nessun cookie, nessun percorso di pagina. Gli indirizzi locali non sono contati. Serve solo a sapere quanti siti diversi usano SavComponents; le annotazioni si cancellano dopo 24 mesi.</p>
+
+  <h2>Link dei temi</h2>
+  <p>Un tema salvato ha un indirizzo pubblico (il suo CSS), così puoi usarlo nei tuoi siti. Chi conosce l’indirizzo può leggere il tema, ma non il tuo nome o la tua email.</p>
+
+  <h2>Email</h2>
+  <p>Ricevi solo il link per confermare l’indirizzo e, se lo chiedi, quello per scegliere una nuova password; con SavAccount, il codice per dimostrare che un account esistente è tuo e un avviso quando SavAccount viene collegato o scollegato.</p>
+
+  <h2>Perché e su quale base</h2>
+  <p>Per fornirti l’account e le sue funzioni: esecuzione del servizio che chiedi (art. 6.1.b GDPR). Per la sicurezza e per contare in forma anonima i siti che usano la libreria: legittimo interesse (art. 6.1.f). Nessuna profilazione e nessuna decisione basata unicamente su un trattamento automatizzato (art. 22). Nome, email e password sono necessari per creare un account; senza, puoi comunque usare componenti e documentazione.</p>
+
+  <h2>Per quanto tempo</h2>
+  <p>Puoi eliminare l’account in qualsiasi momento dalla pagina dell’account: tutto ciò che è elencato sopra viene rimosso subito. Gli account con email mai confermata si cancellano dopo 7 giorni. L’amministratore del sito può anche disattivare o eliminare account.</p>
+
+  <h2>Chi riceve i dati</h2>
+  <p>Il fornitore dell’hosting e della posta, Aruba S.p.A. (Italia), che agisce come responsabile del trattamento (art. 28 GDPR). I dati restano nell’Unione europea. L’app Android dell’Academy è distribuita da Google Play, che tratta i dati del download secondo le sue regole.</p>
+
+  <h2>Età</h2>
+  <p>Per creare un account servono almeno 14 anni; sotto, serve il consenso di chi esercita la responsabilità genitoriale (art. 8 GDPR e art. 2-quinquies del Codice privacy).</p>
+
+  <h2>I tuoi diritti</h2>
+  <p>Accesso, rettifica, cancellazione, limitazione, portabilità e opposizione (artt. 15–22 GDPR), scrivendo dalla pagina dei contatti. Puoi presentare reclamo al <a href="https://www.garanteprivacy.it">Garante per la protezione dei dati personali</a> o rivolgerti all’autorità giudiziaria.</p>
+
+  <h2>Termini d’uso</h2>
+  <p>SavComponents è software libero con licenza MIT, fornito così com’è. Chi usa la libreria, il sito o l’Academy è l’unico responsabile delle proprie azioni e dei contenuti che inserisce (temi, componenti salvati, nome utente in classifica), anche verso terzi. Non sono permessi contenuti illeciti, offensivi o che si spacciano per altri, né tentativi di aggirare la sicurezza. Chiunque può segnalare un contenuto illecito dalla pagina dei contatti; chi è interessato da una rimozione o da una sospensione ne riceve la motivazione e può contestarla gratuitamente, anche davanti a un organismo di risoluzione extragiudiziale certificato o all’autorità giudiziaria (Regolamento UE 2022/2065, Digital Services Act). La pagina dei contatti è il punto di contatto per autorità e utenti, in italiano o in inglese. Nei limiti consentiti dalla legge il fornitore non risponde dei danni derivanti dall’uso o dall’indisponibilità del servizio, salvi dolo, colpa grave e diritti dei consumatori. Si applica la legge italiana.</p>
+
+  <section class="en" id="en" lang="en">
+  <h2>Privacy and terms (courtesy copy)</h2>
+  <p class="note"><strong>Courtesy copy.</strong> Only the Italian text above is legally binding; this English version has no legal value and, if the two differ, the Italian text always prevails.</p>
+  <h2>Controller</h2>
+  <p>Saverio Morelli, a private individual who provides SavComponents free of charge and on a non-commercial basis. For any request, including to exercise your rights: <a href="https://www.saveriomorelli.com/contact-me/">saveriomorelli.com/contact-me</a>. This notice is given under arts. 13 and 14 of Regulation (EU) 2016/679 (GDPR) and the Italian Privacy Code (Legislative Decree 196/2003).</p>
   <p>An account is optional: the components and the documentation work without one. It only lets you keep favourite components, saved configurations and your progress in the Academy.</p>
   <h2>What is stored</h2>
   <p>Your name, your email address, your password (only as a one-way hash), when you created the account and last used it, your favourite components, and the themes and components you save. Nothing else, and nothing is sold or shared.</p>
   <p><b>SavComponents Academy</b> (savcomponents.com/academy, also on Google Play) keeps, for a signed-in account, your learning progress (lessons, quiz scores, challenges, days of practice, badges, XP and level). If you choose a username and join the leaderboard, that username with your level, XP and day streak is shown to everybody; nothing else of you is. You can leave the leaderboard or clear the username at any time from the Academy profile.</p>
   <p>The accounts are kept on the server of saveriomorelli.com, by the same author; savcomponents.com itself stores nothing about you.</p>
+  <h2>Signing in with SavAccount</h2>
+  <p>You can also sign in with <a href="https://www.savaccount.eu">SavAccount</a>, a sign-in service by the same author. SavAccount asks you first, then gives SavComponents your name, your confirmed email address and an identifier that is different for every service; SavComponents keeps that identifier to recognise you next time, and no password. If an account with your address already exists, it is joined to your SavAccount only after you prove it is yours (with its password or a code sent to the address). You can unlink SavAccount from your account settings once your account has a password. SavAccount has its own privacy notice.</p>
   <h2>Cookies and local storage</h2>
-  <p>There are no cookies, analytics or advertising. When you sign in, a random sign-in key is kept in your browser's local storage for up to 30 days and sent only to the accounts server; signing out deletes it. The customiser also remembers your choices there, and the Academy keeps your progress and the code of your challenges there (on this device; in your account only when you sign in).</p>
+  <p>There are no cookies, analytics or advertising. When you sign in, a random sign-in key is kept in your browser's local storage for up to 30 days and sent only to the accounts server; signing out deletes it. While you sign in with SavAccount, another random key is kept in the session storage of the tab, and deleted when you are back. The customiser also remembers your choices there, and the Academy keeps your progress and the code of your challenges there (on this device; in your account only when you sign in). These are strictly necessary technical tools, which need no consent (art. 122 of the Italian Privacy Code; the Garante’s cookie guidelines of 10 June 2021).</p>
   <h2>How many sites use the library</h2>
   <p>When a page loads a released version of the library (<code>/v/&lt;version&gt;/sav.js</code> or <code>sav.css</code>) from savcomponents.com, the server notes which site the page belongs to (only its address, as the browser sends it), turned into a one-way code with a secret key, once a day, with the version. Nothing about the visitor is kept: no IP address, no cookie, no page path. Local addresses are not counted. The only use is to know how many different sites use SavComponents; the notes are deleted after 24 months.</p>
   <h2>Theme links</h2>
   <p>A saved theme has a public address (its CSS) so you can use it on your own sites. Anyone who knows that address can read the theme, but not your name or email.</p>
   <h2>Emails</h2>
-  <p>You only receive the link to confirm your address and, if you ask for it, the link to choose a new password.</p>
+  <p>You only receive the link to confirm your address and, if you ask for it, the link to choose a new password; with SavAccount, the code to prove an existing account is yours, and a note when SavAccount is linked to or unlinked from your account.</p>
   <h2>Deleting your data</h2>
   <p>You can delete your account at any time from the account page: everything listed above is removed at once. Accounts whose email is never confirmed are deleted after 7 days. The administrator of the site can also disable or delete accounts.</p>
+  <h2>Why and on what basis</h2>
+  <p>To give you the account and its features: providing the service you ask for (art. 6.1.b GDPR). For security and to count anonymously the sites that use the library: legitimate interest (art. 6.1.f). No profiling and no decision based solely on automated processing (art. 22). Name, email and password are needed to create an account; without one you can still use the components and the documentation.</p>
+  <h2>Who receives the data</h2>
+  <p>The hosting and mail provider, Aruba S.p.A. (Italy), acting as processor (art. 28 GDPR). The data stays in the European Union. The Android app of the Academy is distributed by Google Play, which processes download data under its own rules.</p>
+  <h2>Age</h2>
+  <p>You must be at least 14 to create an account; below that age, the consent of whoever holds parental responsibility is needed (art. 8 GDPR and art. 2-quinquies of the Italian Privacy Code).</p>
+  <h2>Your rights</h2>
+  <p>Access, rectification, erasure, restriction, portability and objection (arts. 15–22 GDPR), by writing from the contact page. You can complain to the Italian data protection authority, the <a href="https://www.garanteprivacy.it">Garante per la protezione dei dati personali</a>, or go to court.</p>
+  <h2>Terms of use</h2>
+  <p>SavComponents is free software under the MIT licence, provided as is. Whoever uses the library, the site or the Academy is solely responsible for their own actions and for the content they put in (themes, saved components, username on the leaderboard), also towards third parties. Illegal or offensive content, impersonation and attempts to get around security are not allowed. Anyone can report illegal content from the contact page; whoever is affected by a removal or a suspension gets the reasons and can challenge them free of charge, also before a certified out-of-court dispute settlement body or the courts (Regulation (EU) 2022/2065, the Digital Services Act). The contact page is the point of contact for authorities and users, in Italian or English. Within the limits allowed by law the provider is not liable for damage arising from the use or unavailability of the service, except for wilful misconduct, gross negligence and consumer rights. Italian law applies.</p>
   <h2>Contact</h2>
   <p>Saverio Morelli — <a href="https://www.saveriomorelli.com/contact-me/">saveriomorelli.com/contact-me</a></p>
+  </section>
 </main>
 </body>
 </html>

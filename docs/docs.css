@@ -229,6 +229,15 @@ td:nth-child(2) { color: var(--sav-color-text-muted); }
 .done-box > svg { width: 2.6rem; height: 2.6rem; color: var(--sav-color-primary); }
 .done-box h3 { margin: .3rem 0 0; }
 .auth-tabs { --sav-tab-padding: 1.1rem 0 0; }
+/* SavAccount: its mark (leaning square with a person cut out, a small tile) in the colours of the theme */
+.sav-mark { display: block; width: 1.15em; height: 1.15em; flex: none; }
+.sav-mark path { fill: color-mix(in oklab, var(--sav-color-primary) 55%, var(--sav-color-text)); }
+.sav-mark rect { fill: var(--sav-color-primary); }
+.sav-mark-wrap { display: inline-flex; }
+.sav-head { display: flex; align-items: flex-start; gap: .75rem; }
+.sav-head > .sav-mark { width: 2rem; height: 2rem; margin-top: .15rem; }
+.sav-head h3 { margin: 0 0 .2rem; }
+.sav-head p { margin: 0; }
 .auth-tabs::part(nav) { width: 100%; display: flex; }
 .acc-head { display: flex; align-items: center; gap: 1.25rem; }
 .acc-head h1 { margin: .5rem 0 .2rem; }

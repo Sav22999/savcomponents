@@ -2,6 +2,11 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.1.2 — 2026-11-26
+
+- Details (`appearance="plain"`): the last one has no line under it. The line separates one row from the next, so the last of an
+  accordion, or a single plain details inside a card, no longer ends with a separator hanging below it.
+
 ## 1.1.1 — 2026-11-26
 
 - Radio group: `appearance="cards"` turns the options into a grid of cards, each with a picture of its own (slot `media`), its name

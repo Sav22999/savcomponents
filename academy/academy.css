@@ -24,6 +24,14 @@ main { flex: 1; outline: none; }
 .acts.center { justify-content: center; }
 .stack { display: grid; gap: .85rem; }
 .form-err:empty, #qAfter:empty, #chDone:empty { display: none; }
+/* SavAccount: its mark in the colours of the theme */
+.sav-mark { display: block; width: 1.15em; height: 1.15em; flex: none; }
+.sav-mark path { fill: color-mix(in oklab, var(--sav-color-primary) 55%, var(--sav-color-text)); }
+.sav-mark rect { fill: var(--sav-color-primary); }
+.sav-head { display: flex; align-items: flex-start; gap: .75rem; }
+.sav-head > .sav-mark { width: 2rem; height: 2rem; margin-top: .15rem; }
+.sav-head h3 { margin: 0 0 .2rem; }
+.sav-head p { margin: 0; }
 #qAfter, #chDone { display: grid; gap: .7rem; margin-top: .9rem; }
 
 /* home: the level ring next to the welcome */

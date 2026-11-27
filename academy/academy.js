@@ -131,6 +131,9 @@
     email_invalid: 'This email address is not valid.', password_short: 'The password needs at least 8 characters.', privacy_required: 'Please accept the privacy notice.',
     bad_credentials: 'Wrong email or password.', username_invalid: 'A username has 3 to 20 letters, digits or _.', username_taken: 'This username is taken: try another one.',
     too_large: 'Your progress is too large to save.', not_installed: 'Accounts are not available right now.', network: 'No connection: your progress is kept on this device.', server: 'Something went wrong. Try again.',
+    bad_password: 'The password is not right.', sav_off: 'SavAccount sign-in is not available right now.', sav_expired: 'This SavAccount sign-in expired. Start it again.',
+    sav_taken: 'This SavAccount is already linked to another SavComponents account.', sav_failed: 'SavAccount could not confirm who you are. Try again.',
+    sav_code_expired: 'The code expired or was tried too many times: ask for a new one.', sav_code_wrong: 'The code is not right.', cancelled: 'You cancelled the sign-in with SavAccount.',
   };
   const errText = (e) => ERR[e?.message] || ERR.server;
   const A = { user: null, profile: { username: '', onBoard: false }, syncing: false };
@@ -179,6 +182,66 @@
     catch (e) { if (e.message !== 'network') console.warn('Academy save:', e.message); }
   }
 
+  /* ---- "Continue with SavAccount" (savaccount.eu): the same flow as savcomponents.com, coming back to the Academy */
+  let savOn = null; // whether the accounts server offers SavAccount (asked once)
+  const savEnabled = () => (savOn ||= api('auth.config').then((c) => !!c.savaccount).catch(() => false));
+  const SAV_MARK = `<svg class="sav-mark" viewBox="0 0 512 512" aria-hidden="true"><path fill-rule="evenodd" d="M104 63.2 448.7 124 388 468.700 43.300 407.900ZM246 162a60 60 0 0 0-34 109c-32 13-51 46-58 95h184c-7-49-26-82-58-95a60 60 0 0 0-34-109Z"/><rect x="352" y="52" width="104" height="104" transform="rotate(24 404 104)"/></svg>`;
+  const savKey = {
+    make() { const b = new Uint8Array(32); crypto.getRandomValues(b); const k = [...b].map((x) => x.toString(16).padStart(2, '0')).join(''); try { sessionStorage.setItem('savc-sav-key', k); sessionStorage.setItem('savc-sav-back', location.hash); } catch {} return k; },
+    get() { try { return sessionStorage.getItem('savc-sav-key') || ''; } catch { return ''; } },
+    back() { try { return sessionStorage.getItem('savc-sav-back') || ''; } catch { return ''; } },
+    clear() { try { sessionStorage.removeItem('savc-sav-key'); sessionStorage.removeItem('savc-sav-back'); } catch {} },
+  };
+  async function startSav(btn) {
+    btn.loading = true;
+    try { location.assign((await api('auth.sav.start', { mode: 'login', key: savKey.make(), back: 'academy' })).url); }
+    catch (e) { btn.loading = false; toast(errText(e), 'danger'); }
+  }
+  async function savSignedIn(r) {
+    savKey.clear();
+    if (r.token) token.set(r.token);
+    A.user = r.user;
+    $('#authDialog')?.hide();
+    toast(`Welcome, ${A.user.name}`, 'success', 'user');
+    await syncFromAccount();
+  }
+  /** back from SavAccount (?sav=… or ?sav_error=…): signed in, or a last step in the dialog */
+  async function handleSav() {
+    const q = new URLSearchParams(location.search), handoff = q.get('sav'), err = q.get('sav_error');
+    if (!handoff && !err) return;
+    history.replaceState(null, '', location.pathname + location.hash);
+    const back = savKey.back(), key = savKey.get();
+    if (back && back !== location.hash) location.hash = back;
+    if (err) { savKey.clear(); return toast(errText({ message: err === 'cancelled' ? 'cancelled' : err === 'expired' ? 'sav_expired' : 'sav_failed' }), err === 'cancelled' ? 'neutral' : 'danger'); }
+    if (!key) { savKey.clear(); return toast(errText({ message: 'sav_expired' }), 'danger'); }
+    let r;
+    try { r = await api('auth.sav.finish', { handoff, key }); } catch (e) { savKey.clear(); return toast(errText(e), 'danger'); }
+    if (r.token) return savSignedIn(r);
+    authDialog('signin'); // makes the dialog, then its body is replaced by the last step
+    const body = $('#authBody');
+    if (r.signup) {
+      body.innerHTML = `<form class="stack" id="fSavNew"><div class="sav-head">${SAV_MARK}<div><h3>Create your account</h3><p class="muted">SavAccount confirmed <b>${esc(r.signup.email)}</b>. No password needed: you sign in with SavAccount.</p></div></div>
+        <sav-input name="name" label="Name" autocomplete="name" required minlength="2" value="${esc(r.signup.name || '')}"></sav-input>
+        <sav-checkbox name="privacy" required size="sm">I accept the terms and have read the <sav-button appearance="link" size="sm" href="../privacy.html" target="_blank">privacy notice</sav-button></sav-checkbox>
+        <div class="form-err"></div><sav-button type="submit" block>Create account</sav-button></form>`;
+      bindForm('#fSavNew', async (f) => savSignedIn(await api('auth.sav.create', { handoff, key, name: f.get('name'), acceptPrivacy: !!f.get('privacy') })));
+    } else if (r.link) {
+      const pw = r.link.hasPassword;
+      body.innerHTML = `<div class="stack"><div class="sav-head">${SAV_MARK}<div><h3>This is your account?</h3><p class="muted">A SavComponents account with <b>${esc(r.link.email)}</b> already exists. Prove it is yours once, and from then on SavAccount signs you in to it.</p></div></div>
+        ${pw ? `<form class="stack" id="fSavPw"><sav-input name="password" type="password" label="Password of your SavComponents account" required autocomplete="current-password" password-toggle></sav-input>
+          <div class="form-err"></div><sav-button type="submit" block>Join and sign in</sav-button></form><sav-divider>or</sav-divider>` : ''}
+        <form class="stack" id="fSavCode"><sav-button type="button" appearance="${pw ? 'outline' : 'solid'}" ${pw ? 'variant="neutral"' : ''} block id="savSendCode" icon="mail">Send a code to ${esc(r.link.email)}</sav-button>
+          <div id="savCodeBox" class="stack" style="display: none"><sav-otp name="code" length="6" label="Code from the email" required></sav-otp><div class="form-err"></div><sav-button type="submit" block>Join and sign in</sav-button></div></form></div>`;
+      if (pw) bindForm('#fSavPw', async (f) => savSignedIn(await api('auth.sav.link', { handoff, key, password: f.get('password') })));
+      $('#savSendCode').addEventListener('click', async (e) => {
+        const b = e.currentTarget; b.loading = true;
+        try { await api('auth.sav.code', { handoff, key }); $('#savCodeBox').style.display = ''; toast('Code sent: check your email', 'success', 'mail'); }
+        catch (ex) { toast(errText(ex), 'danger'); } finally { b.loading = false; }
+      });
+      bindForm('#fSavCode', async (f) => savSignedIn(await api('auth.sav.link', { handoff, key, code: f.get('code') })));
+    }
+  }
+
   /* ---- sign in, create an account, forgotten password (the same account as savcomponents.com) */
   function authDialog(view = 'signin') {
     let d = $('#authDialog');
@@ -210,11 +273,17 @@
           <sav-input name="name" label="Name" autocomplete="name" required minlength="2"></sav-input>
           <sav-input name="email" type="email" label="Email" autocomplete="email" required help="We send you a link to confirm it."></sav-input>
           <sav-input name="password" type="password" label="Password" autocomplete="new-password" required minlength="8" password-toggle help="At least 8 characters."></sav-input>
-          <sav-checkbox name="privacy" required size="sm">I have read the <sav-button appearance="link" size="sm" href="../privacy.html" target="_blank">privacy notice</sav-button></sav-checkbox>
+          <sav-checkbox name="privacy" required size="sm">I accept the terms and have read the <sav-button appearance="link" size="sm" href="../privacy.html" target="_blank">privacy notice</sav-button></sav-checkbox>
           <div class="form-err"></div><sav-button type="submit" block>Create account</sav-button></form></sav-tab>
       </sav-tabs>
       <sav-alert appearance="plain" noicon>One account for savcomponents.com and the Academy: your progress, favourite components and saved themes.</sav-alert>`;
       $('#toForgot').addEventListener('click', () => authDialog('forgot'));
+      // the SavAccount button under both forms, once the server says it offers it
+      savEnabled().then((on) => {
+        if (!on) return;
+        body.querySelectorAll('#fSignin, #fRegister').forEach((form) => form.insertAdjacentHTML('afterend', `<sav-divider>or</sav-divider><sav-button type="button" block appearance="outline" variant="neutral" data-sav-start><span slot="prefix" style="display:inline-flex">${SAV_MARK}</span>Continue with SavAccount</sav-button>`));
+        body.querySelectorAll('[data-sav-start]').forEach((b) => b.addEventListener('click', () => startSav(b)));
+      });
       bindForm('#fSignin', async (f) => {
         const r = await api('auth.login', { email: f.get('email'), password: f.get('password') });
         if (r.token) token.set(r.token);
@@ -850,6 +919,7 @@ addEventListener('message', (e) => {
     document.addEventListener('click', (e) => { const c = e.target.closest?.('sav-card[data-href]'); if (c && !e.target.closest('a, button, sav-button')) location.hash = c.dataset.href; });
     route();
     syncFromAccount();
+    handleSav();
     // the progress written in another tab shows up here too
     addEventListener('storage', (e) => { if (e.key === 'savc-academy') { S = normalize(store.get('savc-academy', null)); last = stats(); renderTop(); } if (e.key === 'savc-token') syncFromAccount(); });
     if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});

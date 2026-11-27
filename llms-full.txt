@@ -1,0 +1,3411 @@
+# SavComponents 1.1.2
+
+> SavComponents (www.savcomponents.com) is a free, open-source (MIT) library of 81 web components for websites and web apps, by Saverio Morelli: buttons, fields, pickers, dialogs, tabs, tables, charts and more, written as plain HTML tags (<sav-button>, <sav-input>, <sav-dialog>…). No framework and no build step: one stylesheet and one script. Themes with CSS custom properties, light and dark modes and five styles (Soft, Tilt, Sharp, Brutal, Glass). Accessible (keyboard, screen readers), English and Italian built in.
+
+## Use it on any site
+
+```html
+<link rel="stylesheet" href="https://www.savcomponents.com/v/1.1.2/sav.css">
+<script src="https://www.savcomponents.com/v/1.1.2/sav.js" defer></script>
+
+<sav-button>Hello</sav-button>
+```
+
+- The address contains the version (1.1.2 is the latest): a site keeps working the same way when a newer release comes out.
+- Styles: add a class to <html>: sav-style-tilt, sav-style-sharp, sav-style-brutal or sav-style-glass (Soft is the default). Modes: sav-theme-light, sav-theme-dark or sav-theme-auto.
+- Theming: override CSS custom properties such as --sav-color-primary, --sav-color-bg, --sav-radius, --sav-font after sav.css; the customiser on the site exports them, and a theme saved with an account has its own link (/theme/<id>.css).
+- Languages: the words the components write follow <html lang>; add one with Sav.addStrings(lang, {English: translation}).
+- Icons: <sav-icon name="…"> with about 2,000 icons (mostly Lucide, ISC licence).
+
+## Actions
+
+### Button — `<sav-button>`
+
+Buttons start an action or navigate. Five semantic colours, five appearances, three sizes; a button with href renders a link.
+
+Documentation: https://www.savcomponents.com/#button
+
+Attributes:
+
+- `variant` (primary · neutral · success · warning · danger): Colour of the button.
+- `appearance` (solid · soft · outline · ghost · link): Visual weight. Default solid.
+- `size` (sm · md · lg): Height and font size.
+- `pill · square · circle · block` (boolean): Rounded ends, icon-only square/circle, full width.
+- `caret` (boolean): Shows a down chevron (for menus).
+- `loading · disabled` (boolean): Spinner state and disabled state.
+- `href · target · download` (string): Renders a link instead of a button.
+- `type · name · value` (button · submit · reset): Behaviour inside a form.
+- `icon · icon-end` (icon name): An icon before or after the text. Without text the button becomes a square icon button.
+- `label` (string): Accessible name, required for icon-only buttons.
+- `auto-text` (boolean): Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.
+- `--text-color` (CSS): The colour of the text, whatever the background (unset: the colour that fits the background).
+- `aria-expanded · aria-pressed · aria-controls · aria-haspopup · aria-describedby · aria-current` (string): Set on sav-button, they reach the real button inside (menus, toggles).
+
+Slots:
+
+- `(default)`: Label
+- `prefix`: Before the label, e.g. an icon
+- `suffix`: After the label
+
+CSS parts:
+
+- `b`: a
+- `l`: a
+- `s`: p
+
+Example — Variants:
+
+```html
+<sav-button>Primary</sav-button>
+<sav-button variant="neutral">Neutral</sav-button>
+<sav-button variant="success">Success</sav-button>
+<sav-button variant="warning">Warning</sav-button>
+<sav-button variant="danger">Danger</sav-button>
+```
+
+Example — Appearances:
+
+```html
+<sav-button>Solid</sav-button>
+<sav-button appearance="soft">Soft</sav-button>
+<sav-button appearance="outline">Outline</sav-button>
+<sav-button appearance="ghost">Ghost</sav-button>
+<sav-button appearance="link">Link</sav-button>
+```
+
+### Button group — `<sav-button-group>`
+
+Joins buttons together. Works with any appearance and with dropdowns.
+
+Documentation: https://www.savcomponents.com/#button-group
+
+Attributes:
+
+- `label` (string): Accessible name of the group.
+- `auto-text` (boolean): Every button of the group gets black or white text, whichever is readable on its colour (WCAG AA, at least 4.5:1), also with your own colours.
+
+Example — Basic:
+
+```html
+<sav-button-group label="Alignment">
+  <sav-button appearance="outline" variant="neutral">Left</sav-button>
+  <sav-button appearance="outline" variant="neutral">Center</sav-button>
+  <sav-button appearance="outline" variant="neutral">Right</sav-button>
+</sav-button-group>
+<sav-button-group>
+  <sav-button>Save</sav-button>
+  <sav-dropdown placement="bottom-end">
+    <sav-button slot="trigger" square label="More options"><sav-icon name="chevron-down"></sav-icon></sav-button>
+    <sav-menu-item>Save as draft</sav-menu-item>
+    <sav-menu-item>Save and close</sav-menu-item>
+  </sav-dropdown>
+</sav-button-group>
+```
+
+### Copy button — `<sav-copy-button>`
+
+Copies text to the clipboard and confirms with a check mark.
+
+Documentation: https://www.savcomponents.com/#copy-button
+
+Attributes:
+
+- `value` (string): Text to copy.
+- `from` (id): Copies the value or text of the element with this id.
+- `size` (sm · md · lg): 
+- `appearance` (ghost): No border.
+- `copy-label · success-label · error-label` (string): Texts for screen readers.
+
+Events:
+
+- `sav-copy`: After copying. detail.value
+- `sav-error`: When the clipboard is not available.
+
+Example — Value or element:
+
+```html
+<sav-copy-button value="npm i savcomponents"></sav-copy-button>
+<sav-copy-button value="Hello!">Copy text</sav-copy-button>
+<sav-input id="copy-src" value="https://example.com/invite/42" readonly style="max-width: 18rem">
+  <sav-copy-button slot="suffix" from="copy-src" appearance="ghost" size="sm"></sav-copy-button>
+</sav-input>
+```
+
+### Favourite button — `<sav-favourite-button>`
+
+A toggle for favourites, likes and bookmarks: a star, a heart or a bookmark that fills with its colour when pressed.
+
+Documentation: https://www.savcomponents.com/#favourite-button
+
+Attributes:
+
+- `icon` (star · heart · bookmark): Default star. The filled colour: yellow, red or blue.
+- `pressed` (boolean): On (filled).
+- `label` (string): Name for screen readers when there is no text. Default "Favourite", "Like" or "Bookmark".
+- `size` (sm · md · lg): 
+- `appearance` (ghost): No border and no background.
+- `disabled` (boolean): 
+
+CSS parts:
+
+- `b`: u
+- `i`: c
+- `l`: a
+
+Events:
+
+- `sav-change`: Before it changes, cancelable. detail.pressed
+- `change`: After it changed. detail.pressed
+
+Methods:
+
+- `toggle(force?)`: Turns it on or off, or to the given state.
+
+Example — Star, heart, bookmark:
+
+```html
+<sav-favourite-button icon="star" pressed></sav-favourite-button>
+<sav-favourite-button icon="heart"></sav-favourite-button>
+<sav-favourite-button icon="bookmark"></sav-favourite-button>
+<sav-favourite-button icon="heart" pressed>Liked</sav-favourite-button>
+<sav-favourite-button icon="bookmark" appearance="ghost" label="Save for later"></sav-favourite-button>
+```
+
+Example — Saving the choice:
+
+```html
+<sav-favourite-button id="fav-demo" icon="star">Favourite</sav-favourite-button>
+<span id="fav-out" class="muted small">Not a favourite</span>
+<script>
+  document.getElementById('fav-demo').addEventListener('change', (e) => {
+    document.getElementById('fav-out').textContent = e.detail.pressed ? 'Saved as favourite' : 'Not a favourite';
+  });
+</script>
+```
+
+## Feedback
+
+### Alert — `<sav-alert>`
+
+Shows an important message inline. The icon follows the variant.
+
+Documentation: https://www.savcomponents.com/#alert
+
+Attributes:
+
+- `variant` (primary · neutral · success · warning · danger · protected): Colour and icon; protected shows a shield.
+- `appearance` (soft · accent · outline · solid): Default soft.
+- `heading` (string): Bold first line.
+- `closable` (boolean): Shows a close button.
+- `noicon` (boolean): Hides the icon.
+- `duration` (ms): Closes itself after this time.
+- `auto-text` (boolean): Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours: useful with appearance="solid". A --text-color you set still wins.
+
+Slots:
+
+- `(default)`: Message
+- `heading`: Rich heading
+- `icon`: Custom icon
+
+Events:
+
+- `sav-close`: Cancelable, before hiding.
+
+Methods:
+
+- `close()`: Hides the alert.
+
+Example — Variants:
+
+```html
+<sav-alert heading="New version available">Reload the page to get the latest features.</sav-alert>
+<sav-alert variant="success" heading="Payment received">Thanks! A receipt is on its way.</sav-alert>
+<sav-alert variant="warning" closable>Your storage is 90% full.</sav-alert>
+<sav-alert variant="danger" heading="Could not save">Check your connection and try again.</sav-alert>
+<sav-alert variant="protected" heading="Protected area">Only administrators can change these settings. Your data is encrypted.</sav-alert>
+```
+
+Example — Appearances:
+
+```html
+<sav-alert appearance="accent" variant="neutral">An accent line on the start side.</sav-alert>
+<sav-alert appearance="outline" variant="success">Outline on the surface colour.</sav-alert>
+<sav-alert appearance="solid" variant="primary" closable>Solid colour for strong messages.</sav-alert>
+```
+
+### Toast — `Sav.toast()`
+
+Short notifications that stack in a corner and close themselves. Hovering pauses the timer.
+
+Documentation: https://www.savcomponents.com/#toast
+
+Attributes:
+
+- `variant` (primary · neutral · success · warning · danger): Option
+- `heading` (string): Option
+- `icon` (icon name): Option: replaces the default icon.
+- `duration` (ms): Option, default 4500. 0 keeps it open.
+- `closable` (boolean): Option, default true.
+- `placement` (bottom-end · bottom-start · bottom-center · top-end · top-start · top-center): Option.
+
+Methods:
+
+- `Sav.toast(message, options)`: Shows a toast and returns its sav-alert.
+
+Example — JavaScript API:
+
+```html
+<sav-button onclick="Sav.toast('Changes saved', {variant: 'success'})">Success</sav-button>
+<sav-button appearance="soft" onclick="Sav.toast('Message sent to 3 people', {heading: 'Sent', icon: 'mail'})">With heading</sav-button>
+<sav-button appearance="soft" variant="danger" onclick="Sav.toast('Upload failed', {variant: 'danger', duration: 0})">Sticky</sav-button>
+<sav-button appearance="outline" variant="neutral" onclick="Sav.toast('Top center', {placement: 'top-center', variant: 'neutral'})">Top center</sav-button>
+```
+
+### Badge — `<sav-badge>`
+
+Small labels for counts and statuses.
+
+Documentation: https://www.savcomponents.com/#badge
+
+Attributes:
+
+- `variant` (primary · neutral · success · warning · danger): 
+- `appearance` (solid · soft · outline): 
+- `pill · dot · pulse` (boolean): Shape and attention effect.
+- `auto-text` (boolean): Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.
+- `--text-color` (CSS): The colour of the text, whatever the background (unset: the colour that fits the background).
+
+Example — Basic:
+
+```html
+<sav-badge>New</sav-badge>
+<sav-badge variant="success">Active</sav-badge>
+<sav-badge variant="warning" appearance="soft">Pending</sav-badge>
+<sav-badge variant="danger" pill>99+</sav-badge>
+<sav-badge variant="neutral" appearance="outline">Draft</sav-badge>
+<sav-badge variant="success" dot pulse></sav-badge>
+```
+
+Example — Inside a button:
+
+```html
+<sav-button appearance="outline" variant="neutral">Inbox <sav-badge pill>12</sav-badge></sav-button>
+```
+
+### New label — `<sav-new-label>`
+
+Marks something as new: a badge (with sparkles and a passing shine if you like), a diagonal ribbon or a tab in the corner of a card, a pulsing dot, or just the coloured word. It can take care of itself: until hides it after a date, seen-key hides it for good once the person has clicked what it marks.
+
+Documentation: https://www.savcomponents.com/#new-label
+
+Attributes:
+
+- `appearance` (badge · soft · ribbon · corner · dot · text): ribbon and corner sit in the top corner of the parent (give it position: relative).
+- `variant` (primary · neutral · success · warning · danger · protected): 
+- `placement` (end · start): Which top corner, for ribbon and corner.
+- `sparkle` (boolean): A sparkles icon before the word.
+- `shine` (boolean): A gloss crosses it now and then (off with reduced motion).
+- `until` (date): Hidden after this day (2026-12-31) or moment.
+- `seen-key` (string): Hidden for good after the first click on its parent; remembered in the browser under this name. reset() shows it again.
+- `--transform · --offset` (CSS): Text case (default uppercase); distance from the corner.
+- `auto-text` (boolean): Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.
+- `--text-color` (CSS): The colour of the text, whatever the background (unset: the colour that fits the background).
+
+Events:
+
+- `sav-seen`: detail.key
+
+Example — Badge, soft, with sparkles and shine:
+
+```html
+<sav-new-label></sav-new-label>
+<sav-new-label appearance="soft"></sav-new-label>
+<sav-new-label sparkle shine variant="success"></sav-new-label>
+<sav-new-label variant="danger">Just in</sav-new-label>
+```
+
+Example — Next to a menu item and a heading:
+
+```html
+<sav-menu appearance="card" style="width: 15rem">
+  <sav-menu-item><sav-icon slot="prefix" name="layout-dashboard"></sav-icon>Dashboard</sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="chart-column"></sav-icon>Reports<sav-new-label slot="suffix" appearance="text"></sav-new-label></sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="bell"></sav-icon>Alerts<sav-new-label slot="suffix" appearance="dot"></sav-new-label></sav-menu-item>
+</sav-menu>
+<h3 style="margin: 0; display: flex; align-items: center; gap: .5rem">Dark mode <sav-new-label sparkle></sav-new-label></h3>
+```
+
+### Tag — `<sav-tag>`
+
+Keywords, filters and choices; removable tags fire an event and remove themselves.
+
+Documentation: https://www.savcomponents.com/#tag
+
+Attributes:
+
+- `variant` (neutral · primary · success · warning · danger): Default neutral.
+- `appearance` (soft · solid): 
+- `size` (sm · md · lg): 
+- `pill · removable` (boolean): 
+- `auto-text` (boolean): Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.
+- `--text-color` (CSS): The colour of the text, whatever the background (unset: the colour that fits the background).
+
+Events:
+
+- `sav-remove`: Cancelable, before the tag removes itself.
+
+Example — Basic:
+
+```html
+<sav-tag>Design</sav-tag>
+<sav-tag variant="primary">Frontend</sav-tag>
+<sav-tag variant="success" pill>Approved</sav-tag>
+<sav-tag variant="danger" appearance="solid">Urgent</sav-tag>
+<sav-tag removable>JavaScript</sav-tag>
+<sav-tag removable variant="primary" pill>CSS</sav-tag>
+<sav-tag size="sm">Small</sav-tag>
+<sav-tag size="lg">Large</sav-tag>
+```
+
+### Spinner — `<sav-spinner>`
+
+An indeterminate loading indicator. It takes the font size of its parent. Its look follows the style: a ring (square in Sharp, rounded square in Brutal) or, in Tilt, the four leaning tiles of the logo lighting up in turn.
+
+Documentation: https://www.savcomponents.com/#spinner
+
+Attributes:
+
+- `variant` (primary · neutral · success · warning · danger · current): current takes the colour of the text around it (the loading button uses it).
+- `label` (string): Accessible name, default "Loading".
+- `--track-width` (CSS): Stroke width.
+
+Example — Sizes and colours:
+
+```html
+<sav-spinner></sav-spinner>
+<sav-spinner style="font-size: 2rem"></sav-spinner>
+<sav-spinner style="font-size: 3rem; --track-width: 1.5px" variant="success"></sav-spinner>
+<sav-spinner variant="danger" style="font-size: 2rem"></sav-spinner>
+```
+
+### Progress — `<sav-progress-bar · sav-progress-ring>`
+
+Show how far a task has gone.
+
+Documentation: https://www.savcomponents.com/#progress
+
+Attributes:
+
+- `value` (number): 0–100 (or 0–max).
+- `max` (number): Bar only, default 100.
+- `indeterminate · striped · show-value` (boolean): Bar only.
+- `label` (string): 
+- `variant` (primary · …): 
+- `--height · --size · --track-width` (CSS): 
+- `--text-color` (CSS): The colour of the value written on the bar. Unset, it is black or white, whichever is readable on the bar (WCAG AA, at least 4.5:1), whatever the colour.
+
+Example — Bar:
+
+```html
+<sav-progress-bar value="35" label="Uploading" show-value></sav-progress-bar>
+<sav-progress-bar value="70" variant="success" striped style="--height: .9rem"></sav-progress-bar>
+<sav-progress-bar indeterminate label="Loading" variant="neutral"></sav-progress-bar>
+<sav-progress-bar value="60" style="--height: 1.25rem">60%</sav-progress-bar>
+```
+
+Example — Ring:
+
+```html
+<sav-progress-ring value="25">25%</sav-progress-ring>
+<sav-progress-ring value="64" variant="success">64%</sav-progress-ring>
+<sav-progress-ring value="90" variant="danger" style="--size: 6rem; --track-width: 10px">90%</sav-progress-ring>
+```
+
+### Skeleton — `<sav-skeleton>`
+
+Placeholders that hold the layout while content loads.
+
+Documentation: https://www.savcomponents.com/#skeleton
+
+Attributes:
+
+- `shape` (text · rect · circle): 
+- `effect` (sheen · pulse · none): Default sheen.
+- `--color · --sheen` (CSS): 
+
+Example — Card placeholder:
+
+```html
+<div class="demo-skel">
+  <sav-skeleton shape="circle" style="width: 3rem; height: 3rem"></sav-skeleton>
+  <div style="flex: 1; display: grid; gap: .5rem">
+    <sav-skeleton style="width: 40%"></sav-skeleton>
+    <sav-skeleton></sav-skeleton>
+    <sav-skeleton style="width: 80%" effect="pulse"></sav-skeleton>
+  </div>
+</div>
+<sav-skeleton shape="rect" style="height: 8rem; margin-top: 1rem"></sav-skeleton>
+```
+
+### Empty state — `<sav-empty-state>`
+
+What to show when there is nothing yet — no results, an empty inbox, a new project: a drawing made of the icon on leaning tiles (they lean the way the style does), a heading, a line of text and what to do next.
+
+Documentation: https://www.savcomponents.com/#empty-state
+
+Attributes:
+
+- `heading · text` (string): The title and the line under it.
+- `icon` (icon name): Drawn on the leaning tiles (default inbox).
+- `size` (sm · md · lg): 
+- `appearance` (plain · card): card puts it in a dashed box.
+- `level` (number): Heading level for screen readers (default 3).
+
+Slots:
+
+- `(default)`: Buttons or links: what to do next.
+- `image`: Your own picture instead of the icon.
+- `text`: Richer text than the text attribute (links, bold).
+
+CSS parts:
+
+- `b`: a
+- `i`: m
+- `h`: e
+- `t`: e
+- `a`: c
+
+Example — With an action:
+
+```html
+<sav-empty-state icon="inbox" heading="No messages yet" text="When someone writes to you, the message shows up here." style="width: 100%">
+  <sav-button><sav-icon slot="prefix" name="pencil"></sav-icon>Write a message</sav-button>
+  <sav-button appearance="ghost" variant="neutral">Learn more</sav-button>
+</sav-empty-state>
+```
+
+Example — No results, in a card, small:
+
+```html
+<sav-empty-state appearance="card" size="sm" icon="search-x" heading="Nothing matches “zebra”" text="Check the spelling or try fewer words." style="width: 100%">
+  <sav-button size="sm" appearance="outline" variant="neutral">Clear the search</sav-button>
+</sav-empty-state>
+```
+
+## Forms
+
+### Input — `<sav-input>`
+
+A text field with label, help text, icons, clear button and password toggle. It takes part in native forms and validation.
+
+Documentation: https://www.savcomponents.com/#input
+
+Attributes:
+
+- `label · help · placeholder · value` (string): 
+- `type` (text · email · password · number · search · tel · url · date · …): 
+- `size` (sm · md · lg): 
+- `appearance` (outline · filled): 
+- `pill · clearable · password-toggle` (boolean): 
+- `name · required · disabled · readonly`: Form behaviour.
+- `min · max · step · minlength · maxlength · pattern · autocomplete · inputmode`: Passed to the native input.
+- `autofocus` (boolean): Takes the focus when the page opens.
+- `spellcheck` (true · false): Whether the browser checks the spelling.
+- `enterkeyhint` (enter · done · go · next · previous · search · send): The label of the Enter key on phones.
+- `list` (string): The id of a with suggestions.
+
+Slots:
+
+- `label`: Rich label
+- `prefix · suffix`: Icons or text inside the field
+- `help`: Rich help text
+
+CSS parts:
+
+- `f`: o
+- `l`: a
+- `b`: a
+- `i`: n
+- `h`: e
+
+Events:
+
+- `input · change`: Native-like events on the element.
+- `sav-clear`: When the clear button is used.
+
+Methods:
+
+- `focus() · blur() · select()`: 
+- `checkValidity() · reportValidity() · setCustomValidity(msg)`: 
+
+Example — Basic:
+
+```html
+<sav-input label="Name" placeholder="Ada Lovelace" help="As shown on your profile."></sav-input>
+<sav-input label="Search" type="search" placeholder="Search" clearable>
+  <sav-icon slot="prefix" name="search"></sav-icon>
+</sav-input>
+<sav-input label="Password" type="password" password-toggle value="secret-value"></sav-input>
+```
+
+Example — Sizes, filled, pill:
+
+```html
+<sav-input size="sm" placeholder="Small"></sav-input>
+<sav-input placeholder="Medium" appearance="filled"></sav-input>
+<sav-input size="lg" placeholder="Large pill" pill></sav-input>
+```
+
+### Number input — `<sav-number-input>`
+
+A number field with a − button on the left and a + on the right. The buttons switch off at the minimum and maximum; hold one to keep counting. After a wrong entry it says why (too small, too large, which steps fit); with limits="always" it also shows the allowed range beforehand. It takes part in native forms and validation.
+
+Documentation: https://www.savcomponents.com/#number-input
+
+Attributes:
+
+- `label · help · placeholder` (string): 
+- `value · min · max · step` (number): Arrows step by step, PageUp and PageDown by ten steps.
+- `unit` (string): Text after the number, inside the field (kg, %, EUR…).
+- `buttons` (sides · end · none): Where the − and + buttons go. Default sides.
+- `button-step` (number): How far the buttons and the arrow keys move, when it differs from step (e.g. step 1 and button-step 1024).
+- `limits` (auto · always · never): When the allowed range is written under the field: auto (default) only after a wrong entry, with the reason; always also before ("From 1 to 12"); never not at all (only the red border).
+- `size` (sm · md · lg): 
+- `appearance` (outline · filled): 
+- `variant` (primary · …): Colour of the buttons.
+- `pill · readonly · disabled · required` (boolean): 
+- `name` (string): Form field name.
+- `decrease-label · increase-label` (string): Names of the buttons for screen readers. Default "Decrease" and "Increase".
+- `autofocus` (boolean): Takes the focus when the page opens.
+- `autocomplete` (string): What the browser may fill in.
+- `inputmode` (numeric · decimal): The keyboard phones show (numeric by default for whole steps).
+
+Slots:
+
+- `label`: Rich label
+- `prefix · suffix`: Icons or text inside the field, next to the number
+- `help`: Rich help text
+
+CSS parts:
+
+- `f`: o
+- `l`: a
+- `b`: a
+- `i`: n
+- `b`: u
+- `d`: e
+- `i`: n
+- `u`: n
+- `h`: e
+- `l`: i
+
+Events:
+
+- `input`: While the number changes (typing or buttons): detail.value.
+- `change`: When a change is done: detail.value (a number, or null when empty).
+
+Methods:
+
+- `stepUp(n) · stepDown(n)`: Change the number by n steps.
+- `focus() · blur() · select()`: 
+- `checkValidity() · reportValidity() · setCustomValidity(msg)`: 
+
+Example — Basic:
+
+```html
+<sav-number-input label="Guests" value="2" min="1" max="12" help="From 1 to 12 people."></sav-number-input>
+<sav-number-input label="Weight" value="2.5" min="0" step="0.5" unit="kg"></sav-number-input>
+```
+
+Example — Buttons:
+
+```html
+<sav-number-input label="Buttons on the sides (default)" value="1" min="0"></sav-number-input>
+<sav-number-input label="Both buttons on the right" value="1" min="0" buttons="end"></sav-number-input>
+<sav-number-input label="No buttons" value="1" min="0" buttons="none"></sav-number-input>
+```
+
+### Zoom — `<sav-zoom>`
+
+A zoom control: “−”, the percentage, “+”. A click on the percentage goes back to 100%. With for it zooms an element of the page by itself; otherwise listen to change.
+
+Documentation: https://www.savcomponents.com/#zoom
+
+Attributes:
+
+- `value` (number): The zoom in % (default 100).
+- `min · max` (number): The lowest and highest zoom (default 25 and 200).
+- `step` (number): How much “−” and “+” change it; the value lands on its multiples (default 10).
+- `reset` (number): Where a click on the percentage goes back to (default 100).
+- `for` (string): The id of an element to zoom by itself (CSS zoom).
+- `size` (sm · md · lg): 
+- `appearance` (default · plain): plain: no box around it.
+- `label · reset-label · decrease-label · increase-label` (string): Names for screen readers (default "Zoom", "Back to 100%", "Zoom out", "Zoom in").
+
+Events:
+
+- `input · change`: The zoom changed. detail.value
+- `sav-zoom`: Before it changes, cancelable. detail.value
+
+Methods:
+
+- `value`: Property: the zoom in %.
+- `stepBy(1 | -1) · reset()`: One step up or down; back to 100%.
+
+Example — Zooming a picture:
+
+```html
+<sav-zoom for="zoom-pic" min="50" max="200" step="25"></sav-zoom>
+<div style="margin-top: .8rem; overflow: auto; max-height: 14rem; border: 1px solid var(--sav-color-border); border-radius: var(--sav-radius)">
+  <img id="zoom-pic" src="docs/sample.svg" alt="A sample picture" style="display: block; width: 20rem">
+</div>
+```
+
+Example — Sizes, plain and listening:
+
+```html
+<sav-zoom size="sm"></sav-zoom> <sav-zoom></sav-zoom> <sav-zoom size="lg" appearance="plain"></sav-zoom>
+<p id="zoom-out" style="color: var(--sav-color-text-muted)">Change the zoom.</p>
+<script>
+  document.querySelectorAll('sav-zoom').forEach((z) => z.addEventListener('change', (e) => {
+    document.getElementById('zoom-out').textContent = 'Zoom: ' + e.detail.value + '%';
+  }));
+</script>
+```
+
+### Colour picker — `<sav-color-picker>`
+
+A colour field: a swatch, the hex code you can type, and suggested colours. The swatch opens the library’s own colour panel, in the style and theme of the page (saturation and brightness, hue, opacity with alpha, the code, an eyedropper); where the browser cannot offer all of it (Safari, Firefox) the system colour picker opens instead; picker="custom" always uses the panel, picker="native" always the system picker. The value is "#rrggbb" ("#rrggbbaa" with alpha); with clearable it can be empty. compact keeps only the swatch. [object Object]
+
+Documentation: https://www.savcomponents.com/#color-picker
+
+Attributes:
+
+- `value` (string): A colour in hex: #rrggbb or #rgb (with alpha also #rrggbbaa or #rgba).
+- `picker` (auto · custom · native): auto: the library’s colour panel where the browser offers all of it, eyedropper included (Chrome, Edge), the system picker elsewhere (Safari, Firefox) — the default; custom: always the panel, in the style of the page; native: always the system colour picker of the browser or the operating system.
+- `alpha` (boolean): An opacity slider in the panel; the value then ends with two more digits when the colour is see-through (#3b82f680).
+- `label · help · placeholder` (string): 
+- `swatches` (string): Suggested colours, separated by commas: #ef4444,#22c55e…
+- `clearable` (boolean): A button to leave it empty (no colour).
+- `compact` (boolean): Only the swatch: a small square that opens the picker.
+- `size` (sm · md · lg): 
+- `name · disabled · readonly · required`: Like any form field.
+
+CSS parts:
+
+- `f`: o
+- `l`: a
+- `b`: a
+- `s`: w
+- `i`: n
+- `c`: l
+- `s`: w
+- `h`: e
+
+Events:
+
+- `input`: While the colour changes (dragging in the panel or the picker, typing a valid code): detail.value.
+- `change`: The colour is chosen (a drag or a key in the panel ends, the panel closes, a code is typed): detail.value ("" when cleared).
+- `sav-show · sav-hide`: The panel opened (cancelable) or closed.
+
+Methods:
+
+- `value`: The colour, "#rrggbb" or "".
+- `open() · close()`: Opens or closes the colour panel (with picker="native", open() opens the system picker, and only from a click or a key, as browsers require).
+- `focus()`: 
+
+Example — Field, with suggested colours:
+
+```html
+<sav-color-picker label="Brand colour" value="#3b82f6" swatches="#ef4444,#f59e0b,#22c55e,#3b82f6,#8b5cf6" help="Click the square, type a code or pick one below." style="max-width: 18rem"></sav-color-picker>
+<sav-color-picker label="Highlight (optional)" clearable style="max-width: 18rem"></sav-color-picker>
+```
+
+Example — With opacity, and the system picker:
+
+```html
+<sav-color-picker label="Overlay (with opacity)" alpha value="#3b82f680" style="max-width: 18rem"></sav-color-picker>
+<sav-color-picker label="The system colour picker" picker="native" value="#22c55e" style="max-width: 18rem; margin-top: 1rem"></sav-color-picker>
+```
+
+### Textarea — `<sav-textarea>`
+
+Multi-line text, with an optional counter and automatic height.
+
+Documentation: https://www.savcomponents.com/#textarea
+
+Attributes:
+
+- `label · help · placeholder · value` (string): 
+- `rows` (number): Default 4.
+- `resize` (vertical · none · auto): 
+- `counter` (boolean): Shows the character count.
+- `name · required · disabled · readonly · minlength · maxlength`: 
+- `autofocus` (boolean): Takes the focus when the page opens.
+- `spellcheck` (true · false): Whether the browser checks the spelling.
+- `autocomplete` (string): What the browser may fill in.
+- `wrap` (soft · hard · off): How the text is sent: soft keeps the lines as typed, hard adds the breaks shown.
+
+Events:
+
+- `input`: At every key: event.target.value.
+- `change`: When the text changed and the field loses the focus.
+
+Example — Basic:
+
+```html
+<sav-textarea label="Message" placeholder="Write something…" maxlength="200" counter></sav-textarea>
+<sav-textarea label="Grows with the text" resize="auto" rows="2" help="resize=&quot;auto&quot;"></sav-textarea>
+```
+
+### Select — `<sav-select>`
+
+A select with its own list: search, multiple choice, groups and descriptions. Put normal <option> and <optgroup> elements inside. On phones it can open as a sheet from the bottom, or use the phone’s own picker.
+
+Documentation: https://www.savcomponents.com/#select
+
+Attributes:
+
+- `label · help · placeholder · value` (string): With multiple, value is a comma-separated list.
+- `multiple` (boolean): Choose more than one: the choices show as chips.
+- `searchable` (boolean): A search field at the top of the list.
+- `clearable` (boolean): A button that empties the field.
+- `sheet-on-mobile` (boolean): On screens up to 640px the list rises from the bottom.
+- `native-on-mobile · native` (boolean): Use the operating system picker on phones, or always.
+- `size` (sm · md · lg): 
+- `appearance` (outline · filled): 
+- `pill` (boolean): 
+- `select-all` (boolean): With multiple: a row on top of the list picks every option, or clears them all (also Ctrl/⌘ + A in the list). select-all-label and clear-all-label name it.
+- `max-chips` (number): Chips shown before “+N”, default 3.
+- `name · required · disabled · readonly`: Form behaviour.
+- `data-description` (string): On an option: a second line under its label.
+- `auto-text` (boolean): With multiple: the tick of the chosen options is black or white, whichever is readable on the box (WCAG AA, at least 4.5:1), also with your own colours.
+- `placement` (bottom-start · bottom-end · top-start · top-end): Where the list opens, when there is room (default bottom-start).
+
+Events:
+
+- `input · change`: When the value changes.
+- `sav-show · sav-hide`: The list opens or closes.
+
+Methods:
+
+- `value`: A string, or an array with multiple.
+- `show() · hide() · focus()`: 
+
+Example — Basic:
+
+```html
+<sav-select label="Country" placeholder="Choose a country" required>
+  <option value="it">Italy</option>
+  <option value="fr">France</option>
+  <option value="de">Germany</option>
+  <option value="es">Spain</option>
+</sav-select>
+<sav-select label="Plan" value="pro" help="Change it whenever you want." clearable>
+  <optgroup label="Personal">
+    <option value="free" data-description="For trying things out">Free</option>
+    <option value="pro" data-description="Everything for one person">Pro</option>
+  </optgroup>
+  <optgroup label="Business">
+    <option value="team" data-description="Shared spaces and roles">Team</option>
+  </optgroup>
+</sav-select>
+```
+
+Example — Search and multiple choice:
+
+```html
+<sav-select label="Languages" multiple searchable clearable placeholder="Pick some" value="it,en">
+  <option value="it">Italiano</option><option value="en">English</option><option value="fr">Français</option>
+  <option value="de">Deutsch</option><option value="es">Español</option><option value="pt">Português</option>
+  <option value="nl">Nederlands</option><option value="pl">Polski</option><option value="sv">Svenska</option>
+</sav-select>
+```
+
+### Date picker — `<sav-date-picker>`
+
+Picks a day, a month or a year from a calendar in the language of the page. The value is always ISO (2026-11-16), whatever is shown. Keyboard: arrows, Page Up / Down, Enter.
+
+Documentation: https://www.savcomponents.com/#date-picker
+
+Attributes:
+
+- `mode` (date · month · year · datetime): What to pick. Values: 2026-11-16, 2026-11, 2026, 2026-11-16T10:30. datetime shows the time (hours and minutes) under the calendar: a day keeps the panel open, Done closes it, Now picks this moment.
+- `value · min · max` (ISO date): Same format as the mode (min and max of a datetime limit the days).
+- `label · help · placeholder` (string): 
+- `locale` (string): Language of names and the first day of the week; default the page language.
+- `first-day` (number): 0 = Sunday, 1 = Monday…
+- `format` (short · medium · long · full): How the chosen date is written.
+- `clearable` (boolean): 
+- `sheet-on-mobile · native-on-mobile · native` (boolean): How it opens on phones.
+- `size` (sm · md · lg): 
+- `name · required · disabled · readonly`: Form behaviour.
+- `auto-text` (boolean): The chosen day and today are black or white, whichever is readable on what is behind them (WCAG AA, at least 4.5:1), also with your own colours.
+- `placement` (bottom-start · bottom-end · top-start · top-end): Where the calendar opens, when there is room.
+
+Events:
+
+- `input · change`: When a date is chosen.
+- `sav-show · sav-hide`: The list or calendar opened or closed.
+
+Example — Day, month, year:
+
+```html
+<sav-date-picker label="Day" placeholder="Pick a date" value="2026-11-16"></sav-date-picker>
+<sav-date-picker label="Month" mode="month" placeholder="Pick a month"></sav-date-picker>
+<sav-date-picker label="Year" mode="year" placeholder="Pick a year" value="2026"></sav-date-picker>
+<sav-date-picker label="Day and time" mode="datetime" placeholder="Pick a moment" value="2026-11-16T10:30"></sav-date-picker>
+```
+
+Example — Limits, language, phones:
+
+```html
+<sav-date-picker label="Check-in" min="2026-11-16" max="2027-03-31" help="From today to the end of March." clearable sheet-on-mobile></sav-date-picker>
+<sav-date-picker label="Data (italiano)" locale="it-IT" value="2026-12-25" format="full"></sav-date-picker>
+<sav-date-picker label="Native picker on phones" native-on-mobile></sav-date-picker>
+```
+
+### Time picker — `<sav-time-picker>`
+
+Picks a time from hour and minute columns, in 24 or 12 hours following the language. The value is always 24-hour (18:30).
+
+Documentation: https://www.savcomponents.com/#time-picker
+
+Attributes:
+
+- `value · min · max` (HH:MM): 24-hour time.
+- `step` (number): Minutes between choices, default 5.
+- `hour-cycle` (12 · 24): Default from the language.
+- `locale` (string): 
+- `label · help · placeholder` (string): 
+- `clearable` (boolean): 
+- `sheet-on-mobile · native-on-mobile · native` (boolean): How it opens on phones.
+- `size` (sm · md · lg): 
+- `name · required · disabled · readonly`: Form behaviour.
+- `auto-text` (boolean): The chosen time is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.
+- `placement` (bottom-start · bottom-end · top-start · top-end): Where the list opens, when there is room.
+
+Events:
+
+- `input`: At every change in the columns.
+- `change`: When the popup closes with a new time.
+- `sav-show · sav-hide`: The list or calendar opened or closed.
+
+Example — Basic:
+
+```html
+<sav-time-picker label="Start" value="09:30"></sav-time-picker>
+<sav-time-picker label="Every 15 minutes" step="15" placeholder="Pick a time" sheet-on-mobile></sav-time-picker>
+<sav-time-picker label="12 hours" hour-cycle="12" value="18:45"></sav-time-picker>
+<sav-time-picker label="Office hours" min="08:00" max="18:00" native-on-mobile help="From 8 to 18."></sav-time-picker>
+```
+
+### Checkbox & Switch — `<sav-checkbox · sav-switch>`
+
+On/off choices. Checkboxes also support the indeterminate state.
+
+Documentation: https://www.savcomponents.com/#checkbox
+
+Attributes:
+
+- `checked · indeterminate` (boolean): 
+- `value` (string): Sent with the form, default "on".
+- `variant` (primary · …): 
+- `size` (sm · md · lg): 
+- `help` (string): 
+- `name · required · disabled`: 
+- `auto-text` (boolean): sav-checkbox: the tick (or dash) is black or white, whichever is readable on the checked box (WCAG AA, at least 4.5:1), also with your own colours.
+
+Events:
+
+- `change`: 
+
+Example — Checkbox:
+
+```html
+<sav-checkbox checked>Remember me</sav-checkbox>
+<sav-checkbox indeterminate>Select all</sav-checkbox>
+<sav-checkbox variant="success" checked help="We send one email a month.">Newsletter</sav-checkbox>
+<sav-checkbox disabled>Disabled</sav-checkbox>
+```
+
+Example — Switch:
+
+```html
+<sav-switch checked>Notifications</sav-switch>
+<sav-switch variant="success">Auto-save</sav-switch>
+<sav-switch size="lg" variant="danger" checked>Large</sav-switch>
+<sav-switch size="sm">Small</sav-switch>
+```
+
+### Radio group — `<sav-radio-group · sav-radio>`
+
+One choice among several, with arrow-key navigation. appearance="buttons" turns it into a segmented control; appearance="cards" into a grid of cards, each with a picture of its own (looks, layouts, templates, plans).
+
+Documentation: https://www.savcomponents.com/#radio
+
+Attributes:
+
+- `label · help · value · name` (string): On the group.
+- `orientation` (vertical · horizontal): 
+- `appearance` (buttons · cards): buttons: a segmented control. cards: a grid of cards drawn like sav-card (in every style), the mark of the radio in their top corner; the chosen one takes the colour.
+- `columns` (number): Cards: how many per row. Without it the grid fills the width with cards at least --sav-choice-min wide.
+- `--sav-choice-min · --sav-choice-gap · --sav-choice-padding · --sav-choice-align` (CSS): Cards: the narrowest card (default 9rem), the space between them, inside them, and the alignment of their text (start or center).
+- `size` (sm · md · lg): 
+- `mark` (fill · dot · ring): How the chosen option looks: fill fills the shape (the default); dot fills it with a small mark inside; ring keeps it light, with a coloured border and a mark in the middle (the clearest difference from a ticked checkbox in the square styles). On the group it reaches every radio; a radio can have its own.
+- `required · disabled`: 
+- `value · disabled`: On each sav-radio.
+- `auto-text` (boolean): The dot of the chosen option is black or white, whichever is readable on the filled circle (WCAG AA, at least 4.5:1), also with your own colours. On the group it reaches every sav-radio.
+
+Slots:
+
+- `(default)`: On sav-radio: its name
+- `media`: On sav-radio, with cards: the picture on top
+- `description`: On sav-radio, with cards: a line under the name
+
+CSS parts:
+
+- `b`: a
+- `c`: o
+- `l`: a
+- `m`: e
+- `d`: e
+- `b`: a
+
+Events:
+
+- `change`: On the group.
+- `input`: Another option chosen (as it happens).
+
+Example — Basic:
+
+```html
+<sav-radio-group label="Delivery" name="delivery" value="standard">
+  <sav-radio value="standard">Standard (3–5 days)</sav-radio>
+  <sav-radio value="express">Express (1 day)</sav-radio>
+  <sav-radio value="pickup" disabled>Pick up in store</sav-radio>
+</sav-radio-group>
+```
+
+Example — Marks: fill, dot, ring:
+
+```html
+<sav-radio-group label="Fill (the default)" value="a" orientation="horizontal"><sav-radio value="a">Chosen</sav-radio><sav-radio value="b">Other</sav-radio></sav-radio-group>
+<sav-radio-group label="Dot" mark="dot" value="a" orientation="horizontal" style="margin-top: 1rem"><sav-radio value="a">Chosen</sav-radio><sav-radio value="b">Other</sav-radio></sav-radio-group>
+<sav-radio-group label="Ring" mark="ring" value="a" orientation="horizontal" style="margin-top: 1rem"><sav-radio value="a">Chosen</sav-radio><sav-radio value="b">Other</sav-radio></sav-radio-group>
+```
+
+### Chip — `<sav-chip · sav-chip-group>`
+
+A small choice you can switch on and off — filters, options, interests. In a sav-chip-group the chips become a single or multiple choice. (A tag only labels; a chip is chosen.)
+
+Documentation: https://www.savcomponents.com/#chip
+
+Attributes:
+
+- `selected` (boolean): sav-chip: on.
+- `value` (string): sav-chip: its value in a group.
+- `removable` (boolean): sav-chip: a × that removes it.
+- `variant · size · disabled`: sav-chip.
+- `multiple` (boolean): sav-chip-group: more than one at a time.
+- `required` (boolean): sav-chip-group: one must stay selected.
+- `label` (string): sav-chip-group: name of the group.
+- `value` (string · list): sav-chip-group: selected value(s); a list with multiple.
+- `auto-text` (boolean): Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.
+- `--text-color` (CSS): The colour of the text, whatever the background (unset: the colour that fits the background).
+- `auto-text` (boolean): sav-chip-group: auto-text on the group reaches every chip.
+
+Events:
+
+- `change`: sav-chip: detail.selected · sav-chip-group: detail.value
+- `sav-remove`: Before a removable chip goes away, cancelable.
+
+Example — Filters (multiple):
+
+```html
+<sav-chip-group label="Diet" multiple value="veg">
+  <sav-chip value="veg"><sav-icon slot="prefix" name="leaf"></sav-icon>Vegetarian</sav-chip>
+  <sav-chip value="gf">Gluten free</sav-chip>
+  <sav-chip value="spicy">Spicy</sav-chip>
+</sav-chip-group>
+```
+
+Example — Single choice and removable:
+
+```html
+<sav-chip-group label="Size" value="m">
+  <sav-chip value="s">Small</sav-chip><sav-chip value="m">Medium</sav-chip><sav-chip value="l">Large</sav-chip>
+</sav-chip-group>
+<sav-chip removable selected>Rome</sav-chip>
+```
+
+### OTP input — `<sav-otp>`
+
+A one-time code in separate boxes. Choose how many characters and which: numbers only, letters only, letters and numbers, or anything. Pasting a whole code fills every box; phones offer the code from an SMS.
+
+Documentation: https://www.savcomponents.com/#otp
+
+Attributes:
+
+- `length` (number): How many characters (1–12, default 6).
+- `type` (numeric · alpha · alphanumeric · any): Which characters are accepted (default numeric). Letters are shown in upper case.
+- `separator` (number): A dash every N boxes.
+- `mask` (boolean): Hides the characters (PIN).
+- `label · help · name · required · disabled · value`: Like the other fields; required wants every box filled.
+
+CSS parts:
+
+- `b`: a
+- `c`: e
+- `i`: n
+
+Events:
+
+- `input`: At every change. detail.value
+- `change`: When all boxes are filled. detail.value
+- `sav-complete`: Same moment: the code is complete. detail.value
+
+Example — Numbers, letters, groups:
+
+```html
+<sav-otp label="Code from the SMS" length="6" separator="3" required help="We sent it to +39 333 …"></sav-otp>
+<sav-otp label="Voucher" length="8" type="alphanumeric" separator="4"></sav-otp>
+<sav-otp label="PIN" length="4" mask></sav-otp>
+```
+
+### Password — `<sav-password>`
+
+A password field with a strength meter and a checklist of rules you set: minimum length, upper-case and lower-case letters, numbers, symbols. It can refuse to submit a password that is too weak.
+
+Documentation: https://www.savcomponents.com/#password
+
+Attributes:
+
+- `min-length` (number): Default 8.
+- `min-uppercase · min-lowercase · min-digits` (number): Default 1 each; 0 removes the rule.
+- `min-symbols` (number): Default 0.
+- `min-strength` (0 · 1 · 2 · 3 · 4): The form refuses passwords below this score (0 = never).
+- `rules` (boolean): Shows the checklist.
+- `no-meter` (boolean): Hides the meter.
+- `labels` (list): Words for the five scores, comma-separated (default "Too weak,Weak,Fair,Good,Strong").
+- `label · help · placeholder · name · required · autocomplete`: Like an input.
+- `size` (sm · md · lg): 
+- `disabled` (boolean): 
+
+CSS parts:
+
+- `i`: n
+- `m`: e
+- `s`: t
+- `r`: u
+
+Events:
+
+- `input`: detail.value, detail.score (0–4)
+- `change`: When the user leaves the field.
+
+Example — Strength and rules:
+
+```html
+<sav-password label="New password" rules min-length="10" min-symbols="1" min-strength="3" required style="max-width: 22rem"></sav-password>
+```
+
+### Search — `<sav-search>`
+
+A search field that suggests as you type: highlighted matches, arrows and Enter to choose. Suggestions come from children, or from the page on every "sav-query" (for a server search). With multiple every term becomes a chip inside the field (on comma, semicolon, Enter or Space, as you set); with live it searches while you type instead of only on Enter.
+
+Documentation: https://www.savcomponents.com/#search
+
+Attributes:
+
+- `placeholder · label · help · name`: 
+- `value` (string · list): The text; with multiple, the terms (a comma-separated list, or a list in JS).
+- `multiple` (boolean): Each term becomes a chip inside the field; Backspace in the empty field removes the last one, the × on a chip removes that one. Off: one text, as always.
+- `separators` (list): Keys that turn the text into a chip, separated by spaces: enter, space, tab, comma, semicolon or any character (default ", ; enter space"). Pasted text is split at them too.
+- `max-terms` (number): Most terms (default no limit); when reached the field takes no more text and says so.
+- `max-label` (string): What the field says when it is full (default "Up to N terms").
+- `live` (boolean): sav-search fires while you type (after min-chars and debounce) and when the field is emptied; off: only on the search keys.
+- `search-keys` (list): Keys that fire sav-search, separated by spaces (default enter). With multiple, Enter also adds the term first.
+- `min-chars` (number): Characters before suggesting, and before the live search (default 1).
+- `debounce` (ms): Wait after typing before asking for suggestions (default 120) or, with live, before searching (default 250).
+- `max` (number): Suggestions shown (default 8).
+- `no-autoselect` (boolean): The first suggestion is not highlighted: Enter then searches the text as typed until an arrow picks one. By default the first one is ready and Enter takes it (Escape closes the list to search the text).
+- `no-filter` (boolean): Do not filter here: the page sends already-filtered suggestions.
+- `empty-label` (string): Text when nothing matches.
+- `disabled · required` (boolean): Like any field.
+
+Events:
+
+- `sav-query`: While typing (debounced): set .suggestions here. detail.query
+- `sav-pick`: A suggestion was chosen, cancelable. detail.value, detail.label, detail.item
+- `sav-search`: Search now: on the search keys (Enter), when a term is removed or the field is emptied, and with live while typing. detail.query (the text), detail.terms (the chips and the text)
+- `sav-term-add · sav-term-remove`: multiple: a term is about to be added or removed, cancelable. detail.term
+- `input · change · sav-clear`: change with multiple: detail.value is the list of terms.
+
+Methods:
+
+- `suggestions`: Property: strings or { label, value, description, icon, group, href }.
+- `terms`: Property (multiple): the list of terms; set it to replace them.
+- `text`: Property: what is typed right now.
+- `search()`: Fires sav-search now.
+
+Example — From options:
+
+```html
+<sav-search placeholder="Search a city" style="max-width: 22rem">
+  <optgroup label="Italy"><option>Rome</option><option>Milan</option><option>Naples</option></optgroup>
+  <optgroup label="France"><option>Paris</option><option>Lyon</option></optgroup>
+</sav-search>
+```
+
+Example — Live from the page:
+
+```html
+<sav-search id="srch-live" placeholder="Type a component" no-filter style="max-width: 22rem"></sav-search>
+<script>
+  const box = document.getElementById('srch-live');
+  box.addEventListener('sav-query', (e) => {
+    // here a fetch() to your server; this example filters the components of this page
+    const q = e.detail.query.toLowerCase();
+    box.suggestions = SavDocs.docs.filter((d) => d.name.toLowerCase().includes(q))
+      .map((d) => ({ label: d.name, value: d.id, description: d.tag, icon: d.icon, href: '#' + d.id }));
+  });
+</script>
+```
+
+### Chip input — `<sav-chip-input>`
+
+A field whose values are chips: type one and press Enter, a comma or a semicolon, or paste a list; × or Backspace removes them. With kind="color" each chip is a colour with its swatch; with kind="number" only numbers go in. The value is the list.
+
+Documentation: https://www.savcomponents.com/#chip-input
+
+Attributes:
+
+- `value` (list): The chips, separated by commas (in JS a list).
+- `kind` (text · color · number): What a chip may be: any text (the default), a colour code (shown with its swatch, #ABC becomes #aabbcc) or a number. A wrong value shakes the field and is not added.
+- `separators` (list): Keys that turn the text into a chip, separated by spaces: enter, comma, semicolon, space, tab or any character (default ", ; enter").
+- `max-terms` (number): Most chips (default no limit).
+- `label · help · placeholder · name · required · disabled`: Like any field; the form gets one entry per chip.
+- `size` (sm · md · lg): 
+- `min-chars` (number): Characters before the suggestions show (default 1).
+- `max-label` (string): What the field says when it is full (default "Up to N terms").
+
+Events:
+
+- `change`: A chip was added or removed: detail.value (the list).
+- `sav-term-add · sav-term-remove`: Before a chip is added or removed, cancelable. detail.term
+- `input`: While typing: detail.text.
+
+Methods:
+
+- `value · terms`: Property: the list of chips; set it to replace them.
+
+Example — Words:
+
+```html
+<sav-chip-input label="Tags" value="design, accessibility" max-terms="6" style="max-width: 26rem">
+  <option>colour</option><option>contrast</option><option>forms</option><option>keyboard</option>
+</sav-chip-input>
+```
+
+Example — Colours:
+
+```html
+<sav-chip-input label="Palette" kind="color" value="#ef4444,#f59e0b,#22c55e,#3b82f6" help="Type a code (#abc or #aabbcc) and press Enter." style="max-width: 26rem"></sav-chip-input>
+```
+
+### Language choice — `<sav-language-choice>`
+
+Choose a language from a complete list (about 140, already there): flag on the left, ISO 639-3 code on the right, search, one or many. Variants have their own flag (British and American English); several languages can share one (India, Spain, Switzerland). Names are in the page language, or in each language itself.
+
+Documentation: https://www.savcomponents.com/#language-choice
+
+Attributes:
+
+- `value` (tag · list): BCP 47 tags (it-IT, en-GB…); a comma-separated list with multiple.
+- `multiple` (boolean): 
+- `native-names` (boolean): Each language in itself (Italiano, Deutsch…).
+- `locale` (string): Language of the names (default: the page).
+- `code` (iso3 · tag): What the code on the right shows (default ISO 639-3).
+- `no-flag · no-code` (boolean): Hide the flag or the code.
+- `include · exclude` (list): Only these tags, or all but these.
+- `label · placeholder · required · name · sheet-on-mobile · native-on-mobile`: Like the select.
+- `help` (string): A line of help under it.
+- `disabled · readonly` (boolean): 
+- `clearable · searchable` (boolean): A × to empty it; a search in the list (on by default).
+- `max-chips · select-all` (number · boolean): With multiple: chips shown before +N; a row that picks every language.
+- `placement` (bottom-start · bottom-end · top-start · top-end): Where the list opens.
+
+Events:
+
+- `change · input`: Like the select.
+- `sav-show · sav-hide`: The list or calendar opened or closed.
+
+Example — One language:
+
+```html
+<sav-language-choice label="Language" value="en-GB" style="max-width: 20rem"></sav-language-choice>
+```
+
+Example — Several, native names, without codes:
+
+```html
+<sav-language-choice label="Languages you speak" multiple native-names no-code value="it-IT,en-US" style="max-width: 24rem"></sav-language-choice>
+<sav-language-choice label="Only some" include="it-IT,en-GB,en-US,fr-FR,de-DE,es-ES" no-flag value="it-IT" style="max-width: 16rem"></sav-language-choice>
+```
+
+### Country choice — `<sav-country-choice>`
+
+Choose a country from the complete ISO list (249, already there): flag on the left, ISO 3166 code on the right (alpha-3 by default), search by name or code, one or many. Names follow the page language.
+
+Documentation: https://www.savcomponents.com/#country-choice
+
+Attributes:
+
+- `value` (alpha-2 · list): IT, FR…; a comma-separated list with multiple.
+- `multiple` (boolean): 
+- `code` (alpha3 · alpha2 · numeric): Code on the right (default alpha-3).
+- `locale` (string): Language of the names.
+- `no-flag · no-code` (boolean): 
+- `include · exclude` (list): Only these countries (alpha-2), or all but these.
+- `label · placeholder · required · name · sheet-on-mobile · native-on-mobile`: Like the select.
+- `help` (string): A line of help under it.
+- `disabled · readonly` (boolean): 
+- `clearable · searchable` (boolean): A × to empty it; a search in the list (on by default).
+- `max-chips · select-all` (number · boolean): With multiple: chips shown before +N; a row that picks every country.
+- `native-names` (boolean): Each country in its own language.
+- `placement` (bottom-start · bottom-end · top-start · top-end): Where the list opens.
+
+Events:
+
+- `change · input`: Like the select.
+- `sav-show · sav-hide`: The list or calendar opened or closed.
+
+Example — One or many:
+
+```html
+<sav-country-choice label="Country" value="IT" style="max-width: 20rem"></sav-country-choice>
+<sav-country-choice label="Shipping to" multiple value="IT,FR,DE" code="alpha2" style="max-width: 24rem"></sav-country-choice>
+```
+
+### Theme choice — `<sav-theme-choice>`
+
+Light, Dark or Auto (follows the system), each with its icon: a menu or buttons. no-auto leaves only Light and Dark. With apply it switches the page by itself.
+
+Documentation: https://www.savcomponents.com/#theme-choice
+
+Attributes:
+
+- `value` (light · dark · auto): With no-auto, “auto” (or no value) shows the mode the system uses right now.
+- `no-auto` (boolean): Only Light and Dark: the Auto choice is not offered.
+- `appearance` (menu · buttons): Default menu.
+- `icons-only` (boolean): Only the icons (the names stay for screen readers).
+- `apply` (boolean): Calls Sav.setMode() on change.
+- `label` (string): Name for screen readers (default "Theme").
+- `size` (sm · md · lg): 
+
+Events:
+
+- `change`: detail.value
+
+Example — Menu and buttons:
+
+```html
+<sav-theme-choice value="auto"></sav-theme-choice>
+<sav-theme-choice appearance="buttons" value="light"></sav-theme-choice>
+<sav-theme-choice appearance="buttons" icons-only value="dark"></sav-theme-choice>
+```
+
+Example — Only light and dark (no Auto):
+
+```html
+<sav-theme-choice no-auto value="light"></sav-theme-choice>
+<sav-theme-choice appearance="buttons" no-auto value="dark"></sav-theme-choice>
+<sav-theme-choice appearance="buttons" icons-only no-auto></sav-theme-choice>
+```
+
+### Drop zone — `<sav-dropzone>`
+
+An area that accepts things dragged from outside the page: files (upload), or text, links and HTML from other pages and apps — also pasted with Cmd/Ctrl+V. Accepted types, maximum size, one or many, a list of what was dropped. It belongs to forms.
+
+Documentation: https://www.savcomponents.com/#dropzone
+
+Attributes:
+
+- `kind` (files · data · any): What it accepts: files (default), dragged or pasted text and links, or both.
+- `accept` (list): Files: image/*, .pdf, application/zip…
+- `multiple` (boolean): 
+- `max-size` (bytes): Refuses larger files.
+- `label · help · name · required`: 
+- `disabled` (boolean): It takes no files.
+
+Events:
+
+- `change`: detail.files, detail.items
+- `sav-drop`: Text or a link was dropped, cancelable. detail.kind, detail.text, detail.url, detail.html
+
+Methods:
+
+- `files`: Property: the chosen File objects.
+- `dropped`: Property: the dropped text and links.
+
+Example — Images up to 2 MB:
+
+```html
+<sav-dropzone name="photos" accept="image/*,.pdf" max-size="2000000" multiple help="PNG, JPG or PDF, up to 2 MB each" style="max-width: 26rem"></sav-dropzone>
+```
+
+Example — Text and links from other pages:
+
+```html
+<sav-dropzone kind="data" multiple help="Drag a link or some selected text from another tab, or paste it here" style="max-width: 26rem"></sav-dropzone>
+```
+
+### Range — `<sav-range>`
+
+A slider for numbers within a range.
+
+Documentation: https://www.savcomponents.com/#range
+
+Attributes:
+
+- `label · help` (string): 
+- `value · min · max · step` (number): 
+- `show-value` (boolean): 
+- `unit` (string): Appended to the shown value.
+- `labels` (comma list): Labels under the track.
+- `variant` (primary · …): 
+- `name · disabled · required`: Like any form field.
+
+Events:
+
+- `input`: While the thumb moves: event.target.value.
+- `change`: When the thumb is let go: event.target.value.
+
+Example — Basic:
+
+```html
+<sav-range label="Volume" value="40" show-value unit="%"></sav-range>
+<sav-range label="Rating" min="1" max="5" value="3" labels="Bad, Poor, Okay, Good, Great" variant="success"></sav-range>
+```
+
+### Double range — `<sav-range-dual>`
+
+A slider with two handles for a span: a start and an end, such as a price band, an age group or a period between two dates. Each handle works with the keyboard like a normal slider.
+
+Documentation: https://www.savcomponents.com/#range-dual
+
+Attributes:
+
+- `label · help` (string): 
+- `start · end` (number · date): The two values. With type="date" they are dates written YYYY-MM-DD.
+- `min · max · step` (number · date): With type="date" the step is in days.
+- `type` (number · date): Default number.
+- `min-gap` (number): Smallest distance between the two handles (default 0).
+- `show-value` (boolean): Shows "start – end" next to the label.
+- `prefix · unit` (string): Written before and after each shown number (€, %, km…).
+- `labels` (comma list): Labels under the track.
+- `variant` (primary · …): 
+- `disabled · required` (boolean): 
+- `name` (string): Sent with a form as two fields: name-start and name-end.
+- `name-start · name-end` (string): Other names for the two fields.
+- `start-label · end-label` (string): Names of the two handles for screen readers. Default "Start" and "End".
+
+Slots:
+
+- `label`: Rich label
+- `help`: Rich help text
+
+CSS parts:
+
+- `f`: o
+- `l`: a
+- `v`: a
+- `b`: a
+- `t`: r
+- `f`: i
+- `i`: n
+- `i`: n
+- `i`: n
+- `l`: a
+- `h`: e
+
+Events:
+
+- `input`: While a handle moves: detail.start, detail.end, detail.value.
+- `change`: When a handle is let go: detail.start, detail.end, detail.value ([start, end]).
+
+Methods:
+
+- `start · end · value`: Properties: read or set the values (numbers, or YYYY-MM-DD dates).
+- `focus()`: Focuses the first handle.
+
+Example — Basic:
+
+```html
+<sav-range-dual label="Price" min="0" max="500" step="10" start="80" end="320" prefix="€ " show-value></sav-range-dual>
+<sav-range-dual label="Age" min="18" max="99" start="25" end="40" show-value labels="18, 40, 60, 80, 99" variant="success"></sav-range-dual>
+```
+
+Example — Dates:
+
+```html
+<sav-range-dual label="Stay" type="date" min="2027-06-01" max="2027-09-30" start="2027-07-10" end="2027-07-24" min-gap="1" show-value
+  start-label="Check-in" end-label="Check-out" help="At least one night."></sav-range-dual>
+```
+
+### Rating — `<sav-rating>`
+
+Stars (or any icon) for ratings. Keyboard: arrows, Home, End.
+
+Documentation: https://www.savcomponents.com/#rating
+
+Attributes:
+
+- `value · max` (number): Default max 5.
+- `icon` (icon name): Default star.
+- `readonly · disabled` (boolean): 
+- `label · help · name` (string): 
+- `--size · --color · --empty` (CSS): 
+- `required` (boolean): A score must be given before the form is sent.
+
+Events:
+
+- `change`: detail.value
+
+Example — Basic:
+
+```html
+<sav-rating label="Your rating" value="3"></sav-rating>
+<sav-rating value="4" readonly style="--size: 1.1rem"></sav-rating>
+<sav-rating value="2" max="5" icon="heart" style="--color: var(--sav-color-danger); --size: 2rem"></sav-rating>
+```
+
+## Layout
+
+### Card — `<sav-card>`
+
+A surface for grouped content, with optional media, header and footer.
+
+Documentation: https://www.savcomponents.com/#card
+
+Attributes:
+
+- `appearance` (outlined · elevated · flat): Default outlined.
+- `interactive` (boolean): Hover effect and pointer.
+- `--sav-card-padding` (CSS): 
+
+Slots:
+
+- `media`: Image on top
+- `header`: Title
+- `(default)`: Body
+- `footer`: Actions
+
+Example — Basic:
+
+```html
+<div class="demo-grid">
+  <sav-card>
+    <img slot="media" src="docs/sample.svg" alt="" height="140">
+    <strong slot="header">Mountain cabin</strong>
+    A quiet place in the Dolomites, two hours from the nearest town.
+    <div slot="footer" class="row between"><sav-rating value="4" readonly style="--size: 1rem"></sav-rating><sav-button size="sm">Book</sav-button></div>
+  </sav-card>
+  <sav-card appearance="elevated">
+    <strong slot="header">Elevated</strong>
+    A stronger shadow and no border.
+  </sav-card>
+  <sav-card appearance="flat" interactive>
+    <strong slot="header">Flat and interactive</strong>
+    Lifts on hover, for clickable cards.
+  </sav-card>
+</div>
+```
+
+### Avatar — `<sav-avatar>`
+
+A picture, initials or an icon for a person.
+
+Documentation: https://www.savcomponents.com/#avatar
+
+Attributes:
+
+- `image` (url): Falls back to initials if it fails.
+- `label` (string): Name: gives the initials and the accessible name.
+- `initials` (string): Overrides the computed initials.
+- `href · target` (url · string): The avatar is a link (for example to the profile). Hover draws a ring on its own shape, the keyboard the focus ring: no box around it.
+- `button` (boolean): The avatar is a button (for example to open a menu): listen to click.
+- `shape` (circle · rounded · square · tilt): Tilt is a square leaning 10°, like the logo.
+- `size` (sm · md · lg · xl): Or --size.
+- `variant` (neutral · primary): 
+- `--size · --ring` (CSS): --size: width and height. --ring: a ring that follows the shape (circle, rounded, leaning square in Tilt), for example 0 0 0 2px white to separate avatars that overlap.
+- `auto-text` (boolean): Black or white initials, whichever is readable on the colour behind them (WCAG AA, at least 4.5:1), also with your own colours.
+
+Example — Basic:
+
+```html
+<sav-avatar label="Ada Lovelace"></sav-avatar>
+<sav-avatar label="Grace Hopper" variant="primary"></sav-avatar>
+<sav-avatar></sav-avatar>
+<sav-avatar label="Alan Turing" shape="rounded" size="lg" variant="primary"></sav-avatar>
+<sav-avatar image="docs/sample.svg" label="Landscape" size="xl"></sav-avatar>
+```
+
+Example — Stacked, with a ring:
+
+```html
+<div style="display: flex">
+  <sav-avatar label="Ada Lovelace" variant="primary" style="--ring: 0 0 0 3px var(--sav-color-bg)"></sav-avatar>
+  <sav-avatar label="Alan Turing" style="--ring: 0 0 0 3px var(--sav-color-bg); margin-left: -.4rem"></sav-avatar>
+  <sav-avatar label="Grace Hopper" variant="primary" style="--ring: 0 0 0 3px var(--sav-color-bg); margin-left: -.4rem"></sav-avatar>
+</div>
+```
+
+### Divider — `<sav-divider>`
+
+Separates content, horizontally or vertically, with an optional label.
+
+Documentation: https://www.savcomponents.com/#divider
+
+Attributes:
+
+- `vertical` (boolean): 
+- `--spacing` (CSS): Space around the line.
+
+Example — Basic:
+
+```html
+<p>Above</p>
+<sav-divider></sav-divider>
+<sav-divider>or continue with</sav-divider>
+<div class="row">Home<sav-divider vertical></sav-divider>Blog<sav-divider vertical></sav-divider>Contact</div>
+```
+
+### Container — `<sav-container>`
+
+A centred column with a maximum width and side padding: the frame of a page or of a section. It can also be a surface with a background.
+
+Documentation: https://www.savcomponents.com/#container
+
+Attributes:
+
+- `size` (sm · md · lg · xl · full): Maximum width: 40, 60 (default), 75, 90rem or none.
+- `appearance` (plain · surface · muted): Plain is just a column.
+- `padding` (none · md · lg): Side padding.
+- `--max-width · --padding · --inner` (CSS): Exact sizes.
+
+Example — Widths and appearances:
+
+```html
+<sav-container size="sm" appearance="surface">
+  <strong>Small surface</strong>
+  <p style="margin:.4rem 0 0">At most 40rem wide, centred. In the Tilt style its background leans.</p>
+</sav-container>
+<sav-container size="md" appearance="muted">
+  <strong>Medium, muted</strong>
+  <p style="margin:.4rem 0 0">At most 60rem wide.</p>
+</sav-container>
+```
+
+### Grid — `<sav-grid>`
+
+Puts its children in columns: a fixed number, or as many as fit with a minimum width. On phones fixed columns fall back to one (mobile-columns sets another number).
+
+Documentation: https://www.savcomponents.com/#grid
+
+Attributes:
+
+- `columns` (number): Fixed number of columns. Without it, as many as fit.
+- `min` (length): Minimum width of a column (default 14rem).
+- `gap` (length): Space between cells (default 1rem).
+- `align` (start · center · end): Vertical alignment of the cells.
+- `keep` (boolean): Keep the columns on phones.
+- `--mobile-columns` (CSS): Columns on phones (default 1).
+
+Example — As many as fit:
+
+```html
+<sav-grid min="10rem" style="width: 100%">
+  <sav-card>One</sav-card><sav-card>Two</sav-card><sav-card>Three</sav-card><sav-card>Four</sav-card>
+</sav-grid>
+```
+
+Example — Fixed columns:
+
+```html
+<sav-grid columns="3" gap=".75rem" style="width: 100%">
+  <sav-card>A</sav-card><sav-card>B</sav-card><sav-card>C</sav-card>
+</sav-grid>
+```
+
+### Sortable (drag and drop) — `<sav-sortable>`
+
+Reorder things by dragging them (mouse, touch, pen) — or with the keyboard: Space picks up, arrows move, Space drops, Escape cancels. Any element can be an item.
+
+Documentation: https://www.savcomponents.com/#sortable
+
+Attributes:
+
+- `direction` (vertical · horizontal): 
+- `grip` (boolean · end): Shows the drag handle (six dots) in each item: at the start, or at the end with grip="end". It turns sideways with direction="horizontal".
+- `handle` (grip · selector): Drag only from this part of each item: grip for the handle above, or a CSS selector of your own (the rest of the item can then be clicked or selected).
+- `data-no-drag` (item attribute): This child does not move.
+- `data-id` (item attribute): Name used in detail.order.
+
+Events:
+
+- `sav-sort`: After a move. detail.from, detail.to, detail.item, detail.order
+
+Example — With the drag handle:
+
+```html
+<sav-sortable grip handle="grip" style="max-width: 20rem">
+  <div class="sort-row">Write the brief</div>
+  <div class="sort-row">Pick the colours</div>
+  <div class="sort-row">Send it for review</div>
+</sav-sortable>
+<sav-sortable grip="end" direction="horizontal" style="margin-top: 1rem">
+  <span class="sort-chip">Red</span><span class="sort-chip">Green</span><span class="sort-chip">Blue</span>
+</sav-sortable>
+<style>
+  .sort-row { display: flex; align-items: center; padding: .65rem .9rem; border: 1px solid var(--sav-color-border); border-radius: var(--sav-radius); background: var(--sav-color-surface); }
+  .sort-chip { display: inline-flex; align-items: center; padding: .35rem .7rem; border-radius: var(--sav-radius-sm); background: var(--sav-color-surface-2); }
+</style>
+```
+
+Example — Reorder the list:
+
+```html
+<sav-sortable id="sort-demo" style="max-width: 20rem">
+  <sav-card data-id="design">1 · Design</sav-card>
+  <sav-card data-id="build">2 · Build</sav-card>
+  <sav-card data-id="test">3 · Test</sav-card>
+  <sav-card data-id="ship">4 · Ship</sav-card>
+</sav-sortable>
+<script>
+  document.getElementById('sort-demo').addEventListener('sav-sort', (e) => Sav.toast('New order: ' + e.detail.order.join(', '), { duration: 2500 }));
+</script>
+```
+
+### Icon — `<sav-icon>`
+
+More than 2,000 stroked icons that follow the colour and size of the text. About a hundred are built into the library; the others load by themselves the first time they are used. Search them below and click one to copy it. Most icons come from Lucide (ISC licence).
+
+Documentation: https://www.savcomponents.com/#icon
+
+Attributes:
+
+- `name` (icon name): Any name of the list below.
+- `label` (string): Accessible name; without it the icon is decorative.
+- `--sav-icon-stroke` (CSS): Stroke width, default 2.
+
+Methods:
+
+- `Sav.registerIcon(name, svgInner)`: Adds an icon drawn on a 24×24 grid.
+- `Sav.iconBase`: Where the extra icons are loaded from. Default: the shared icon set of the site that serves sav.js, /icons// (savcomponents.com for a copy hosted elsewhere). Also settable with data-icon-base on the script tag.
+- `Sav.iconsVersion`: The version of the icon set this library uses. Icon sets are versioned on their own, so library updates do not copy them.
+
+Example — Size and colour:
+
+```html
+<sav-icon name="heart"></sav-icon>
+<sav-icon name="rocket" style="font-size: 2rem"></sav-icon>
+<sav-icon name="leaf" style="font-size: 2rem; color: var(--sav-color-success)"></sav-icon>
+<sav-icon name="flame" style="font-size: 2.5rem; color: var(--sav-color-danger); --sav-icon-stroke: 1.5"></sav-icon>
+<sav-icon name="shield-check" label="Secure" style="font-size: 2rem"></sav-icon>
+```
+
+### Code — `<sav-code-block · sav-code>`
+
+Code with syntax highlighting: a block with its language, optional file name, copy button and line numbers (they are never copied), or a short piece inside a sentence.
+
+Documentation: https://www.savcomponents.com/#code
+
+Attributes:
+
+- `language` (html · css · js · ts · json · php · python · bash · sql · text): Highlighting and the label in the header.
+- `filename` (string): Shown next to the language.
+- `label` (string): Replaces the language name in the header.
+- `highlight` (e.g. 2,4-6): Lines to highlight.
+- `no-line-numbers · no-copy · no-header · wrap` (boolean): Hide the numbers, the copy button or the header; wrap long lines.
+- `--max-height` (CSS): Scrolls when taller.
+
+Events:
+
+- `sav-copy`: After copying (detail.value).
+
+Methods:
+
+- `code`: Property: read or set the code from JavaScript.
+- `Sav.highlight(code, language)`: Highlighted HTML of any text.
+
+Example — Code block:
+
+```html
+<sav-code-block language="js" filename="greet.js">
+  // Says hello to someone
+  function greet(name) {
+    const text = `Hello, ${name}!`;
+    return text.toUpperCase();
+  }
+</sav-code-block>
+```
+
+Example — Languages:
+
+```html
+<sav-code-block language="css">
+  .card { padding: 1rem; color: var(--sav-color-primary); }
+</sav-code-block>
+<sav-code-block language="php" highlight="2">
+  &lt;?php
+  $name = trim($_POST['name'] ?? '');
+  echo "Hello, " . htmlspecialchars($name);
+</sav-code-block>
+<sav-code-block language="python">
+  def area(r):
+      return 3.14159 * r ** 2  # circle
+</sav-code-block>
+<sav-code-block language="sql">
+  SELECT name, email FROM users WHERE status = 'active' ORDER BY name LIMIT 10;
+</sav-code-block>
+<sav-code-block language="bash" no-line-numbers>
+  npm install --save savcomponents
+</sav-code-block>
+```
+
+## Content
+
+### Heading — `<sav-heading>`
+
+A real h1–h6 with the look of the style: an optional marker before it (a leaning tile in Tilt), a label above and a subtitle below.
+
+Documentation: https://www.savcomponents.com/#heading
+
+Attributes:
+
+- `level` (1 · 2 · 3 · 4 · 5 · 6): The heading level for screen readers and the page outline (default 2).
+- `size` (1 · 2 · 3 · 4 · 5 · 6): Visual size, when it should differ from the level.
+- `marker` (boolean): A small square before the text.
+- `eyebrow` (string): A label above the heading (a sav-label).
+- `subtitle` (string): A muted line below.
+
+CSS parts:
+
+- `b`: a
+- `e`: y
+- `s`: u
+
+Example — Levels, marker, label and subtitle:
+
+```html
+<sav-heading level="1" eyebrow="Guide" subtitle="Everything you need in five minutes.">Getting started</sav-heading>
+<sav-heading level="2" marker>Install</sav-heading>
+<sav-heading level="3" size="4">A smaller h3</sav-heading>
+```
+
+### Stat card — `<sav-stat>`
+
+A number that matters, for dashboards: its name, the value, how it changed — green when it goes the good way, red when not (invert for numbers that should go down) — a caption and a small trend line.
+
+Documentation: https://www.savcomponents.com/#stat
+
+Attributes:
+
+- `label · value` (string): The name and the number (written as you want it: 48,200 or 1.2M).
+- `prefix · unit` (string): Before and after the number: € , %, s…
+- `change` (string): How it changed: +12%, −4, 0%; the sign decides up or down.
+- `trend` (up · down · flat): Overrides what the sign of change says.
+- `invert` (boolean): Going down is good (load time, refunds): down is green, up is red.
+- `caption` (string): A short note: vs last month.
+- `icon` (icon name): 
+- `data` (string): Numbers for the trend line, separated by commas.
+- `appearance` (card · plain): 
+- `--sav-stat-size · --spark-width` (CSS): Size of the number, width of the trend line.
+
+Slots:
+
+- `(default)`: Anything under it: a link, a button.
+
+CSS parts:
+
+- `b`: a
+- `l`: a
+- `i`: c
+- `v`: a
+- `c`: h
+- `c`: a
+- `s`: p
+
+Example — A row of numbers:
+
+```html
+<sav-grid min="13rem" style="width: 100%">
+  <sav-stat label="Monthly revenue" prefix="€ " value="48,200" change="+12.4%" caption="vs last month" icon="wallet" data="20,24,22,30,28,35,41,39,48"></sav-stat>
+  <sav-stat label="Active users" value="3,912" change="+3.1%" caption="this week" icon="users" data="31,33,32,35,34,37,39"></sav-stat>
+  <sav-stat label="Page load" value="1.8" unit="s" change="+0.3 s" invert caption="slower than last week" icon="timer" data="1.4,1.5,1.5,1.6,1.7,1.8"></sav-stat>
+  <sav-stat label="Refunds" value="12" change="−4" invert caption="fewer is better" icon="undo-2" data="20,18,17,16,14,12"></sav-stat>
+</sav-grid>
+```
+
+Example — Plain, without a card:
+
+```html
+<sav-stat appearance="plain" label="Downloads" value="1.2M" change="0%" caption="no change"></sav-stat>
+```
+
+### Timeline — `<sav-timeline · sav-timeline-item>`
+
+Things that happened, in order: an order on its way, the history of a document, the steps of a project. Each item has a time, a heading and any content, on a line with a dot or an icon — coloured with a variant; the dots take the shape of the style.
+
+Documentation: https://www.savcomponents.com/#timeline
+
+Attributes:
+
+- `label` (string): Name of the list for screen readers.
+- `time · datetime · heading · icon · variant`: On sav-timeline-item: datetime is the machine date behind the written time; variant colours the dot.
+- `auto-text` (boolean): The icons in the coloured dots are black or white, whichever is readable on the dot (WCAG AA, at least 4.5:1), also with your own colours.
+
+Slots:
+
+- `(default)`: On sav-timeline-item: the details.
+
+CSS parts:
+
+- `b`: a
+- `d`: o
+- `t`: i
+- `h`: e
+- `c`: o
+
+Example — An order:
+
+```html
+<sav-timeline label="Order 1042" style="max-width: 26rem">
+  <sav-timeline-item time="Mon 09:12" heading="Order placed" variant="success" icon="check">3 items, € 48. Paid by card.</sav-timeline-item>
+  <sav-timeline-item time="Mon 16:40" heading="Shipped" variant="primary" icon="truck">Tracking number <code>AB123456IT</code>.</sav-timeline-item>
+  <sav-timeline-item time="Wed" heading="Out for delivery"></sav-timeline-item>
+  <sav-timeline-item time="Wed" heading="Delivered"></sav-timeline-item>
+</sav-timeline>
+```
+
+Example — History, with avatars and relative times:
+
+```html
+<sav-timeline style="max-width: 26rem">
+  <sav-timeline-item heading="Ada changed the title" icon="pencil"><sav-relative-time datetime="2026-11-27T00:42:11.456Z"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Alan left a comment" icon="message-circle">“Looks good to me.” · <sav-relative-time datetime="2026-11-26T21:47:11.457Z"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Build failed" variant="danger" icon="x">2 tests did not pass · yesterday</sav-timeline-item>
+</sav-timeline>
+```
+
+### Keyboard key — `<sav-kbd>`
+
+Keys to press, drawn as keycaps that follow the style: mod+K shows ⌘ K on a Mac and Ctrl K elsewhere; several shortcuts with commas, or “then” for one after the other. Screen readers hear “Control + K”.
+
+Documentation: https://www.savcomponents.com/#kbd
+
+Attributes:
+
+- `keys` (string): The keys, if not written inside: mod+K, shift+enter, G then I. mod is ⌘ on a Mac and Ctrl elsewhere.
+- `size` (sm · md · lg): 
+
+CSS parts:
+
+- `b`: a
+- `k`: e
+
+Example — Shortcuts:
+
+```html
+<p>Search: <sav-kbd>mod+K</sav-kbd> · Save: <sav-kbd>mod+S</sav-kbd> · New tab: <sav-kbd>mod+shift+T</sav-kbd></p>
+<p>Go to the inbox: <sav-kbd>G then I</sav-kbd> · Close: <sav-kbd size="sm">Esc</sav-kbd> · Move: <sav-kbd size="lg">up, down</sav-kbd></p>
+```
+
+### Relative time — `<sav-relative-time>`
+
+A moment written the way people say it — “3 minutes ago”, “yesterday”, “in 2 weeks” — in the page language, and kept up to date while the page is open; the full date shows on hover. Or the date itself with format.
+
+Documentation: https://www.savcomponents.com/#relative-time
+
+Attributes:
+
+- `datetime` (string): The moment: a date (2026-11-19T10:30, with or without time) or milliseconds since 1970. Empty: now.
+- `format` (relative · date · datetime): Default relative (“3 minutes ago”).
+- `numeric` (auto · always): auto says “yesterday”, always says “1 day ago”.
+- `locale` (string): Language (default the page language).
+
+CSS parts:
+
+- `b`: a
+
+Example — Past, future, and dates:
+
+```html
+<ul style="margin: 0; line-height: 1.9">
+  <li>Saved <sav-relative-time datetime="2026-11-27T00:46:51.457Z"></sav-relative-time></li>
+  <li>Edited <sav-relative-time datetime="2026-11-27T00:05:11.457Z"></sav-relative-time></li>
+  <li>Created <sav-relative-time datetime="2026-11-26T00:47:11.457Z"></sav-relative-time></li>
+  <li>Renews <sav-relative-time datetime="2026-12-09T00:47:11.457Z"></sav-relative-time></li>
+  <li>In Italian: <sav-relative-time locale="it" datetime="2026-11-26T21:47:11.457Z"></sav-relative-time></li>
+  <li>As a date: <sav-relative-time format="date" datetime="2026-11-01T09:00"></sav-relative-time></li>
+</ul>
+```
+
+### Label — `<sav-label>`
+
+A short caption that names a section or a category — the small "eyebrow" above a title. Unlike a tag it is not removable and does not filter; unlike a badge it is not a status or a count.
+
+Documentation: https://www.savcomponents.com/#label
+
+Attributes:
+
+- `variant` (primary · neutral · success · warning · danger · protected): 
+- `appearance` (solid · soft · outline · plain): Default solid.
+- `case` (upper · normal): Upper case by default.
+- `--sav-label-size` (CSS): Font size (default .72rem).
+- `auto-text` (boolean): Black or white text, whichever is readable on the colour behind it (WCAG AA, at least 4.5:1), also with your own colours. A --text-color you set still wins.
+- `--text-color` (CSS): The colour of the text, whatever the background (unset: the colour that fits the background).
+
+Slots:
+
+- `(default)`: The text.
+- `prefix`: An icon before it.
+
+Example — Appearances:
+
+```html
+<sav-label>Feedback</sav-label>
+<sav-label appearance="soft">Navigation</sav-label>
+<sav-label appearance="outline" variant="neutral">Draft</sav-label>
+<sav-label appearance="plain">Chapter 2</sav-label>
+<sav-label variant="success" case="normal"><sav-icon slot="prefix" name="check"></sav-icon>Approved</sav-label>
+```
+
+### Image — `<sav-image>`
+
+An image with a fixed ratio, the corners of the style (with the tinted plate behind it in Tilt), lazy loading, a caption and an optional zoom.
+
+Documentation: https://www.savcomponents.com/#image
+
+Attributes:
+
+- `src · srcset · sizes` (string): Like a normal img.
+- `alt` (string): Describes the image; leave empty for decoration.
+- `ratio` (16:9 · 4:3 · 1:1 · …): Keeps the shape while it loads.
+- `fit` (cover · contain): Default cover.
+- `caption` (string): A line under the image.
+- `zoom` (boolean): Opens it large on click.
+- `zoom-src` (url): A bigger file for the zoom.
+- `eager` (boolean): Loads at once instead of when it comes into view.
+
+CSS parts:
+
+- `b`: a
+- `f`: r
+- `i`: m
+- `c`: a
+- `z`: o
+
+Events:
+
+- `sav-zoom`: The picture opened bigger (zoom).
+
+Example — Ratio, caption and zoom:
+
+```html
+<sav-image src="docs/sample.svg" alt="Hills at sunset" ratio="16:9" caption="Click to enlarge" zoom style="max-width: 22rem"></sav-image>
+<sav-image src="docs/sample.svg" alt="" ratio="1:1" fit="contain" style="width: 9rem"></sav-image>
+```
+
+### Flag — `<sav-flag>`
+
+The flag of a country (ISO alpha-2) or of a region (gb-sct, es-ct…), from a set of 270 SVG flags that is versioned on its own like the icons. Decorative unless it has a label.
+
+Documentation: https://www.savcomponents.com/#flag
+
+Attributes:
+
+- `code` (string): ISO 3166 alpha-2 (it) or a region (gb-wls, es-pv…), lower or upper case.
+- `label` (string): What it represents, when the flag alone carries a meaning.
+- `--size` (CSS): Width (default 1.33em, ratio 4:3).
+
+Example — Countries and regions:
+
+```html
+<sav-flag code="it"></sav-flag> <sav-flag code="jp"></sav-flag> <sav-flag code="br"></sav-flag> <sav-flag code="gb-sct" label="Scotland"></sav-flag> <sav-flag code="eu" label="European Union" style="--size: 3rem"></sav-flag>
+```
+
+### List — `<sav-list · sav-list-item>`
+
+Rows with something at the start (icon, avatar), a title and description, and something at the end. A row with href is a link, with button a button.
+
+Documentation: https://www.savcomponents.com/#list
+
+Attributes:
+
+- `appearance` (divided · card · plain): sav-list. Default divided (lines between rows).
+- `href` (url): sav-list-item: the row is a link.
+- `button` (boolean): sav-list-item: the row is a button.
+- `description` (string): sav-list-item: the second line.
+
+Slots:
+
+- `(default)`: Title of the row.
+- `prefix`: Icon or avatar at the start.
+- `suffix`: Badge, button or value at the end.
+
+Example — Card list:
+
+```html
+<sav-list appearance="card" style="max-width: 26rem; width: 100%">
+  <sav-list-item description="ada@example.com" href="#list"><sav-avatar slot="prefix" size="sm" label="Ada Lovelace"></sav-avatar>Ada Lovelace</sav-list-item>
+  <sav-list-item description="Last seen yesterday" href="#list"><sav-avatar slot="prefix" size="sm" label="Alan Turing" variant="primary"></sav-avatar>Alan Turing</sav-list-item>
+  <sav-list-item description="3 new messages"><sav-icon slot="prefix" name="mail"></sav-icon>Inbox<sav-badge slot="suffix">3</sav-badge></sav-list-item>
+</sav-list>
+```
+
+### Table — `<sav-table>`
+
+Styles the normal table you put inside: borders, stripes and hover from the style, a scroll area on small screens, and sorting by clicking a header.
+
+Documentation: https://www.savcomponents.com/#table
+
+Attributes:
+
+- `sortable` (boolean): Click a header to sort (numbers as numbers); data-no-sort on a th skips it, data-value on a td sorts by that value.
+- `striped` (boolean): 
+- `hover` (boolean): Highlights the row under the pointer.
+- `compact` (boolean): Less padding.
+- `appearance` (card · plain): Default card.
+- `class="num"` (th · td): Right-aligned numbers.
+- `label` (string): Name of the scroll area for screen readers when the table is wider than its frame (then the frame can be reached with Tab and scrolled with the arrows). Default: the caption, or "Table".
+
+Events:
+
+- `sav-sort`: After sorting. detail.column, detail.direction
+
+Methods:
+
+- `sort(index)`: Sorts by a column.
+
+Example — Sortable, striped:
+
+```html
+<sav-table sortable striped hover style="width: 100%">
+  <table>
+    <thead><tr><th>Name</th><th>Role</th><th class="num">Tasks</th></tr></thead>
+    <tbody>
+      <tr><td>Ada</td><td>Editor</td><td class="num">12</td></tr>
+      <tr><td>Alan</td><td>Viewer</td><td class="num">4</td></tr>
+      <tr><td>Grace</td><td>Admin</td><td class="num">27</td></tr>
+    </tbody>
+  </table>
+</sav-table>
+```
+
+## Media
+
+### Carousel — `<sav-carousel · sav-slide>`
+
+Slides that scroll sideways — only images, or image and text. Arrow buttons, dots, swipe with fingers, drag with the mouse, arrow keys (each can be turned off), more than one slide at a time, loop and an autoplay that stops on hover, on focus and with reduced motion.
+
+Documentation: https://www.savcomponents.com/#carousel
+
+Attributes:
+
+- `label` (string): sav-carousel: name for screen readers.
+- `per-view` (number): Slides visible at once (default 1).
+- `loop` (boolean): After the last comes the first.
+- `autoplay` (ms): Moves by itself (default 5000 ms); pauses on hover and focus, off with reduced motion.
+- `no-arrows` (boolean): Hides the previous and next buttons (on touch screens they are hidden anyway).
+- `touch-arrows` (boolean): Shows the arrows on touch screens too.
+- `no-hint` (boolean): On touch screens, no “grab and move” hint the first time the carousel shows up.
+- `no-dots` (boolean): Hides the dots.
+- `no-swipe` (boolean): Turns off swiping with fingers and dragging with the mouse.
+- `no-keyboard` (boolean): Turns off the arrow keys.
+- `controls` (inside · outside): Where the arrows sit.
+- `src · alt · heading · text · ratio · overlay`: sav-slide: image, its text, the text over the image.
+
+Events:
+
+- `sav-slide`: The visible slide changed. detail.index
+
+Methods:
+
+- `go(index)`: Shows a slide.
+
+Example — Images:
+
+```html
+<sav-carousel label="Gallery" loop style="max-width: 30rem">
+  <sav-slide src="docs/sample.svg" alt="Hills at sunset"></sav-slide>
+  <sav-slide src="docs/media/poster.jpg" alt="Blue gradient"></sav-slide>
+  <sav-slide src="docs/sample.svg" alt="Hills, again" style="filter: hue-rotate(120deg)"></sav-slide>
+</sav-carousel>
+```
+
+Example — Image and text, two at a time:
+
+```html
+<sav-carousel label="Stories" per-view="2" style="width: 100%">
+  <sav-slide src="docs/sample.svg" alt="" heading="Mountain cabin" text="Two hours from the nearest town."></sav-slide>
+  <sav-slide src="docs/media/poster.jpg" alt="" heading="Lake house" text="Swim before breakfast."></sav-slide>
+  <sav-slide src="docs/sample.svg" alt="" heading="City loft" text="Everything at walking distance." style="filter: hue-rotate(200deg)"></sav-slide>
+  <sav-slide src="docs/sample.svg" alt="" heading="Seaside" text="Overlay text on the image." overlay style="filter: hue-rotate(300deg)"></sav-slide>
+</sav-carousel>
+```
+
+### Video — `<sav-video>`
+
+A video in a frame with the corners of the style, a fixed ratio and a poster with a big play button, then its own control bar: play, the progress bar and the time, mute and volume, full screen — and on request back and forward 10 seconds, speed, loop, captions and picture in picture. The bar hides while playing; keys: Space, arrows, M, F, C. When the player is small, the controls that do not fit move into a ⋯ menu; controls chooses which ones show, native-controls uses the browser’s bar.
+
+Documentation: https://www.savcomponents.com/#video
+
+Attributes:
+
+- `src` (url): Or elements inside.
+- `poster` (url): Image before playing.
+- `ratio` (16:9 · 4:3 · 1:1 · 9:16): 
+- `caption · label` (string): Line below; name of the play button.
+- `controls` (list): Which controls show, separated by spaces: play skip seek time mute volume speed loop captions pip fullscreen (default: play seek time mute volume fullscreen; captions and pip also need the video to allow them). none: no controls at all, not even the big play button — only the video (with autoplay muted loop for a background video).
+- `native-controls` (boolean): The browser’s own control bar instead of this one.
+- `autoplay · muted · loop` (boolean): loop starts the video again at the end; the Loop button in the bar turns it on and off (and sets the attribute).
+- `replay-label` (string): At the end (without loop) the last frame dims and a big Replay button shows: its text (default "Replay").
+- `<track kind="captions">` (child): Captions: the CC button appears.
+- `auto-text` (boolean): The play icon is black or white, whichever is readable on the play button (WCAG AA, at least 4.5:1), also with your own colours.
+
+Events:
+
+- `play · pause · ended`: 
+
+Methods:
+
+- `play() · pause()`: 
+- `video`: Property: the element.
+
+Example — Large:
+
+```html
+<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" label="Gradient demo" caption="A 4-second sample made for this page: try the controls, the keys and full screen." style="max-width: 46rem"></sav-video>
+```
+
+Example — Small, square, with the browser controls:
+
+```html
+<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" ratio="1:1" style="max-width: 16rem"></sav-video>
+<sav-video src="docs/media/sample.mp4" poster="docs/media/poster.jpg" native-controls style="max-width: 22rem"></sav-video>
+```
+
+### Audio — `<sav-audio>`
+
+A player in the style with the controls of the video player: play/pause, the progress bar and the time, mute and volume — and on request back and forward 10 seconds, speed and loop; title, artist and cover. Keys: Space or K play, ← → 5 seconds, ↑ ↓ volume, M mute. When the player is small, the controls that do not fit move into a ⋯ menu (and in a very small one the cover steps aside); controls chooses which ones show, native-controls uses the browser’s own player.
+
+Documentation: https://www.savcomponents.com/#audio
+
+Attributes:
+
+- `src` (url): Or elements inside.
+- `title · artist` (string): 
+- `cover` (url): A small picture.
+- `loop · autoplay · muted` (boolean): loop starts again by itself at the end (the Loop button turns it on and off); autoplay starts on its own (browsers allow sound only after the person has used the page).
+- `replay-label` (string): At the end (without loop) the play button turns into Replay: its name (default "Replay").
+- `controls` (list): Which controls show, separated by spaces: play skip seek time mute volume speed loop (default: play seek time mute volume). none: no controls, only title, artist and cover (it plays with autoplay or from code).
+- `native-controls` (boolean): The browser’s own player instead of the library’s.
+- `auto-text` (boolean): The play icon is black or white, whichever is readable on the play button (WCAG AA, at least 4.5:1), also with your own colours.
+
+CSS parts:
+
+- `b`: a
+- `c`: o
+- `p`: l
+- `t`: i
+- `a`: r
+- `c`: o
+- `m`: u
+- `a`: u
+
+Events:
+
+- `play · pause · ended`: 
+
+Methods:
+
+- `play() · pause()`: 
+- `audio`: Property: the element (volume, playbackRate, currentTime…).
+
+Example — Player:
+
+```html
+<sav-audio src="docs/media/sample.wav" title="Little melody" artist="SavComponents" cover="docs/media/poster.jpg" style="max-width: 34rem"></sav-audio>
+```
+
+Example — Narrow (the ⋯ menu), chosen controls, the browser’s player:
+
+```html
+<sav-audio src="docs/media/sample.wav" title="Little melody" style="max-width: 20rem"></sav-audio>
+<sav-audio src="docs/media/sample.wav" title="Only play, seek and time" controls="play seek time" style="max-width: 26rem; margin-top: 1rem"></sav-audio>
+<sav-audio src="docs/media/sample.wav" native-controls style="max-width: 26rem; margin-top: 1rem"></sav-audio>
+```
+
+## Overlays
+
+### Dialog — `<sav-dialog>`
+
+A modal window built on the native <dialog>: focus trap, Esc and click outside to close. With sheet-on-mobile it becomes an action sheet on phones (the first demo has it: try it at phone width).
+
+Documentation: https://www.savcomponents.com/#dialog
+
+Attributes:
+
+- `open` (boolean): Shows the dialog.
+- `label` (string): Title.
+- `sheet-on-mobile` (boolean): On screens up to 640px wide it opens as an action sheet from the bottom, with full-width buttons.
+- `persistent` (boolean): Clicking outside does not close it.
+- `no-header · no-close` (boolean): 
+- `--width` (CSS): Default 32rem.
+
+Slots:
+
+- `(default)`: Body
+- `label`: Rich title
+- `header-actions`: Buttons next to the close button
+- `footer`: Actions
+
+Events:
+
+- `sav-show · sav-after-show`: 
+- `sav-request-close`: Cancelable; detail.source = close-button · keyboard · overlay · button
+- `sav-hide · sav-after-hide`: 
+
+Methods:
+
+- `show() · hide()`: 
+- `[data-sav-close]`: Any element inside with this attribute closes it.
+
+Example — Basic:
+
+```html
+<sav-button onclick="document.getElementById('demo-dialog').show()">Open dialog</sav-button>
+<sav-dialog id="demo-dialog" label="Delete project?" sheet-on-mobile>
+  This removes the project and its 24 files. You can't undo this.
+  <sav-button slot="footer" appearance="ghost" variant="neutral" data-sav-close>Cancel</sav-button>
+  <sav-button slot="footer" variant="danger" data-sav-close>Delete</sav-button>
+</sav-dialog>
+<sav-button appearance="outline" onclick="document.getElementById('demo-dialog-2').show()">Persistent</sav-button>
+<sav-dialog id="demo-dialog-2" label="Sign in" persistent style="--width: 24rem">
+  <div class="stack">
+    <sav-input label="Email" type="email" autofocus></sav-input>
+    <sav-input label="Password" type="password" password-toggle></sav-input>
+  </div>
+  <sav-button slot="footer" block data-sav-close>Continue</sav-button>
+</sav-dialog>
+```
+
+### Drawer — `<sav-drawer>`
+
+A panel that slides in from an edge. Same API as the dialog.
+
+Documentation: https://www.savcomponents.com/#drawer
+
+Attributes:
+
+- `placement` (end · start · top · bottom): Default end.
+- `--size` (CSS): Width or height, default 24rem.
+- `open · label · persistent`: As in the dialog.
+
+Events:
+
+- `sav-show · sav-hide`: Starts to open or to close.
+- `sav-after-show · sav-after-hide`: Finished opening or closing (after the animation).
+- `sav-request-close`: Esc, the backdrop or the × asks to close: call event.preventDefault() to keep it open.
+
+Example — Placements:
+
+```html
+<sav-button appearance="outline" onclick="document.getElementById('drw-end').show()">End</sav-button>
+<sav-button appearance="outline" onclick="document.getElementById('drw-start').show()">Start</sav-button>
+<sav-button appearance="outline" onclick="document.getElementById('drw-bottom').show()">Bottom</sav-button>
+<sav-drawer id="drw-end" label="Filters">
+  <div class="stack">
+    <sav-checkbox checked>In stock</sav-checkbox>
+    <sav-checkbox>Free shipping</sav-checkbox>
+    <sav-range label="Max price" value="60" show-value unit=" €"></sav-range>
+  </div>
+  <sav-button slot="footer" data-sav-close>Apply</sav-button>
+</sav-drawer>
+<sav-drawer id="drw-start" label="Menu" placement="start" style="--size: 17rem">Navigation goes here.</sav-drawer>
+<sav-drawer id="drw-bottom" label="Share" placement="bottom" style="--size: 14rem">A bottom sheet, handy on phones.</sav-drawer>
+```
+
+### Dropdown — `<sav-dropdown · sav-menu-item>`
+
+A menu that opens from a trigger. Arrow keys, type-ahead, Esc; closes when clicking outside.
+
+Documentation: https://www.savcomponents.com/#dropdown
+
+Attributes:
+
+- `placement` (bottom-start · bottom-end · top-start · top-end · right-start …): 
+- `multiple` (boolean): Every item is a checkbox and the menu stays open; read the choices from value.
+- `sheet-on-mobile` (boolean): On phones the menu rises from the bottom.
+- `label` (string): Title of the sheet on phones.
+- `stay-open` (boolean): Keeps it open after a choice.
+- `disabled` (boolean): 
+- `--min-width · --max-height` (CSS): 
+- `value · disabled · variant="danger" · type="checkbox" · checked`: On sav-menu-item.
+
+Events:
+
+- `sav-select`: detail.item, detail.value
+- `change`: With multiple or checkbox items: detail.value is the list of checked values.
+- `sav-show · sav-hide`: 
+
+Methods:
+
+- `show() · hide()`: 
+- `value`: The checked values (array).
+
+Example — Basic:
+
+```html
+<sav-dropdown id="demo-dd">
+  <sav-button slot="trigger" caret appearance="outline" variant="neutral">Actions</sav-button>
+  <sav-menu-label>File</sav-menu-label>
+  <sav-menu-item value="edit"><sav-icon slot="prefix" name="edit"></sav-icon>Edit<kbd slot="suffix">E</kbd></sav-menu-item>
+  <sav-menu-item value="copy"><sav-icon slot="prefix" name="copy"></sav-icon>Duplicate</sav-menu-item>
+  <sav-menu-item value="share" disabled><sav-icon slot="prefix" name="link"></sav-icon>Share</sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item type="checkbox" checked value="pin">Pinned</sav-menu-item>
+  <sav-menu-item value="delete" variant="danger"><sav-icon slot="prefix" name="trash"></sav-icon>Delete</sav-menu-item>
+</sav-dropdown>
+<sav-dropdown placement="bottom-end">
+  <sav-button slot="trigger" square appearance="ghost" variant="neutral" label="More"><sav-icon name="more-horizontal"></sav-icon></sav-button>
+  <sav-menu-item>Profile</sav-menu-item>
+  <sav-menu-item>Sign out</sav-menu-item>
+</sav-dropdown>
+<script>document.getElementById('demo-dd').addEventListener('sav-select', e => Sav.toast('Selected: ' + e.detail.value, {variant: 'neutral', duration: 2000}))</script>
+```
+
+Example — Several choices:
+
+```html
+<sav-dropdown multiple id="demo-dd-multi" label="Columns">
+  <sav-button slot="trigger" caret appearance="outline" variant="neutral" icon="filter">Columns</sav-button>
+  <sav-menu-item value="name" checked>Name</sav-menu-item>
+  <sav-menu-item value="email" checked>Email</sav-menu-item>
+  <sav-menu-item value="phone">Phone</sav-menu-item>
+  <sav-menu-item value="city">City</sav-menu-item>
+</sav-dropdown>
+<script>document.getElementById('demo-dd-multi').addEventListener('change', e => Sav.toast('Shown: ' + e.detail.value.join(', '), {variant: 'neutral', duration: 2000}))</script>
+```
+
+### Info tip — `<sav-info-tip>`
+
+A small button (an icon, or an icon with text) that opens a box of information when pressed: for help next to a field, a title or a setting. Unlike the tooltip it opens on click, so it works on phones and can hold links.
+
+Documentation: https://www.savcomponents.com/#info-tip
+
+Attributes:
+
+- `content` (string): The text of the box (or put rich content inside).
+- `heading` (string): Bold first line of the box.
+- `icon` (icon name): Default help-circle.
+- `label` (string): Text next to the icon.
+- `variant` (neutral · primary): 
+- `size` (sm · md): 
+- `placement` (top · bottom · left · right): Default top; it flips when there is no room.
+- `sheet-on-mobile` (boolean): On phones the box rises from the bottom.
+
+Slots:
+
+- `(default)`: Rich content of the box
+- `trigger`: Your own trigger instead of the icon
+
+Events:
+
+- `sav-show · sav-hide`: 
+
+Methods:
+
+- `show() · hide()`: 
+
+Example — Next to a label:
+
+```html
+<sav-input placeholder="IT60 X054 2811 1010 0000 0123 456">
+  <span slot="label">IBAN <sav-info-tip content="The 27 characters of your bank account, starting with IT. You find it in your bank's app."></sav-info-tip></span>
+</sav-input>
+```
+
+Example — Icon, text, heading:
+
+```html
+<sav-info-tip heading="Why we ask" content="We use your phone only to send the delivery updates."></sav-info-tip>
+<sav-info-tip icon="info" label="How it works" variant="primary" heading="Three steps">Choose a plan, add your team and <a href="#start">start</a>. You can change everything later.</sav-info-tip>
+<sav-info-tip icon="shield" label="Privacy" placement="bottom" sheet-on-mobile>Nothing leaves your device until you press Save.</sav-info-tip>
+```
+
+### Tooltip — `<sav-tooltip>`
+
+A short hint on hover or focus. It flips when there is no room.
+
+Documentation: https://www.savcomponents.com/#tooltip
+
+Attributes:
+
+- `content` (string): Text of the tooltip.
+- `placement` (top · bottom · left · right (+ -start / -end)): 
+- `trigger` (hover focus · click): Space separated.
+- `delay` (ms): Default 150.
+- `disabled` (boolean): 
+- `--max-width` (CSS): 
+- `auto-text` (boolean): Black or white text, whichever is readable on the tooltip colour (--sav-color-tooltip-bg) (WCAG AA, at least 4.5:1), also with your own colours.
+
+Slots:
+
+- `(default)`: The trigger
+- `content`: Rich content
+
+Example — Placements:
+
+```html
+<sav-tooltip content="On top"><sav-button appearance="outline" variant="neutral">Top</sav-button></sav-tooltip>
+<sav-tooltip content="Below" placement="bottom"><sav-button appearance="outline" variant="neutral">Bottom</sav-button></sav-tooltip>
+<sav-tooltip content="On the left" placement="left"><sav-button appearance="outline" variant="neutral">Left</sav-button></sav-tooltip>
+<sav-tooltip placement="right"><sav-button appearance="outline" variant="neutral">Rich</sav-button><span slot="content"><b>Tip:</b> press <kbd>/</kbd> to search</span></sav-tooltip>
+<sav-tooltip content="Opened by click" trigger="click"><sav-button appearance="soft">Click</sav-button></sav-tooltip>
+```
+
+### Popover — `<sav-popover>`
+
+A panel next to a button with anything inside — text, a small form, a list. A click on the trigger opens it, Esc or a click outside closes it, and the focus goes into the panel and back. Bigger than a tooltip or an info tip, lighter than a dialog; it leans in Tilt and turns to glass in Glass.
+
+Documentation: https://www.savcomponents.com/#popover
+
+Attributes:
+
+- `heading` (string): A title at the top of the panel (also its name for screen readers).
+- `placement` (bottom-start · bottom · bottom-end · top-start · top · top-end · left · right · right-start): Where the panel opens (it flips when there is no room). Default bottom-start.
+- `no-close` (boolean): No × button (Esc and a click outside still close it).
+- `sheet-on-mobile` (boolean): On phones it slides up from the bottom.
+- `label` (string): Name for screen readers when there is no heading.
+- `--width` (CSS): Widest the panel gets (default 20rem).
+
+Slots:
+
+- `trigger`: The button (or any focusable element) that opens it.
+- `(default)`: The content of the panel.
+
+CSS parts:
+
+- `b`: o
+- `h`: e
+- `c`: l
+
+Events:
+
+- `sav-show · sav-hide`: The panel opened or closed.
+
+Methods:
+
+- `show() · hide()`: 
+- `open`: true while it is open.
+
+Example — A small form:
+
+```html
+<sav-popover heading="Share this page">
+  <sav-button slot="trigger" appearance="outline" variant="neutral"><sav-icon slot="prefix" name="share"></sav-icon>Share</sav-button>
+  <p style="margin: 0 0 .6rem">Anyone with the link can see it.</p>
+  <div style="display: flex; gap: .5rem; align-items: center">
+    <sav-input size="sm" value="https://example.com/p/42" readonly style="flex: 1"></sav-input>
+    <sav-copy-button value="https://example.com/p/42"></sav-copy-button>
+  </div>
+</sav-popover>
+```
+
+Example — Placement, without a close button:
+
+```html
+<sav-popover placement="top" no-close label="Profile">
+  <sav-avatar slot="trigger" initials="AL" label="Ada Lovelace" button></sav-avatar>
+  <b>Ada Lovelace</b><br><span style="color: var(--sav-color-text-muted)">Editor · online</span>
+</sav-popover>
+<sav-popover placement="right-start" heading="Filters" sheet-on-mobile>
+  <sav-button slot="trigger" appearance="soft"><sav-icon slot="prefix" name="sliders-horizontal"></sav-icon>Filters</sav-button>
+  <div style="display: grid; gap: .5rem"><sav-checkbox checked>In stock</sav-checkbox><sav-checkbox>On sale</sav-checkbox><sav-checkbox>Free delivery</sav-checkbox></div>
+</sav-popover>
+```
+
+### Command palette — `<sav-command>`
+
+A search box over the page with everything you can do or open: type a few letters, move with the arrows, Enter. It opens with a shortcut from anywhere (⌘K on a Mac, Ctrl+K elsewhere), groups commands, shows their icons and shortcuts and highlights what matches.
+
+Documentation: https://www.savcomponents.com/#command
+
+Attributes:
+
+- `hotkey` (string): The shortcut that opens and closes it: mod+k (⌘K on a Mac, Ctrl+K elsewhere), ctrl+p, alt+space…
+- `placeholder` (string): Text in the empty search box.
+- `empty-label` (string): Text when nothing matches (default “Nothing found”).
+- `label` (string): Name for screen readers (default “Commands”).
+
+Slots:
+
+- `(default)`: commands, in for groups: value, data-icon, data-description, data-shortcut, data-keywords, data-href.
+
+CSS parts:
+
+- `d`: i
+- `b`: a
+- `i`: n
+- `l`: i
+- `c`: l
+
+Events:
+
+- `sav-select`: A command was chosen: detail.value, detail.item (cancel it to keep the palette open).
+- `sav-show · sav-hide`: Opened or closed.
+
+Methods:
+
+- `show() · hide()`: 
+- `commands`: The commands as a list ({ label, value, icon, description, shortcut, keywords, group, href }); set it to fill the palette from code.
+
+Example — Press the shortcut, or the button:
+
+```html
+<sav-button id="cmdOpen" appearance="outline" variant="neutral"><sav-icon slot="prefix" name="search"></sav-icon>Search commands <sav-kbd slot="suffix" size="sm">mod+K</sav-kbd></sav-button>
+<sav-command id="cmdDemo" hotkey="mod+k" placeholder="What do you want to do?">
+  <optgroup label="Pages">
+    <option value="home" data-icon="home" data-description="Start page">Home</option>
+    <option value="components" data-icon="blocks" data-description="Every component" data-keywords="list library">Components</option>
+    <option value="settings" data-icon="settings" data-shortcut="mod+,">Settings</option>
+  </optgroup>
+  <optgroup label="Actions">
+    <option value="new" data-icon="plus" data-shortcut="mod+n">New project</option>
+    <option value="invite" data-icon="user-plus" data-description="Send an invitation by email">Invite people</option>
+    <option value="dark" data-icon="moon">Switch to dark mode</option>
+  </optgroup>
+</sav-command>
+<script>
+  document.getElementById('cmdOpen').addEventListener('click', () => document.getElementById('cmdDemo').show());
+  document.getElementById('cmdDemo').addEventListener('sav-select', (e) => Sav.toast('Chosen: ' + e.detail.value));
+</script>
+```
+
+## Navigation
+
+### Tabs — `<sav-tabs · sav-tab>`
+
+Switch between panels. Each sav-tab is both the button label and its panel.
+
+Documentation: https://www.savcomponents.com/#tabs
+
+Attributes:
+
+- `appearance` (underline · pills · segmented): Default underline.
+- `orientation` (horizontal · vertical): horizontal: a bar above the panels (the default); vertical: a column of tabs beside them.
+- `side` (start · end): Vertical tabs: start puts the column on the left (the default), end on the right (the fold handle and the tooltips then sit on its left side).
+- `active` (tab name): Tab to open first.
+- `label · name · icon · active · disabled`: On sav-tab.
+- `collapsible` (boolean): Vertical tabs: a button under the tabs folds them to icons only (collapsed) and opens them again (expanded).
+- `collapsed` (boolean): Vertical tabs: only the icons show (or the first letter of a tab without icon); the names become tooltips. Set it to start collapsed; the button changes it.
+- `collapse-label · expand-label` (string): Text of the fold button. Default "Collapse" and "Expand".
+- `collapse-button` (edge · row): Where the fold button goes: edge (a small handle on the outer border of the rail — right with start, left with end — next to the first tab, the default) or row (a row with text at the bottom of the rail).
+- `icon-placement` (start · after · end): Where the icon of a tab goes: start (before the text, the default), after (right after the text) or end (at the far end of the tab, with space in between; clearest in vertical tabs). On sav-tabs it applies to every tab; on one sav-tab it applies to that tab only.
+- `level` (normal · sub): On sav-tab: sub sits under the tab before it, smaller and indented (two levels; clearest with vertical tabs).
+- `--sav-tab-sub-indent` (CSS): How far sub tabs are indented (default .9rem).
+- `--sav-tab-padding` (CSS): Panel padding.
+- `auto-text` (boolean): The text of the selected tab is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.
+
+CSS parts:
+
+- `n`: a
+- `t`: a
+- `s`: u
+- `t`: a
+- `t`: a
+- `i`: n
+- `p`: a
+- `r`: a
+- `c`: o
+
+Events:
+
+- `sav-tab-show`: detail.name, detail.index
+- `sav-collapse`: Vertical tabs folded or opened: detail.collapsed.
+
+Methods:
+
+- `show(nameOrIndex)`: Opens a tab by its name or position.
+- `collapse() · expand()`: Vertical tabs: only the icons, or icons and names again.
+
+Example — Appearances:
+
+```html
+<sav-tabs>
+  <sav-tab label="Overview" icon="home">The overview panel.</sav-tab>
+  <sav-tab label="Activity" icon="bell">Recent activity.</sav-tab>
+  <sav-tab label="Settings" icon="settings">Settings panel.</sav-tab>
+  <sav-tab label="Disabled" disabled></sav-tab>
+</sav-tabs>
+<sav-tabs appearance="pills">
+  <sav-tab label="Monthly">Billed every month.</sav-tab>
+  <sav-tab label="Yearly" active>Two months free.</sav-tab>
+</sav-tabs>
+<sav-tabs appearance="segmented">
+  <sav-tab label="List">List view.</sav-tab>
+  <sav-tab label="Board">Board view.</sav-tab>
+  <sav-tab label="Calendar">Calendar view.</sav-tab>
+</sav-tabs>
+```
+
+Example — Vertical:
+
+```html
+<sav-tabs orientation="vertical">
+  <sav-tab label="Account">Account settings.</sav-tab>
+  <sav-tab label="Security">Password and two-step login.</sav-tab>
+  <sav-tab label="Billing">Invoices and payment methods.</sav-tab>
+</sav-tabs>
+```
+
+### Accordion — `<sav-accordion · sav-details>`
+
+Expandable sections with a smooth height animation. exclusive keeps only one open.
+
+Documentation: https://www.savcomponents.com/#accordion
+
+Attributes:
+
+- `exclusive` (boolean): On the accordion.
+- `appearance` (boxed · plain): 
+- `summary · open · disabled`: On sav-details.
+- `--gap` (CSS): Space between items.
+
+Slots:
+
+- `summary`: Rich summary
+- `prefix`: Icon before the summary
+
+Events:
+
+- `sav-show · sav-hide`: On sav-details.
+
+Example — Exclusive:
+
+```html
+<sav-accordion exclusive>
+  <sav-details summary="What is SavComponents?" open>A set of web components that work in any page, with or without a framework.</sav-details>
+  <sav-details summary="Do I need a build step?">No: add one CSS file and one script.</sav-details>
+  <sav-details summary="Can I change the colours?">Yes, every colour, radius and size is a CSS custom property.</sav-details>
+</sav-accordion>
+```
+
+Example — Plain:
+
+```html
+<sav-accordion appearance="plain">
+  <sav-details summary="Shipping">Free over 50 €.</sav-details>
+  <sav-details summary="Returns">30 days to change your mind.</sav-details>
+</sav-accordion>
+```
+
+### Menu — `<sav-menu · sav-menu-item>`
+
+A menu that stays on the page, in several kinds: a list (a sidebar, a settings page), a bar across the top whose submenus drop down, and a rail of icons whose labels become tooltips and whose submenus fly out to the side — collapsible folds a list into a rail and back. Any item can hold a submenu; the current item is highlighted the way the style says. Same items as the dropdown, with arrow keys.
+
+Documentation: https://www.savcomponents.com/#menu
+
+Attributes:
+
+- `label` (string): Name for screen readers.
+- `appearance` (plain · card): 
+- `orientation` (vertical · horizontal): horizontal: a bar; its submenus drop down.
+- `collapsed` (boolean): A rail: icons only, the labels become tooltips, submenus fly out to the side.
+- `collapsible` (boolean): Adds the button that folds the list into a rail and back.
+- `selectable` (boolean): Marks the clicked item as current (also inside submenus).
+- `current · open · value · variant · type · disabled`: sav-menu-item; open shows its submenu.
+- `<sav-menu slot="submenu">` (child): Inside a sav-menu-item: its submenu (it can hold more).
+- `auto-text` (boolean): The current item is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours. Set it on the outer sav-menu: it reaches the submenus too.
+
+Events:
+
+- `sav-select`: detail.value, detail.item
+- `sav-toggle`: detail.item, detail.open (a submenu) · detail.collapsed (the rail)
+
+Example — Sidebar list:
+
+```html
+<sav-menu label="Account" appearance="card" selectable style="width: 15rem">
+  <sav-menu-label>Account</sav-menu-label>
+  <sav-menu-item value="profile" current><sav-icon slot="prefix" name="user"></sav-icon>Profile</sav-menu-item>
+  <sav-menu-item value="security"><sav-icon slot="prefix" name="lock"></sav-icon>Security</sav-menu-item>
+  <sav-menu-item value="billing"><sav-icon slot="prefix" name="credit-card"></sav-icon>Billing</sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item value="logout" variant="danger"><sav-icon slot="prefix" name="log-out"></sav-icon>Sign out</sav-menu-item>
+</sav-menu>
+```
+
+Example — Submenus that open in place:
+
+```html
+<sav-menu label="Documents" appearance="card" selectable style="width: 16rem">
+  <sav-menu-item value="home" current><sav-icon slot="prefix" name="home"></sav-icon>Home</sav-menu-item>
+  <sav-menu-item open><sav-icon slot="prefix" name="folder"></sav-icon>Projects
+    <sav-menu slot="submenu">
+      <sav-menu-item value="website">Website</sav-menu-item>
+      <sav-menu-item value="app">Phone app</sav-menu-item>
+      <sav-menu-item value="brand">Brand book</sav-menu-item>
+    </sav-menu>
+  </sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="users"></sav-icon>Team
+    <sav-menu slot="submenu">
+      <sav-menu-item value="people">People</sav-menu-item>
+      <sav-menu-item value="roles">Roles</sav-menu-item>
+    </sav-menu>
+  </sav-menu-item>
+  <sav-menu-item value="settings"><sav-icon slot="prefix" name="settings"></sav-icon>Settings</sav-menu-item>
+</sav-menu>
+```
+
+### Header — `<sav-header>`
+
+The top bar of a site or app: logo, links, search and actions (an avatar, buttons). When the header is too narrow for everything — its own width, so it works in any layout — the links fold behind a menu button and the search folds into a button that opens the field across the whole header, with an X to close it. The current link is highlighted like the breadcrumb: a tint, a leaning tile, an underline, an inked block or glass, by style.
+
+Documentation: https://www.savcomponents.com/#header
+
+Attributes:
+
+- `align` (start · center · end): Where the links sit in the free room between logo and actions.
+- `appearance` (bar · transparent · floating · plain): bar: a surface with a line under it (default); transparent: blurred; floating: a panel with a shadow (leans in Tilt); plain: no background.
+- `sticky` (boolean): Stays at the top while the page scrolls.
+- `breakpoint` (number): Below this width (px, of the header itself) the links fold behind a menu button. Without it they fold when everything no longer fits on one line.
+- `search-collapse` (auto · always · never): When the search becomes a button that opens the field across the header: when narrow (default), always, or never.
+- `menu-button` (start · end): Side of the menu button when narrow.
+- `label` (string): Name of the navigation (default “Main”).
+- `slot="logo" · slot="search" · slot="actions"`: The links go in the default slot; mark the current one with aria-current="page".
+- `--height · --padding · --search-width · --sav-header-bg` (CSS): Size, side padding, width of the open search, background.
+- `toggleMenu() · toggleSearch()` (method): Open or close the folded menu or search (pass true or false).
+- `auto-text` (boolean): The link of the current page (aria-current="page") is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.
+
+Events:
+
+- `sav-toggle`: detail.part (menu · search), detail.open
+
+Example — Logo, links, search and avatar:
+
+```html
+<sav-header>
+  <a slot="logo" href="#header"><img src="docs/logo.svg" width="28" height="28" alt="">Acme</a>
+  <a href="#header" aria-current="page">Home</a>
+  <a href="#header">Products</a>
+  <a href="#header">Pricing</a>
+  <a href="#header">About</a>
+  <sav-search slot="search" placeholder="Search" size="sm"></sav-search>
+  <sav-avatar slot="actions" initials="AL" label="Ada Lovelace" style="--size: 2rem"></sav-avatar>
+</sav-header>
+```
+
+Example — Links in the centre, floating, with buttons:
+
+```html
+<sav-header align="center" appearance="floating">
+  <a slot="logo" href="#header"><img src="docs/logo.svg" width="28" height="28" alt="">Acme</a>
+  <a href="#header" aria-current="page">Home</a>
+  <a href="#header">Products</a>
+  <a href="#header">Pricing</a>
+  <a href="#header">About</a>
+  <sav-button slot="actions" size="sm" appearance="ghost" variant="neutral">Sign in</sav-button>
+  <sav-button slot="actions" size="sm">Get started</sav-button>
+</sav-header>
+```
+
+### Bottom navigation — `<sav-bottom-nav · sav-bottom-nav-item>`
+
+The bar at the bottom of a phone app: 3–5 destinations with icon and label, a badge, the current one marked. With fixed it sticks to the bottom; with mobile-only it hides on wide screens.
+
+Documentation: https://www.savcomponents.com/#bottom-nav
+
+Attributes:
+
+- `fixed` (boolean): Sticks to the bottom of the window.
+- `mobile-only` (boolean): With fixed: hidden above 760px.
+- `label` (string): Name of the navigation.
+- `icon · label · href · badge · current · value`: sav-bottom-nav-item.
+
+Events:
+
+- `sav-select`: detail.value, detail.item
+
+Example — Four destinations:
+
+```html
+<sav-bottom-nav label="Main" style="width: 100%; max-width: 24rem">
+  <sav-bottom-nav-item icon="home" label="Home" current></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="search" label="Search"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="bell" label="Alerts" badge="3"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="user" label="Profile"></sav-bottom-nav-item>
+</sav-bottom-nav>
+```
+
+### Breadcrumb — `<sav-breadcrumb>`
+
+Shows where the page sits in the site. The current page (the last item) is highlighted the way the style says: a tint in Soft, a leaning tile in Tilt, an underline in Sharp, an inked block in Brutal, glass in Glass. Long paths can fold the middle behind “…”.
+
+Documentation: https://www.savcomponents.com/#breadcrumb
+
+Attributes:
+
+- `separator` (string): On the breadcrumb; default a chevron.
+- `appearance` (plain · contained): contained puts the path in a bar.
+- `max-items` (number): Longer paths show the first item, “…” (click to open) and the last ones.
+- `label` (string): Accessible name (default “Breadcrumb”).
+- `href` (url): On each item.
+- `--sav-breadcrumb-current-bg · -fg · -shadow` (CSS): How the current page is highlighted.
+- `auto-text` (boolean): The current page is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.
+
+Example — Basic:
+
+```html
+<sav-breadcrumb>
+  <sav-breadcrumb-item href="#breadcrumb"><sav-icon slot="prefix" name="home"></sav-icon>Home</sav-breadcrumb-item>
+  <sav-breadcrumb-item href="#breadcrumb">Projects</sav-breadcrumb-item>
+  <sav-breadcrumb-item>SavComponents</sav-breadcrumb-item>
+</sav-breadcrumb>
+<sav-breadcrumb separator="/">
+  <sav-breadcrumb-item href="#breadcrumb">Docs</sav-breadcrumb-item>
+  <sav-breadcrumb-item href="#breadcrumb">Components</sav-breadcrumb-item>
+  <sav-breadcrumb-item>Breadcrumb</sav-breadcrumb-item>
+</sav-breadcrumb>
+```
+
+Example — In a bar, long path folded:
+
+```html
+<sav-breadcrumb appearance="contained" max-items="3">
+  <sav-breadcrumb-item href="#breadcrumb"><sav-icon slot="prefix" name="home"></sav-icon>Home</sav-breadcrumb-item>
+  <sav-breadcrumb-item href="#breadcrumb">Shop</sav-breadcrumb-item>
+  <sav-breadcrumb-item href="#breadcrumb">Outdoor</sav-breadcrumb-item>
+  <sav-breadcrumb-item href="#breadcrumb">Backpacks</sav-breadcrumb-item>
+  <sav-breadcrumb-item>Hiking backpack 30 L</sav-breadcrumb-item>
+</sav-breadcrumb>
+```
+
+### Pagination — `<sav-pagination>`
+
+Page numbers for long lists and tables: always the first and the last, the pages around the current one and “…” in between, previous and next. The current page is highlighted like the breadcrumb, by style. Links (href="?page={page}") or buttons that fire sav-page.
+
+Documentation: https://www.savcomponents.com/#pagination
+
+Attributes:
+
+- `page` (number): The current page, from 1.
+- `pages` (number): How many pages; or give total and page-size.
+- `total · page-size` (number): Number of items and items per page (default 10).
+- `siblings` (number): Pages shown on each side of the current one (default 1).
+- `href` (string): Turns pages into links; {page} is replaced with the number.
+- `appearance` (numbers · simple): simple: only ‹ “3 of 12” ›.
+- `labels` (boolean): Writes Previous and Next next to the arrows.
+- `align` (start · center · end): 
+- `size` (sm · md · lg): 
+- `label` (string): Name of the navigation (default “Pages”).
+- `auto-text` (boolean): The number of the current page is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.
+
+CSS parts:
+
+- `b`: a
+- `p`: a
+- `p`: r
+- `n`: e
+- `s`: u
+
+Events:
+
+- `sav-page`: A page was chosen: detail.page, detail.previous. Cancel it to stay.
+- `change`: The page changed (buttons): detail.page.
+
+Example — Numbers, and simple:
+
+```html
+<sav-pagination pages="20" page="6"></sav-pagination>
+<sav-pagination pages="20" page="6" siblings="2" labels size="sm"></sav-pagination>
+<sav-pagination appearance="simple" pages="12" page="3"></sav-pagination>
+```
+
+Example — From the number of items, centred:
+
+```html
+<sav-pagination total="248" page-size="25" page="1" align="center" style="width: 100%"></sav-pagination>
+```
+
+### Steps — `<sav-steps · sav-step>`
+
+The steps of a task — sign-up, checkout, a set-up: the done ones with a tick and a coloured line, the current one marked, the next ones waiting. Across or down; with clickable people go back to a step already done. The markers take the shape and lean of the style.
+
+Documentation: https://www.savcomponents.com/#steps
+
+Attributes:
+
+- `current` (number): The step you are on, from 1 (steps before it are done; one past the last means all done).
+- `orientation` (horizontal · vertical): 
+- `clickable` (boolean): Steps already done can be clicked to go back.
+- `label` (string): Name of the list (default “Steps”).
+- `label · description · icon · status`: On sav-step; status="error" marks a step that went wrong.
+- `auto-text` (boolean): The number or tick of the done, current and failed steps is black or white, whichever is readable on its marker (WCAG AA, at least 4.5:1), also with your own colours.
+
+CSS parts:
+
+- `b`: a
+- `m`: a
+- `l`: a
+- `d`: e
+- `l`: i
+
+Events:
+
+- `sav-step`: A done step was clicked: detail.index (cancel it to stay).
+- `change`: The current step changed: detail.current.
+
+Methods:
+
+- `next() · previous()`: One step forward or back.
+- `current`: The current step (number).
+
+Example — Across:
+
+```html
+<sav-steps current="2" style="width: 100%">
+  <sav-step label="Account" description="Email and password"></sav-step>
+  <sav-step label="Profile" description="Name and photo"></sav-step>
+  <sav-step label="Plan" description="Free or Pro"></sav-step>
+  <sav-step label="Done"></sav-step>
+</sav-steps>
+```
+
+Example — Down, clickable, with icons and an error:
+
+```html
+<sav-steps orientation="vertical" current="3" clickable id="stepsDemo">
+  <sav-step label="Cart" icon="shopping-cart" description="3 items"></sav-step>
+  <sav-step label="Delivery" icon="truck" description="Click to go back here"></sav-step>
+  <sav-step label="Payment" icon="credit-card" status="error" description="The card was declined"></sav-step>
+  <sav-step label="Confirmation" icon="check"></sav-step>
+</sav-steps>
+<div class="row"><sav-button size="sm" appearance="outline" variant="neutral" onclick="document.getElementById('stepsDemo').previous()">Back</sav-button><sav-button size="sm" onclick="document.getElementById('stepsDemo').next()">Next</sav-button></div>
+```
+
+### Level path — `<sav-level-path · sav-level>`
+
+The map of a course, as in learning apps and games: levels on a winding line. The ones done are coloured, with a tick or their icon and their stars; the current one breathes and says what to do (Start); the next ones are locked. The nodes take the shape of the style: round, square, a leaning tile in Tilt. A heading, a divider or a card inside starts a new stretch, across the whole width.
+
+Documentation: https://www.savcomponents.com/#level-path
+
+Attributes:
+
+- `current` (number): The level the learner is on, from 1: the ones before it are done, the ones after it locked. One past the last: all done.
+- `open` (boolean): The levels after the current one are open (outlined) instead of locked.
+- `wave` (none · sm · md · lg · px): How far the line winds left and right (default md; it never leaves the width of the path).
+- `current-label` (string): The bubble over the current level (default “Start”; empty: no bubble).
+- `no-line` (boolean): No line between the levels.
+- `label` (string): Name of the path for screen readers (default “Levels”).
+- `label · icon · stars · milestone · status · variant · href · target · value`: On sav-level: its name; its icon (otherwise a tick when done, the number when not); stars from 0 to 3 (shown when the attribute is there); milestone makes it bigger; status (done · current · locked · open) overrides what current says; variant its colour; href makes it a link; value goes in the events.
+- `--sav-level-gap · --sav-level-label-bg · --size` (CSS): Space between the levels (default 1.7rem); the colour behind the names (default the page, so the line passes behind them); on sav-level, the size of the node.
+
+CSS parts:
+
+- `b`: a
+- `l`: i
+- `n`: o
+- `l`: a
+- `s`: t
+- `b`: u
+
+Events:
+
+- `sav-select`: A level that is not locked was chosen: detail.index (from 1), detail.value, detail.level.
+- `sav-locked`: A locked level was touched, to say why (finish the one before): detail.index, detail.level.
+
+Methods:
+
+- `current`: The current level (number).
+
+Example — A course:
+
+```html
+<sav-level-path current="4" label="HTML basics" style="max-width: 26rem; margin: auto">
+  <sav-level label="Tags" icon="code" stars="3"></sav-level>
+  <sav-level label="Text" icon="type" stars="3"></sav-level>
+  <sav-level label="Links" icon="link" stars="2"></sav-level>
+  <sav-level label="Images" icon="image"></sav-level>
+  <sav-level label="Lists" icon="list"></sav-level>
+  <sav-level label="Tables" icon="table"></sav-level>
+  <sav-level label="Final test" icon="trophy" milestone variant="warning"></sav-level>
+</sav-level-path>
+```
+
+Example — Units, and what a click does:
+
+```html
+<sav-level-path id="lp-units" current="3" current-label="Continue" label="Spanish for travellers (example)" style="max-width: 26rem; margin: auto">
+  <sav-heading level="3" size="5" eyebrow="Unit 1" marker>At the airport</sav-heading>
+  <sav-level label="Greetings" icon="hand" stars="3"></sav-level>
+  <sav-level label="Check-in" icon="plane" stars="1"></sav-level>
+  <sav-level label="Directions" icon="map-pin"></sav-level>
+  <sav-divider>Unit 2</sav-divider>
+  <sav-level label="At the hotel" icon="hotel"></sav-level>
+  <sav-level label="Ordering food" icon="utensils"></sav-level>
+  <sav-level label="Review" icon="dumbbell" variant="success" milestone></sav-level>
+</sav-level-path>
+<script>
+  const lp = document.getElementById('lp-units');
+  lp.addEventListener('sav-select', (e) => Sav.toast('Open “' + e.detail.level.getAttribute('label') + '” (example)'));
+  lp.addEventListener('sav-locked', () => Sav.toast('Finish the level before it first (example)', { variant: 'warning' }));
+</script>
+```
+
+### Tree — `<sav-tree · sav-tree-item>`
+
+Items inside items that open and close — folders and files, sections and pages. The arrow keys move, → opens or goes in, ← closes or goes to the parent, Enter chooses. The chosen item is highlighted like the current page of the breadcrumb.
+
+Documentation: https://www.savcomponents.com/#tree
+
+Attributes:
+
+- `label` (string): Name of the tree for screen readers.
+- `selectable` (boolean): Items with children can be chosen too (otherwise a click opens or closes them).
+- `label · value · icon · icon-open · expanded · selected · disabled`: On sav-tree-item; icon-open is the icon while it is open (an open folder).
+- `auto-text` (boolean): The selected item is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.
+
+CSS parts:
+
+- `b`: a
+- `i`: t
+- `t`: o
+- `i`: c
+- `l`: a
+- `c`: h
+
+Events:
+
+- `sav-select`: An item was chosen: detail.value, detail.item.
+- `sav-toggle`: An item opened or closed: detail.item, detail.expanded.
+
+Example — Folders and files:
+
+```html
+<sav-tree label="Project files" style="width: 18rem">
+  <sav-tree-item label="src" icon="folder" icon-open="folder-open" expanded>
+    <sav-tree-item label="components" icon="folder" icon-open="folder-open">
+      <sav-tree-item label="button.js" icon="file-code"></sav-tree-item>
+      <sav-tree-item label="card.js" icon="file-code"></sav-tree-item>
+    </sav-tree-item>
+    <sav-tree-item label="index.html" icon="file-code" selected></sav-tree-item>
+    <sav-tree-item label="styles.css" icon="file-code"></sav-tree-item>
+  </sav-tree-item>
+  <sav-tree-item label="images" icon="folder" icon-open="folder-open">
+    <sav-tree-item label="logo.svg" icon="image"></sav-tree-item>
+  </sav-tree-item>
+  <sav-tree-item label="README.md" icon="file-text"></sav-tree-item>
+  <sav-tree-item label="secret.env" icon="lock" disabled></sav-tree-item>
+</sav-tree>
+```
+
+Example — Sections you can choose too (selectable):
+
+```html
+<sav-tree selectable label="Settings" style="width: 16rem">
+  <sav-tree-item label="Account" expanded><sav-tree-item label="Profile"></sav-tree-item><sav-tree-item label="Security"></sav-tree-item></sav-tree-item>
+  <sav-tree-item label="Notifications"><sav-tree-item label="Email"></sav-tree-item><sav-tree-item label="Phone"></sav-tree-item></sav-tree-item>
+</sav-tree>
+```
+
+### Infinite scroll — `<sav-infinite-scroll>`
+
+Loads more as you reach the end of a list. When the end comes near it fires sav-load; you add the items and call done() — or done(false) when there is nothing more, or fail() on an error. Meanwhile a spinner (the style’s own), at the end a line, on an error “Try again”. It watches the page, or itself when it scrolls; mode="button" waits for a “Load more” button instead.
+
+Documentation: https://www.savcomponents.com/#infinite-scroll
+
+Attributes:
+
+- `mode` (auto · button): auto loads by itself near the end (default); button waits for “Load more”.
+- `threshold` (number): How many pixels before the end it starts loading (default 300).
+- `loading-label · more-label · end-label · error-label` (string): The texts: “Loading…”, “Load more”, “That’s all”, “It did not load.”
+- `retry-label` (string): The text of the Try again button (default "Try again").
+
+CSS parts:
+
+- `b`: a
+- `f`: o
+- `l`: o
+- `m`: o
+- `e`: r
+- `e`: n
+
+Events:
+
+- `sav-load`: Time to load more: detail.page (1, 2, 3…). Add the items, then call done() or fail().
+
+Methods:
+
+- `done(more = true)`: The items are in; false when there is nothing more.
+- `fail()`: Loading failed: shows “Try again”.
+- `reset()`: Starts again from page 0 (a new search).
+- `load()`: Loads the next page now.
+- `page · loading`: Pages loaded so far; true while loading.
+
+Example — In a box that scrolls:
+
+```html
+<sav-infinite-scroll id="feedDemo" end-label="You have seen every post" style="display: block; width: 100%; max-height: 18rem; overflow: auto; padding: .25rem">
+  <sav-card>Post 1</sav-card><sav-card>Post 2</sav-card><sav-card>Post 3</sav-card>
+</sav-infinite-scroll>
+<script>
+  {
+    const feed = document.getElementById('feedDemo');
+    // a pretend server: 3 more posts each time, 4 pages in all
+    feed.addEventListener('sav-load', (e) => {
+      setTimeout(() => {
+        const start = feed.children.length;
+        for (let i = 1; i <= 3; i++) feed.insertAdjacentHTML('beforeend', '<sav-card>Post ' + (start + i) + '</sav-card>');
+        feed.done(e.detail.page < 4);
+      }, 700);
+    });
+  }
+</script>
+```
+
+Example — With a button, and an error:
+
+```html
+<sav-infinite-scroll id="moreDemo" mode="button" more-label="Show more products" style="width: 100%">
+  <sav-list><sav-list-item>Backpack</sav-list-item><sav-list-item>Tent</sav-list-item></sav-list>
+</sav-infinite-scroll>
+<script>
+  {
+    const more = document.getElementById('moreDemo');
+    let tries = 0;
+    more.addEventListener('sav-load', () => {
+      setTimeout(() => {
+        // the second time it fails, to show "Try again"
+        if (++tries === 2) { more.fail(); return; }
+        more.querySelector('sav-list').insertAdjacentHTML('beforeend', '<sav-list-item>Sleeping bag</sav-list-item><sav-list-item>Stove</sav-list-item>');
+        more.done(tries < 4);
+      }, 600);
+    });
+  }
+</script>
+```
+
+## Charts
+
+### Bar chart — `<sav-chart-bar>`
+
+Bars, vertical or horizontal, one series or several side by side, or stacked; spacing, values on the bars, a hover tooltip and a hidden table for screen readers. Colours come from --sav-chart-1…8.
+
+Documentation: https://www.savcomponents.com/#chart-bar
+
+Attributes:
+
+- `data` (JSON): { labels: [...], series: [{ name, values: [...], color? }] } — or set the .data property.
+- `orientation` (vertical · horizontal): 
+- `stacked` (boolean): Series on top of each other.
+- `gap` (0 – 0.9): Space between groups (default 0.3).
+- `show-values` (boolean): Numbers on the bars.
+- `max` (number): Top of the scale (default: rounded up from the data).
+- `label` (string): What the chart shows (screen readers).
+- `height` (px): 
+- `no-legend` (boolean): 
+
+Example — Grouped, vertical:
+
+```html
+<sav-chart-bar label="Sales per quarter" show-values style="width: 100%" data='{"labels":["Q1","Q2","Q3","Q4"],"series":[{"name":"2025","values":[12,19,15,24]},{"name":"2026","values":[16,22,21,30]}]}'></sav-chart-bar>
+```
+
+Example — Stacked, horizontal:
+
+```html
+<sav-chart-bar label="Time per task" orientation="horizontal" stacked gap="0.45" show-values style="width: 100%" data='{"labels":["Design","Build","Test"],"series":[{"name":"Ada","values":[6,10,3]},{"name":"Alan","values":[2,12,5]},{"name":"Grace","values":[4,6,8]}]}'></sav-chart-bar>
+```
+
+### Pie chart — `<sav-chart-pie>`
+
+A pie or a donut: gaps between slices, percentages, a text in the centre of the donut.
+
+Documentation: https://www.savcomponents.com/#chart-pie
+
+Attributes:
+
+- `data` (JSON): { labels: [...], values: [...] }
+- `type` (pie · donut): 
+- `thickness` (px): Width of the donut ring.
+- `gap` (degrees): Space between slices, as the angle it takes at the edge (default 1.2; 0 for none). The space is equally wide all the way to the centre.
+- `show-values` (boolean): Percentages on the slices.
+- `center` (string): Text in the middle of the donut.
+- `height` (px): Size (default 260).
+- `label` (string): The name of the chart (screen readers, and the table under it).
+
+Example — Pie and donut:
+
+```html
+<sav-chart-pie label="Traffic sources" show-values style="width: 16rem" data='{"labels":["Search","Social","Direct","Email"],"values":[48,22,18,12]}'></sav-chart-pie>
+<sav-chart-pie label="Storage" type="donut" center="72%" gap="2" style="width: 16rem" data='{"labels":["Photos","Videos","Free"],"values":[40,32,28]}'></sav-chart-pie>
+```
+
+### Radar chart — `<sav-chart-radar>`
+
+A spider web: one axis per label, one shape per series — to compare profiles on several qualities at once.
+
+Documentation: https://www.savcomponents.com/#chart-radar
+
+Attributes:
+
+- `data` (JSON): { labels: [axes], series: [{ name, values }] }
+- `max` (number): 
+- `levels` (number): Rings of the web (default 4).
+- `no-fill` (boolean): Lines only.
+- `height` (px): Size (default 320).
+- `label` (string): The name of the chart (screen readers, and the table under it).
+
+Example — Two profiles:
+
+```html
+<sav-chart-radar label="Skills" max="10" style="width: 22rem" data='{"labels":["Speed","Design","Code","Tests","Docs","Support"],"series":[{"name":"Team A","values":[8,6,9,5,7,6]},{"name":"Team B","values":[5,9,6,8,6,9]}]}'></sav-chart-radar>
+```
+
+### Area and line chart — `<sav-chart-line>`
+
+Values over time as a filled area or a line only: smooth curves, points, stacked areas.
+
+Documentation: https://www.savcomponents.com/#chart-line
+
+Attributes:
+
+- `data` (JSON): { labels: [...], series: [{ name, values }] }
+- `type` (area · line): Default area.
+- `smooth` (boolean): Curves instead of straight segments.
+- `points` (boolean): A dot on every value.
+- `stacked` (boolean): Areas on top of each other.
+- `max · height`: 
+- `label` (string): The name of the chart (screen readers, and the table under it).
+- `min` (number): The lowest value of the axis (default 0).
+
+Example — Area, smooth:
+
+```html
+<sav-chart-line label="Visitors" smooth style="width: 100%" data='{"labels":["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],"series":[{"name":"This week","values":[120,180,150,210,260,190,240]},{"name":"Last week","values":[100,140,160,150,200,170,180]}]}'></sav-chart-line>
+```
+
+Example — Lines with points:
+
+```html
+<sav-chart-line label="Temperature" type="line" points style="width: 100%" data='{"labels":["Jan","Feb","Mar","Apr","May","Jun"],"series":[{"name":"Rome","values":[8,9,12,15,19,24]},{"name":"Oslo","values":[-4,-3,1,5,11,15]}]}'></sav-chart-line>
+```
+
+### Activity chart — `<sav-chart-activity>`
+
+A calendar heatmap: one column per week, a square per day, darker when the value (1–100) is higher. Good for streaks, contributions, workouts.
+
+Documentation: https://www.savcomponents.com/#chart-activity
+
+Attributes:
+
+- `data` (JSON): { '2026-11-16': 40, … } or [{ date, value }] — values 0–100.
+- `start · end` (YYYY-MM-DD): Period (default: the last 12 months).
+- `levels` (number): Colour steps (default 5).
+- `week-start` (0 · 1): Sunday or Monday (default 1).
+- `locale` (string): Month and day names.
+- `label` (string): The name of the chart (screen readers, and the table under it).
+
+Example — The last twelve months:
+
+```html
+<sav-chart-activity id="act-demo" label="Workouts" style="width: 100%"></sav-chart-activity>
+<script>
+  // data: { 'YYYY-MM-DD': value 0–100 } (or [{ date, value }]); here random values for the example
+  const days = {};
+  for (let i = 0; i < 365; i++) { const d = new Date(); d.setDate(d.getDate() - i); if (Math.random() > 0.45) days[d.toISOString().slice(0, 10)] = Math.round(Math.random() * 100); }
+  document.getElementById('act-demo').data = days;
+</script>
+```
+
+### Map chart — `<sav-chart-map>`
+
+The world coloured by value (a choropleth), or with some countries highlighted; it can zoom on one or more countries. Countries are named in the page language; a click tells which one.
+
+Documentation: https://www.savcomponents.com/#chart-map
+
+Attributes:
+
+- `by` (country · continent): continent: data and highlight name continents ({"europe": 40, "north-america": 25}) and each continent is one area, with one colour, one name and one value (default country).
+- `region` (world · europe · africa · asia · north-america · south-america · oceania · antarctica): The continent to show: the map frames it and dims the rest of the world (default world).
+- `data` (JSON): { "IT": 40, "FRA": 12 } — alpha-2 or alpha-3 keys.
+- `highlight` (list): Countries filled with the main colour (without values).
+- `focus` (list): Zoom on these countries.
+- `levels` (number): Colour steps (default 5).
+- `antarctica` (boolean): Show Antarctica (hidden by default).
+- `locale` (string): Language of the country names.
+- `max · height · label`: 
+
+Events:
+
+- `sav-country`: A country was clicked. detail.code, detail.value
+
+Example — By continent:
+
+```html
+<sav-chart-map region="europe" label="Visitors in Europe" data='{"IT":420,"FR":310,"DE":280,"ES":190,"GB":240,"PL":90,"SE":60,"PT":75}' style="width: 100%"></sav-chart-map>
+<sav-chart-map by="continent" label="Sales by continent" data='{"europe":320,"north-america":280,"asia":210,"south-america":90,"africa":40,"oceania":60}' style="width: 100%; margin-top: 1rem"></sav-chart-map>
+<sav-chart-map by="continent" highlight="europe" label="Where we ship" style="width: 100%; margin-top: 1rem"></sav-chart-map>
+<sav-chart-map region="south-america" highlight="BR AR CL" label="Offices" style="width: 100%; margin-top: 1rem"></sav-chart-map>
+```
+
+Example — Values by country:
+
+```html
+<sav-chart-map label="Visitors by country" style="width: 100%" data='{"US":420,"BR":180,"IT":160,"DE":150,"FR":120,"GB":110,"IN":240,"JP":90,"AU":60,"CA":80,"ZA":30,"MX":70,"ES":65}'></sav-chart-map>
+```
+
+## Sections
+
+### Showcase — `<sav-showcase>`
+
+A section for a product page: screenshots on one side — one or two desktops, one to three phones, or a desktop with phones — and label, title, text and buttons on the other. The buttons here are only examples: on your page they link where you want.
+
+Documentation: https://www.savcomponents.com/#showcase
+
+Attributes:
+
+- `desktop` (url(s)): One or two desktop screenshots, separated by spaces.
+- `mobile` (url(s)): One to three phone screenshots, separated by spaces.
+- `desktop-alt · mobile-alt` (string): What each screenshot shows, separated by |.
+- `eyebrow · heading · text` (string): Label, title, paragraph.
+- `reverse` (boolean): Screenshots on the right.
+
+Slots:
+
+- `(default)`: More content under the text.
+- `actions`: Buttons (give them an href to link somewhere).
+
+Example — Desktop and phone:
+
+```html
+<sav-showcase desktop="docs/media/poster.jpg" mobile="docs/sample.svg" desktop-alt="The app on a computer" mobile-alt="The app on a phone"
+  eyebrow="New" heading="Your documents, everywhere" text="Open, sign and share PDFs from the browser or your phone. Lorem ipsum dolor sit amet, consectetur adipiscing elit.">
+  <sav-button slot="actions">Try it free</sav-button>
+  <sav-button slot="actions" appearance="outline" variant="neutral">Learn more</sav-button>
+</sav-showcase>
+```
+
+Example — One phone, two phones, three phones:
+
+```html
+<sav-showcase mobile="docs/sample.svg" heading="One phone" text="Lorem ipsum dolor sit amet."><sav-button slot="actions">Get the app</sav-button></sav-showcase>
+<sav-showcase reverse mobile="docs/sample.svg docs/media/poster.jpg" heading="Two phones" text="Consectetur adipiscing elit, sed do eiusmod."><sav-button slot="actions">Get the app</sav-button></sav-showcase>
+<sav-showcase mobile="docs/media/poster.jpg docs/sample.svg docs/media/poster.jpg" heading="Three phones" text="Ut enim ad minim veniam, quis nostrud."><sav-button slot="actions">Get the app</sav-button></sav-showcase>
+```
+
