@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.2.0 — web components, no dependencies
+ * SavComponents v1.2.1 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.2.0' });
+  const Sav = (window.Sav = { version: '1.2.1' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -4165,6 +4165,8 @@
     onContext(e) {
       if (e.__savContext) return; // a context menu inside this area already answered (or let the browser's menu show)
       if (e.composedPath().includes(this.menu)) { e.preventDefault(); return; }
+      // something inside the area already answered the right click (a menu of its own, a canvas that uses it): nothing here
+      if (e.defaultPrevented) return;
       if (this.disabled || this.inField(e)) return;
       e.__savContext = true;
       // the menu key and Shift F10 open it under the focused element instead of at the pointer

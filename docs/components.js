@@ -1135,7 +1135,7 @@ window.SAVC_DOCS = [
   {
     builtFrom: ['dropdown', 'menu'],
     id: 'context-menu', name: 'Context menu', tag: 'sav-context-menu · sav-menu-item', group: 'Overlays', icon: 'mouse-right',
-    desc: 'Your own menu for the right click on an area of the page, instead of the browser’s. It also opens with a long press on phones and tablets, and with the menu key or Shift F10 on the focused area. It opens at the pointer and turns to another corner near the edges of the window; items can hold submenus that fly out to the side. Same items as the dropdown; in text fields the browser’s menu stays, for copy and paste. Opened with the pointer it leaves the focus where it was, so a text field keeps its caret.',
+    desc: 'Your own menu for the right click on an area of the page, instead of the browser’s. It also opens with a long press on phones and tablets, and with the menu key or Shift F10 on the focused area. It opens at the pointer and turns to another corner near the edges of the window; items can hold submenus that fly out to the side. Same items as the dropdown; in text fields the browser’s menu stays, for copy and paste, and an element inside the area that answers the right click itself (preventDefault) keeps it. Opened with the pointer it leaves the focus where it was, so a text field keeps its caret.',
     notice: { variant: 'neutral', heading: 'Not the only way', text: 'Many people never right-click, and on touch screens a long press is hard to guess: put the same actions somewhere visible too (a button, a dropdown).' },
     demos: [{ title: 'Right click on an area', html: `<sav-context-menu id="demo-ctx" label="Photo">
   <sav-card slot="target" tabindex="0" style="flex: 1 1 100%; text-align: center; cursor: context-menu">

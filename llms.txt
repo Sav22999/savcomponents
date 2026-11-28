@@ -5,13 +5,13 @@
 ## Use it on any site
 
 ```html
-<link rel="stylesheet" href="https://www.savcomponents.com/v/1.2.0/sav.css">
-<script src="https://www.savcomponents.com/v/1.2.0/sav.js" defer></script>
+<link rel="stylesheet" href="https://www.savcomponents.com/v/1.2.1/sav.css">
+<script src="https://www.savcomponents.com/v/1.2.1/sav.js" defer></script>
 
 <sav-button>Hello</sav-button>
 ```
 
-- The address contains the version (1.2.0 is the latest): a site keeps working the same way when a newer release comes out.
+- The address contains the version (1.2.1 is the latest): a site keeps working the same way when a newer release comes out.
 - Styles: add a class to <html>: sav-style-tilt, sav-style-sharp, sav-style-brutal or sav-style-glass (Soft is the default). Modes: sav-theme-light, sav-theme-dark or sav-theme-auto.
 - Theming: override CSS custom properties such as --sav-color-primary, --sav-color-bg, --sav-radius, --sav-font after sav.css; the customiser on the site exports them, and a theme saved with an account has its own link (/theme/<id>.css).
 - Languages: the words the components write follow <html lang>; add one with Sav.addStrings(lang, {English: translation}).

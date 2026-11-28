@@ -2,6 +2,13 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.2.1 — 2026-11-28
+
+- Context menu: a right click that something inside the area already answered (`preventDefault()` in its own `contextmenu`
+  listener: a menu of its own, a canvas or a drawing surface that uses the right button) no longer opens it as well. Before, a
+  context menu on a large area (the whole page) opened on top of the menus of the elements inside it. A context menu nested in
+  the area still wins over the outer one, as before.
+
 ## 1.2.0 — 2026-11-28
 
 - New component: context menu (`sav-context-menu`). Your own menu for the right click on an area of the page, instead of the
