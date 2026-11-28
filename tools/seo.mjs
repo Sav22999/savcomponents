@@ -16,14 +16,19 @@ const ctx = { window: {} };
 vm.runInNewContext(read('docs/components.js'), ctx);
 const docs = ctx.window.SAVC_DOCS;
 const version = read('dist/sav.js').match(/version:\s*'([\d.]+)'/)[1];
+// Subresource Integrity: the hashes frozen next to the release (tools/release.sh writes v/<version>/integrity.json).
+// A version without that file (none should be left) degrades to a snippet with no integrity attributes.
+let sri = {};
+try { sri = JSON.parse(read(`v/${version}/integrity.json`)); } catch {}
+const sriAttr = (file) => sri[file] ? ` integrity="${sri[file]}" crossorigin="anonymous"` : '';
 const plain = (s) => String(s ?? '').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const groups = [...new Set(docs.map((d) => d.group))];
 const today = new Date().toISOString().slice(0, 10);
 
 const intro = `SavComponents (www.savcomponents.com) is a free, open-source (MIT) library of ${docs.length} web components for websites and web apps, by Saverio Morelli: buttons, fields, pickers, dialogs, tabs, tables, charts and more, written as plain HTML tags (<sav-button>, <sav-input>, <sav-dialog>…). No framework and no build step: one stylesheet and one script. Themes with CSS custom properties, light and dark modes and five styles (Soft, Tilt, Sharp, Brutal, Glass). Accessible (keyboard, screen readers), English and Italian built in.`;
-const install = `<link rel="stylesheet" href="${SITE}/v/${version}/sav.css">
-<script src="${SITE}/v/${version}/sav.js" defer></script>
+const install = `<link rel="stylesheet" href="${SITE}/v/${version}/sav.css"${sriAttr('sav.css')}>
+<script src="${SITE}/v/${version}/sav.js" defer${sriAttr('sav.js')}></script>
 
 <sav-button>Hello</sav-button>`;
 const notes = [

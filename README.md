@@ -8,8 +8,8 @@ No framework, no build step. Themes with CSS custom properties and five styles (
 ## Use it on any site
 
 ```html
-<link rel="stylesheet" href="https://savcomponents.com/v/1.1.0/sav.css">
-<script src="https://savcomponents.com/v/1.1.0/sav.js" defer></script>
+<link rel="stylesheet" href="https://savcomponents.com/v/1.1.0/sav.css" integrity="sha384-pt0AHUMfNDeqKV0Bdm+e6o19cPUqUmtm7auPVwRztez8ERTTRSVBDR8D4+S4nt5Z" crossorigin="anonymous">
+<script src="https://savcomponents.com/v/1.1.0/sav.js" defer integrity="sha384-e6Pq6geE2aEutVCbHSCv3lAb34vVI4+oV8jn6wyIwvGCWa3wrgTNxRpOHE9Cjp6K" crossorigin="anonymous"></script>
 
 <sav-button>Hello</sav-button>
 ```

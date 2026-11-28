@@ -21,6 +21,16 @@
   /** The address of the current page with another release (the newest has no ?v). */
   const verUrl = (v) => { const u = new URL(location.href); if (v === LATEST) u.searchParams.delete('v'); else u.searchParams.set('v', v); return u.href; };
   const LIB_URL = `${PUBLIC_URL}/v/${Sav.version}`; // a fixed version: a new release never changes a site that uses this one
+  /* Subresource Integrity for the copy-paste snippet: the hashes frozen next to the release (v/<version>/integrity.json).
+     Fetched once; until it arrives (or for an old release without the file) the snippet simply shows no integrity. */
+  let SRI = null; // { 'sav.js': 'sha384-…', 'sav.css': 'sha384-…' }
+  const sriAttr = (file) => (SRI && SRI[file] ? ` integrity="${SRI[file]}" crossorigin="anonymous"` : '');
+  fetch(`${LIB_URL}/integrity.json`).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    if (!j || !j['sav.js'] || !j['sav.css']) return;
+    SRI = j;
+    const [id] = hashParts(); // re-render the open page if it shows the snippet, so the integrity fills in
+    if (id === 'start' || window.SavBuilder?.pages?.[id]) route();
+  }).catch(() => {});
   const slug = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const titleCase = (n) => { const t = String(n).replace(/-/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1); };
   const plain = (html) => String(html || '').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').trim();
@@ -133,7 +143,7 @@
   function pageStart() {
     return `<div class="doc-head"><sav-label class="eyebrow">Start</sav-label><h1>Getting started</h1><p class="lead">Two files, then use the tags anywhere in your HTML.</p></div>
     <h2>1. Add the files</h2>
-    ${codeBlock(`<link rel="stylesheet" href="${LIB_URL}/sav.css">\n<script src="${LIB_URL}/sav.js" defer></script>`)}
+    ${codeBlock(`<link rel="stylesheet" href="${LIB_URL}/sav.css"${sriAttr('sav.css')}>\n<script src="${LIB_URL}/sav.js" defer${sriAttr('sav.js')}></script>`)}
     <p>Works on any domain. The address contains the version (<code>${Sav.version}</code>): a page that uses it keeps working the same way when a newer release comes out. Move to a new version by changing the number, after checking the changelog.</p>
     <p>You can also download <a href="dist/sav.css" download>sav.css</a> and <a href="dist/sav.js" download>sav.js</a> and host them yourself.</p>
     <h2>2. Use the components</h2>
@@ -1041,7 +1051,7 @@ input.addEventListener('change', () => console.log(input.value));`, 'ts')}
   window.SavDocs = {
     clampKnob,
     docs: DOCS, icon: ICON, esc, codeBlock, footer: () => footer(), route: () => route(),
-    playMarkup, knobsFor, richField, dataEditor, wireData, keysJoin, keysField, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, store, hashParts,
+    playMarkup, knobsFor, richField, dataEditor, wireData, keysJoin, keysField, applyDeps, multiValue, multiAttrs, multiAttr, knobLabel, jsonOk, plain, titleCase, slug, libUrl: LIB_URL, sriAttr, store, hashParts,
     themeConfig: () => ({ style: store.get('savc-style', 'tilt'), mode: store.get('savc-mode', 'auto'), tokens: themeTokens(), settings: { ...theme } }),
     applyThemeConfig(cfg) {
       theme = { ...(cfg.settings || {}) };
