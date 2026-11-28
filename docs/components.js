@@ -135,7 +135,7 @@ window.SAVC_DOCS = [
   },
   {
     id: 'toast', name: 'Toast', tag: 'Sav.toast()', group: 'Feedback', icon: 'message-square',
-    desc: 'Short notifications that stack in a corner and close themselves. Hovering pauses the timer.',
+    desc: 'Short notifications that stack in a corner and close themselves. Hovering pauses the timer. On phones they go across the bottom (or the top) of the screen, clear of the notch and the home bar, three at most at a time; touching one pauses it and a swipe to the side closes it.',
     demos: [
       { title: 'JavaScript API', html: `<sav-button onclick="Sav.toast('Changes saved', {variant: 'success'})">Success</sav-button>
 <sav-button appearance="soft" onclick="Sav.toast('Message sent to 3 people', {heading: 'Sent', icon: 'mail'})">With heading</sav-button>
@@ -362,13 +362,16 @@ window.SAVC_DOCS = [
   <sav-color-picker name="accent" label="Accent" required clearable></sav-color-picker>
   <sav-button type="submit">Save</sav-button>
 </form>` },
+      { title: 'On phones', html: `<sav-color-picker label="Sheet from the bottom" sheet-on-mobile picker="custom" value="#8b5cf6" swatches="#ef4444,#f59e0b,#22c55e,#3b82f6,#8b5cf6" style="max-width: 18rem"></sav-color-picker>
+<sav-color-picker label="Panel under the field" picker="custom" value="#8b5cf6" style="max-width: 18rem"></sav-color-picker>` },
     ],
     attrs: [['value', 'string', 'A colour in hex: #rrggbb or #rgb (with alpha also #rrggbbaa or #rgba).'], ['picker', 'auto · custom · native', 'auto: the library’s colour panel where the browser offers all of it, eyedropper included (Chrome, Edge), the system picker elsewhere (Safari, Firefox) — the default; custom: always the panel, in the style of the page; native: always the system colour picker of the browser or the operating system.'], ['alpha', 'boolean', 'An opacity slider in the panel; the value then ends with two more digits when the colour is see-through (#3b82f680).'], ['label · help · placeholder', 'string', ''], ['swatches', 'string', 'Suggested colours, separated by commas: #ef4444,#22c55e…'],
       ['clearable', 'boolean', 'A button to leave it empty (no colour).'], ['compact', 'boolean', 'Only the swatch: a small square that opens the picker.'],
+      ['sheet-on-mobile', 'boolean', 'On screens up to 640px the panel rises from the bottom, full width: a bigger area, sliders and buttons for a finger, the name of the field and Done; drag the handle down or tap outside to close it.'],
       ['size', 'sm · md · lg', ''], ['name · disabled · readonly · required', '', 'Like any form field.']],
     events: [['input', 'While the colour changes (dragging in the panel or the picker, typing a valid code): detail.value.'], ['change', 'The colour is chosen (a drag or a key in the panel ends, the panel closes, a code is typed): detail.value ("" when cleared).'], ['sav-show · sav-hide', 'The panel opened (cancelable) or closed.']],
     methods: [['value', 'The colour, "#rrggbb" or "".'], ['open() · close()', 'Opens or closes the colour panel (with picker="native", open() opens the system picker, and only from a click or a key, as browsers require).'], ['focus()', '']],
-    parts: ['form-control', 'label', 'base', 'swatch', 'input', 'clear-button', 'swatches', 'help-text'],
+    parts: ['form-control', 'label', 'base', 'swatch', 'input', 'clear-button', 'swatches', 'help-text', 'panel', 'sheet-header'],
   },
   {
     id: 'textarea', name: 'Textarea', play: { tag: 'sav-textarea', attrs: { label: 'Message' } }, tag: 'sav-textarea', group: 'Forms', icon: 'letter-text',
@@ -405,6 +408,9 @@ window.SAVC_DOCS = [
       { title: 'On phones', html: `<sav-select label="Sheet from the bottom" sheet-on-mobile placeholder="Try it at phone width">
   <option>Small</option><option>Medium</option><option>Large</option>
 </sav-select>
+<sav-select label="List under the field" placeholder="As on wide screens">
+  <option>Small</option><option>Medium</option><option>Large</option>
+</sav-select>
 <sav-select label="The phone's own picker" native-on-mobile placeholder="Native on phones">
   <option>Small</option><option>Medium</option><option>Large</option>
 </sav-select>` },
@@ -424,9 +430,11 @@ window.SAVC_DOCS = [
 <sav-date-picker label="Month" mode="month" placeholder="Pick a month"></sav-date-picker>
 <sav-date-picker label="Year" mode="year" placeholder="Pick a year" value="2026"></sav-date-picker>
 <sav-date-picker label="Day and time" mode="datetime" placeholder="Pick a moment" value="2026-11-16T10:30"></sav-date-picker>` },
-      { title: 'Limits, language, phones', html: `<sav-date-picker label="Check-in" min="2026-11-16" max="2027-03-31" help="From today to the end of March." clearable sheet-on-mobile></sav-date-picker>
-<sav-date-picker label="Data (italiano)" locale="it-IT" value="2026-12-25" format="full"></sav-date-picker>
-<sav-date-picker label="Native picker on phones" native-on-mobile></sav-date-picker>` },
+      { title: 'Limits, language', html: `<sav-date-picker label="Check-in" min="2026-11-16" max="2027-03-31" help="From today to the end of March." clearable sheet-on-mobile></sav-date-picker>
+<sav-date-picker label="Data (italiano)" locale="it-IT" value="2026-12-25" format="full"></sav-date-picker>` },
+      { title: 'On phones', html: `<sav-date-picker label="Sheet from the bottom" sheet-on-mobile placeholder="Try it at phone width"></sav-date-picker>
+<sav-date-picker label="Calendar under the field" placeholder="As on wide screens"></sav-date-picker>
+<sav-date-picker label="The phone's own picker" native-on-mobile placeholder="Native on phones"></sav-date-picker>` },
     ],
     attrs: [['mode', 'date · month · year · datetime', 'What to pick. Values: 2026-11-16, 2026-11, 2026, 2026-11-16T10:30. datetime shows the time (hours and minutes) under the calendar: a day keeps the panel open, Done closes it, Now picks this moment.'], ['value · min · max', 'ISO date', 'Same format as the mode (min and max of a datetime limit the days).'], ['label · help · placeholder', 'string', ''],
       ['locale', 'string', 'Language of names and the first day of the week; default the page language.'], ['first-day', 'number', '0 = Sunday, 1 = Monday…'], ['format', 'short · medium · long · full', 'How the chosen date is written.'],
@@ -441,6 +449,9 @@ window.SAVC_DOCS = [
 <sav-time-picker label="Every 15 minutes" step="15" placeholder="Pick a time" sheet-on-mobile></sav-time-picker>
 <sav-time-picker label="12 hours" hour-cycle="12" value="18:45"></sav-time-picker>
 <sav-time-picker label="Office hours" min="08:00" max="18:00" native-on-mobile help="From 8 to 18."></sav-time-picker>` },
+      { title: 'On phones', html: `<sav-time-picker label="Sheet from the bottom" sheet-on-mobile placeholder="Try it at phone width"></sav-time-picker>
+<sav-time-picker label="Columns under the field" placeholder="As on wide screens"></sav-time-picker>
+<sav-time-picker label="The phone's own picker" native-on-mobile placeholder="Native on phones"></sav-time-picker>` },
     ],
     attrs: [['value · min · max', 'HH:MM', '24-hour time.'], ['step', 'number', 'Minutes between choices, default 5.'], ['hour-cycle', '12 · 24', 'Default from the language.'], ['locale', 'string', ''],
       ['label · help · placeholder', 'string', ''], ['clearable', 'boolean', ''], ['sheet-on-mobile · native-on-mobile · native', 'boolean', 'How it opens on phones.'], ['size', 'sm · md · lg', ''], ['name · required · disabled · readonly', '', 'Form behaviour.'], ['auto-text', 'boolean', 'The chosen time is black or white, whichever is readable on its highlight (WCAG AA, at least 4.5:1), also with your own colours.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the list opens, when there is room.']],
@@ -622,6 +633,8 @@ window.SAVC_DOCS = [
       { title: 'One language', html: `<sav-language-choice label="Language" value="en-GB" style="max-width: 20rem"></sav-language-choice>` },
       { title: 'Several, native names, without codes', html: `<sav-language-choice label="Languages you speak" multiple native-names no-code value="it-IT,en-US" style="max-width: 24rem"></sav-language-choice>
 <sav-language-choice label="Only some" include="it-IT,en-GB,en-US,fr-FR,de-DE,es-ES" no-flag value="it-IT" style="max-width: 16rem"></sav-language-choice>` },
+      { title: 'On phones', html: `<sav-language-choice label="Sheet from the bottom" sheet-on-mobile placeholder="Try it at phone width" style="max-width: 20rem"></sav-language-choice>
+<sav-language-choice label="List under the field" placeholder="As on wide screens" style="max-width: 20rem"></sav-language-choice>` },
     ],
     attrs: [['value', 'tag · list', 'BCP 47 tags (it-IT, en-GB…); a comma-separated list with multiple.'], ['multiple', 'boolean', ''], ['native-names', 'boolean', 'Each language in itself (Italiano, Deutsch…).'], ['locale', 'string', 'Language of the names (default: the page).'],
       ['code', 'iso3 · tag', 'What the code on the right shows (default ISO 639-3).'], ['no-flag · no-code', 'boolean', 'Hide the flag or the code.'], ['include · exclude', 'list', 'Only these tags, or all but these.'], ['label · placeholder · required · name · sheet-on-mobile · native-on-mobile', '', 'Like the select.'], ['help', 'string', 'A line of help under it.'], ['disabled · readonly', 'boolean', ''], ['clearable · searchable', 'boolean', 'A × to empty it; a search in the list (on by default).'], ['max-chips · select-all', 'number · boolean', 'With multiple: chips shown before +N; a row that picks every language.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the list opens.']],
@@ -634,6 +647,8 @@ window.SAVC_DOCS = [
     demos: [
       { title: 'One or many', html: `<sav-country-choice label="Country" value="IT" style="max-width: 20rem"></sav-country-choice>
 <sav-country-choice label="Shipping to" multiple value="IT,FR,DE" code="alpha2" style="max-width: 24rem"></sav-country-choice>` },
+      { title: 'On phones', html: `<sav-country-choice label="Sheet from the bottom" sheet-on-mobile placeholder="Try it at phone width" style="max-width: 20rem"></sav-country-choice>
+<sav-country-choice label="List under the field" placeholder="As on wide screens" style="max-width: 20rem"></sav-country-choice>` },
     ],
     attrs: [['value', 'alpha-2 · list', 'IT, FR…; a comma-separated list with multiple.'], ['multiple', 'boolean', ''], ['code', 'alpha3 · alpha2 · numeric', 'Code on the right (default alpha-3).'], ['locale', 'string', 'Language of the names.'],
       ['no-flag · no-code', 'boolean', ''], ['include · exclude', 'list', 'Only these countries (alpha-2), or all but these.'], ['label · placeholder · required · name · sheet-on-mobile · native-on-mobile', '', 'Like the select.'], ['help', 'string', 'A line of help under it.'], ['disabled · readonly', 'boolean', ''], ['clearable · searchable', 'boolean', 'A × to empty it; a search in the list (on by default).'], ['max-chips · select-all', 'number · boolean', 'With multiple: chips shown before +N; a row that picks every country.'], ['native-names', 'boolean', 'Each country in its own language.'], ['placement', 'bottom-start · bottom-end · top-start · top-end', 'Where the list opens.']],
@@ -650,8 +665,10 @@ window.SAVC_DOCS = [
       { title: 'Only light and dark (no Auto)', html: `<sav-theme-choice no-auto value="light"></sav-theme-choice>
 <sav-theme-choice appearance="buttons" no-auto value="dark"></sav-theme-choice>
 <sav-theme-choice appearance="buttons" icons-only no-auto></sav-theme-choice>` },
+      { title: 'On phones', html: `<sav-theme-choice sheet-on-mobile label="Theme: action sheet" value="auto"></sav-theme-choice>
+<sav-theme-choice label="Theme: menu under the button" value="auto"></sav-theme-choice>` },
     ],
-    attrs: [['value', 'light · dark · auto', 'With no-auto, “auto” (or no value) shows the mode the system uses right now.'], ['no-auto', 'boolean', 'Only Light and Dark: the Auto choice is not offered.'], ['appearance', 'menu · buttons', 'Default menu.'], ['icons-only', 'boolean', 'Only the icons (the names stay for screen readers).'], ['apply', 'boolean', 'Calls Sav.setMode() on change.'], ['label', 'string', 'Name for screen readers (default "Theme").'], ['size', 'sm · md · lg', '']],
+    attrs: [['value', 'light · dark · auto', 'With no-auto, “auto” (or no value) shows the mode the system uses right now.'], ['no-auto', 'boolean', 'Only Light and Dark: the Auto choice is not offered.'], ['appearance', 'menu · buttons', 'Default menu.'], ['icons-only', 'boolean', 'Only the icons (the names stay for screen readers).'], ['apply', 'boolean', 'Calls Sav.setMode() on change.'], ['label', 'string', 'Name for screen readers (default "Theme").'], ['size', 'sm · md · lg', ''], ['sheet-on-mobile', 'boolean', 'With the menu: on phones it opens as an action sheet (sav-action-sheet), titled by label.'], ['label', 'string', 'Name of the choice (default Theme): for screen readers, and the title of the sheet on phones.']],
     events: [['change', 'detail.value']],
   },
   {
@@ -1056,7 +1073,7 @@ window.SAVC_DOCS = [
   /* ------------------------------------------------------------ Overlays */
   {
     id: 'dialog', name: 'Dialog', tag: 'sav-dialog', group: 'Overlays', icon: 'app-window',
-    desc: 'A modal window built on the native <code>&lt;dialog&gt;</code>: focus trap, Esc and click outside to close. With <code>sheet-on-mobile</code> it becomes an action sheet on phones (the first demo has it: try it at phone width).',
+    desc: 'A modal window built on the native <code>&lt;dialog&gt;</code>: focus trap, Esc and click outside to close. With <code>sheet-on-mobile</code> it opens as an action sheet (<code>sav-action-sheet</code>) on phones: handle, drag down to close, title and close button; its buttons go one under the other (try it at phone width).',
     demos: [{ title: 'Basic', html: `<sav-button onclick="document.getElementById('demo-dialog').show()">Open dialog</sav-button>
 <sav-dialog id="demo-dialog" label="Delete project?" sheet-on-mobile>
   This removes the project and its 24 files. You can't undo this.
@@ -1070,8 +1087,20 @@ window.SAVC_DOCS = [
     <sav-input label="Password" type="password" password-toggle></sav-input>
   </div>
   <sav-button slot="footer" block data-sav-close>Continue</sav-button>
+</sav-dialog>` },
+      { title: 'On phones', html: `<sav-button onclick="document.getElementById('demo-dialog-sheet').show()">Action sheet</sav-button>
+<sav-dialog id="demo-dialog-sheet" label="Archive the chat?" sheet-on-mobile>
+  You can find it again in Archived.
+  <sav-button slot="footer" appearance="ghost" variant="neutral" data-sav-close>Cancel</sav-button>
+  <sav-button slot="footer" data-sav-close>Archive</sav-button>
+</sav-dialog>
+<sav-button appearance="outline" onclick="document.getElementById('demo-dialog-middle').show()">Window in the middle</sav-button>
+<sav-dialog id="demo-dialog-middle" label="Archive the chat?">
+  You can find it again in Archived.
+  <sav-button slot="footer" appearance="ghost" variant="neutral" data-sav-close>Cancel</sav-button>
+  <sav-button slot="footer" data-sav-close>Archive</sav-button>
 </sav-dialog>` }],
-    attrs: [['open', 'boolean', 'Shows the dialog.'], ['label', 'string', 'Title.'], ['sheet-on-mobile', 'boolean', 'On screens up to 640px wide it opens as an action sheet from the bottom, with full-width buttons.'], ['persistent', 'boolean', 'Clicking outside does not close it.'], ['no-header · no-close', 'boolean', ''], ['--width', 'CSS', 'Default 32rem.']],
+    attrs: [['open', 'boolean', 'Shows the dialog.'], ['label', 'string', 'Title.'], ['sheet-on-mobile', 'boolean', 'On screens up to 640px wide it opens as an action sheet (sav-action-sheet) from the bottom, with full-width buttons.'], ['persistent', 'boolean', 'Clicking outside does not close it.'], ['no-header · no-close', 'boolean', ''], ['--width', 'CSS', 'Default 32rem.']],
     slots: [['(default)', 'Body'], ['label', 'Rich title'], ['header-actions', 'Buttons next to the close button'], ['footer', 'Actions']],
     events: [['sav-show · sav-after-show', ''], ['sav-request-close', 'Cancelable; detail.source = close-button · keyboard · overlay · button'], ['sav-hide · sav-after-hide', '']],
     methods: [['show() · hide()', ''], ['[data-sav-close]', 'Any element inside with this attribute closes it.']],
@@ -1176,13 +1205,19 @@ window.SAVC_DOCS = [
   <sav-menu-item value="city">City</sav-menu-item>
 </sav-dropdown>
 <script>document.getElementById('demo-dd-multi').addEventListener('change', e => Sav.toast('Shown: ' + e.detail.value.join(', '), {variant: 'neutral', duration: 2000}))</script>` },
-      { title: 'Sheet on phones', html: `<sav-dropdown sheet-on-mobile label="Share">
-  <sav-button slot="trigger" icon="share" appearance="soft">Share</sav-button>
+      { title: 'On phones', html: `<sav-dropdown sheet-on-mobile label="Share">
+  <sav-button slot="trigger" icon="share" appearance="soft">Action sheet</sav-button>
+  <sav-menu-item><sav-icon slot="prefix" name="link"></sav-icon>Copy link</sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="mail"></sav-icon>Email</sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="message-circle"></sav-icon>Message</sav-menu-item>
+</sav-dropdown>
+<sav-dropdown>
+  <sav-button slot="trigger" caret appearance="outline" variant="neutral">Menu under the button</sav-button>
   <sav-menu-item><sav-icon slot="prefix" name="link"></sav-icon>Copy link</sav-menu-item>
   <sav-menu-item><sav-icon slot="prefix" name="mail"></sav-icon>Email</sav-menu-item>
   <sav-menu-item><sav-icon slot="prefix" name="message-circle"></sav-icon>Message</sav-menu-item>
 </sav-dropdown>` }],
-    attrs: [['placement', 'bottom-start · bottom-end · top-start · top-end · right-start …', ''], ['multiple', 'boolean', 'Every item is a checkbox and the menu stays open; read the choices from value.'], ['sheet-on-mobile', 'boolean', 'On phones the menu rises from the bottom.'], ['label', 'string', 'Title of the sheet on phones.'], ['stay-open', 'boolean', 'Keeps it open after a choice.'], ['disabled', 'boolean', ''], ['--min-width · --max-height', 'CSS', ''], ['value · disabled · variant="danger" · type="checkbox" · checked', '', 'On sav-menu-item.']],
+    attrs: [['placement', 'bottom-start · bottom-end · top-start · top-end · right-start …', ''], ['multiple', 'boolean', 'Every item is a checkbox and the menu stays open; read the choices from value.'], ['sheet-on-mobile', 'boolean', 'On phones the menu opens as an action sheet (sav-action-sheet): handle, title, close button and Cancel (Done, with multiple or stay-open).'], ['label', 'string', 'Title of the sheet on phones (default: the text of the trigger).'], ['stay-open', 'boolean', 'Keeps it open after a choice.'], ['disabled', 'boolean', ''], ['--min-width · --max-height', 'CSS', ''], ['value · disabled · variant="danger" · type="checkbox" · checked', '', 'On sav-menu-item.']],
     events: [['sav-select', 'detail.item, detail.value'], ['change', 'With multiple or checkbox items: detail.value is the list of checked values.'], ['sav-show · sav-hide', '']],
     methods: [['show() · hide()', ''], ['value', 'The checked values (array).']],
   },
@@ -1229,9 +1264,17 @@ window.SAVC_DOCS = [
 // between the rows the browser's own menu stays
 document.getElementById('demo-ctx-files').addEventListener('sav-show', e => { if (!e.detail.target?.closest('sav-list-item')) e.preventDefault(); });
 document.getElementById('demo-ctx-files').addEventListener('sav-select', e => Sav.toast(e.detail.value + ': ' + e.detail.target.closest('sav-list-item').textContent.trim(), {variant: 'neutral', duration: 2000}));
-</script>` }],
+</script>` },
+      { title: 'On phones', html: `<sav-context-menu label="Note" sheet-on-mobile>
+  <sav-card slot="target" tabindex="0" style="text-align: center">Long-press: an action sheet</sav-card>
+  <sav-menu-item>Copy</sav-menu-item><sav-menu-item>Pin</sav-menu-item><sav-menu-item variant="danger">Delete</sav-menu-item>
+</sav-context-menu>
+<sav-context-menu label="Note">
+  <sav-card slot="target" tabindex="0" style="text-align: center">Long-press: a menu at the finger</sav-card>
+  <sav-menu-item>Copy</sav-menu-item><sav-menu-item>Pin</sav-menu-item><sav-menu-item variant="danger">Delete</sav-menu-item>
+</sav-context-menu>` }],
     attrs: [['for', 'id', 'The element whose right click opens the menu. Without it, the elements inside with slot="target" are the area.'], ['label', 'string', 'Name of the menu for screen readers, and title of the sheet on phones.'],
-      ['sheet-on-mobile', 'boolean', 'On phones the menu rises from the bottom.'], ['stay-open', 'boolean', 'Keeps it open after a choice.'], ['disabled', 'boolean', 'The browser’s own menu shows again.'], ['--min-width · --max-height', 'CSS', ''],
+      ['sheet-on-mobile', 'boolean', 'On phones the menu opens as an action sheet (sav-action-sheet), titled by label; submenus open in place under their item.'], ['stay-open', 'boolean', 'Keeps it open after a choice.'], ['disabled', 'boolean', 'The browser’s own menu shows again.'], ['--min-width · --max-height', 'CSS', ''],
       ['value · disabled · variant="danger" · type="checkbox" · checked', '', 'On sav-menu-item.'], ['<sav-menu slot="submenu">', '', 'Inside a sav-menu-item: a submenu that flies out to the side (on the left when there is no room on the right).']],
     slots: [['target', 'The area that opens the menu, when for is not used.'], ['(default)', 'sav-menu-item, sav-menu-label and sav-divider.']],
     events: [['sav-show', 'Before it opens: detail.target is the element right-clicked, detail.x and detail.y the point. Call event.preventDefault() to let the browser’s menu show instead.'], ['sav-select', 'detail.item, detail.value, detail.checked (checkbox items), detail.target'], ['change', 'With checkbox items: detail.value is the list of checked values.'], ['sav-hide', '']],
@@ -1249,7 +1292,7 @@ document.getElementById('demo-ctx-files').addEventListener('sav-select', e => Sa
 <sav-info-tip icon="shield" label="Privacy" placement="bottom" sheet-on-mobile>Nothing leaves your device until you press Save.</sav-info-tip>` },
     ],
     attrs: [['content', 'string', 'The text of the box (or put rich content inside).'], ['heading', 'string', 'Bold first line of the box.'], ['icon', 'icon name', 'Default help-circle.'], ['label', 'string', 'Text next to the icon.'],
-      ['variant', 'neutral · primary', ''], ['size', 'sm · md', ''], ['placement', 'top · bottom · left · right', 'Default top; it flips when there is no room.'], ['sheet-on-mobile', 'boolean', 'On phones the box rises from the bottom.']],
+      ['variant', 'neutral · primary', ''], ['size', 'sm · md', ''], ['placement', 'top · bottom · left · right', 'Default top; it flips when there is no room.'], ['sheet-on-mobile', 'boolean', 'On phones the text opens in an action sheet (sav-action-sheet), titled by the heading or the label.']],
     slots: [['(default)', 'Rich content of the box'], ['trigger', 'Your own trigger instead of the icon']],
     events: [['sav-show · sav-hide', '']],
     methods: [['show() · hide()', '']],
@@ -1285,9 +1328,17 @@ document.getElementById('demo-ctx-files').addEventListener('sav-select', e => Sa
   <sav-button slot="trigger" appearance="soft"><sav-icon slot="prefix" name="sliders-horizontal"></sav-icon>Filters</sav-button>
   <div style="display: grid; gap: .5rem"><sav-checkbox checked>In stock</sav-checkbox><sav-checkbox>On sale</sav-checkbox><sav-checkbox>Free delivery</sav-checkbox></div>
 </sav-popover>` },
+      { title: 'On phones', html: `<sav-popover heading="Sort by" sheet-on-mobile>
+  <sav-button slot="trigger" appearance="soft"><sav-icon slot="prefix" name="arrow-up-down"></sav-icon>Action sheet</sav-button>
+  <sav-radio-group value="new"><sav-radio value="new">Newest</sav-radio><sav-radio value="price">Price</sav-radio></sav-radio-group>
+</sav-popover>
+<sav-popover heading="Sort by">
+  <sav-button slot="trigger" appearance="outline" variant="neutral"><sav-icon slot="prefix" name="arrow-up-down"></sav-icon>Panel next to it</sav-button>
+  <sav-radio-group value="new"><sav-radio value="new">Newest</sav-radio><sav-radio value="price">Price</sav-radio></sav-radio-group>
+</sav-popover>` },
     ],
     attrs: [['heading', 'string', 'A title at the top of the panel (also its name for screen readers).'], ['placement', 'bottom-start · bottom · bottom-end · top-start · top · top-end · left · right · right-start', 'Where the panel opens (it flips when there is no room). Default bottom-start.'],
-      ['no-close', 'boolean', 'No × button (Esc and a click outside still close it).'], ['sheet-on-mobile', 'boolean', 'On phones it slides up from the bottom.'], ['label', 'string', 'Name for screen readers when there is no heading.'], ['--width', 'CSS', 'Widest the panel gets (default 20rem).']],
+      ['no-close', 'boolean', 'No × button (Esc and a click outside still close it).'], ['sheet-on-mobile', 'boolean', 'On phones the content opens in an action sheet (sav-action-sheet), titled by the heading or the label.'], ['label', 'string', 'Name for screen readers when there is no heading.'], ['--width', 'CSS', 'Widest the panel gets (default 20rem).']],
     slots: [['trigger', 'The button (or any focusable element) that opens it.'], ['(default)', 'The content of the panel.']],
     events: [['sav-show · sav-hide', 'The panel opened or closed.']],
     methods: [['show() · hide()', ''], ['open', 'true while it is open.']],
@@ -1540,14 +1591,24 @@ document.getElementById('demo-ctx-files').addEventListener('sav-select', e => Sa
   {
     builtFrom: ['badge', 'icon'],
     id: 'bottom-nav', name: 'Bottom navigation', tag: 'sav-bottom-nav · sav-bottom-nav-item', group: 'Navigation', icon: 'smartphone',
-    desc: 'The bar at the bottom of a phone app: 3–5 destinations with icon and label, a badge, the current one marked. With fixed it sticks to the bottom; with mobile-only it hides on wide screens.',
+    desc: 'The bar at the bottom of a phone app: 3–5 destinations with icon and label, a badge, the current one marked. With fixed it sticks to the bottom; with mobile-only it hides on wide screens. With more than five, the first four stay and a fifth, More, opens an action sheet with the others.',
+    notice: { variant: 'warning', heading: 'More than five: avoid it if you can', text: 'A bottom bar works best with 3–5 destinations, all in sight. Destinations behind More are found and used much less, and take one tap more. Keep the bar for the main destinations and put the rest in the pages (a settings page, a menu in the header). More exists as a way out, not as a design.' },
     demos: [ { title: 'Four destinations', html: `<sav-bottom-nav label="Main" style="width: 100%; max-width: 24rem">
   <sav-bottom-nav-item icon="home" label="Home" current></sav-bottom-nav-item>
   <sav-bottom-nav-item icon="search" label="Search"></sav-bottom-nav-item>
   <sav-bottom-nav-item icon="bell" label="Alerts" badge="3"></sav-bottom-nav-item>
   <sav-bottom-nav-item icon="user" label="Profile"></sav-bottom-nav-item>
+</sav-bottom-nav>` },
+      { title: 'More than five (avoid it if you can)', html: `<sav-bottom-nav label="Main" style="width: 100%; max-width: 24rem">
+  <sav-bottom-nav-item icon="home" label="Home" current></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="search" label="Search"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="bell" label="Alerts" badge="3"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="user" label="Profile"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="bookmark" label="Saved"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="settings" label="Settings" badge="1"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="help-circle" label="Help"></sav-bottom-nav-item>
 </sav-bottom-nav>` } ],
-    attrs: [['fixed', 'boolean', 'Sticks to the bottom of the window.'], ['mobile-only', 'boolean', 'With fixed: hidden above 760px.'], ['label', 'string', 'Name of the navigation.'], ['icon · label · href · badge · current · value', '', 'sav-bottom-nav-item.']],
+    attrs: [['fixed', 'boolean', 'Sticks to the bottom of the window.'], ['mobile-only', 'boolean', 'With fixed: hidden above 760px.'], ['label', 'string', 'Name of the navigation.'], ['icon · label · href · badge · current · value', '', 'sav-bottom-nav-item.'], ['max-items', 'number', 'Most destinations in sight (default 5): with more, the last place becomes More, an action sheet with the others.'], ['more-label · more-icon', 'string', 'The words and the icon of More (default More, three dots).']],
     events: [['sav-select', 'detail.value, detail.item']],
   },
   {

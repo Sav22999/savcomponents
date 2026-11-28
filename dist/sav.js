@@ -44,7 +44,7 @@
     'Choose a colour.': 'Scegli un colore.', 'The browser did not allow picking a colour from the screen.': 'Il browser non ha permesso di prendere un colore dallo schermo.',
     'Done': 'Fine', 'Cancel': 'Annulla', 'Please choose a value.': 'Scegli un valore.', 'Remove {name}': 'Rimuovi {name}', 'Search': 'Cerca', 'Options': 'Opzioni', 'No results': 'Nessun risultato',
     'Clear all': 'Deseleziona tutto', 'Select all': 'Seleziona tutto', 'Today': 'Oggi', 'This month': 'Questo mese', 'This year': 'Quest’anno', 'Now': 'Adesso', 'Time': 'Ora',
-    'Hours': 'Ore', 'Minutes': 'Minuti', 'Previous': 'Precedente', 'Next': 'Successivo', 'Please select an option.': 'Scegli un’opzione.', 'Start': 'Inizio', 'End': 'Fine',
+    'Hours': 'Ore', 'Minutes': 'Minuti', 'Hour': 'Ora', 'Min': 'Min', 'More': 'Altro', 'AM/PM': 'AM/PM', 'Morning or afternoon': 'Mattina o pomeriggio', 'Previous': 'Precedente', 'Next': 'Successivo', 'Please select an option.': 'Scegli un’opzione.', 'Start': 'Inizio', 'End': 'Fine',
     'Rating': 'Valutazione', 'Expand': 'Espandi', 'Collapse': 'Riduci', 'More information': 'Più informazioni', 'Enlarge {name}': 'Ingrandisci {name}', 'image': 'immagine',
     'Character {i} of {n}': 'Carattere {i} di {n}', 'Enter all {n} characters.': 'Inserisci tutti i {n} caratteri.', 'At least {x} characters': 'Almeno {x} caratteri',
     '{x} upper-case letter': '{x} lettera maiuscola', '{x} upper-case letters': '{x} lettere maiuscole', '{x} lower-case letter': '{x} lettera minuscola',
@@ -939,8 +939,12 @@
       :host([toast]) .a::before { transform: none; }
       :host([toast]) .a::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--_c); transform-origin: left; animation: sav-countdown var(--_dur, 0ms) linear forwards; }
       :host([toast]:not([duration])) .a::after, :host([toast][duration="0"]) .a::after { display: none; }
-      :host(:hover) .a::after { animation-play-state: paused; }
+      /* the countdown stops while the toast waits: under the mouse, or under a finger */
+      :host([data-paused]) .a::after { animation-play-state: paused; }
       @keyframes sav-countdown { to { transform: scaleX(0); } }
+      /* phones: a swipe to the side closes the toast (the page still scrolls up and down over it); a close button big enough for a finger */
+      :host([toast]) { touch-action: pan-y; }
+      @media (max-width: 640px) { :host([toast]) .x { padding: .55rem; margin: -.55rem -.7rem -.55rem 0; } }
       /* auto-text: black or white, whichever is readable on what is behind the text */
       :host { --_eb: color-mix(in oklab, var(--_c) 9%, var(--sav-color-bg)); }
       :host([appearance="solid"]) { --_eb: var(--_c); }
@@ -949,6 +953,7 @@
     `];
     connectedCallback() {
       if (!this.shadowRoot.firstChild) this.render();
+      if (this.hasAttribute('toast') && !this._swipeOn) { this._swipeOn = true; this.addEventListener('pointerdown', (e) => this.swipe(e)); }
       this.armTimer();
     }
     disconnectedCallback() { clearTimeout(this._t); }
@@ -969,20 +974,67 @@
     }
     armTimer() {
       clearTimeout(this._t);
+      this._t = 0;
+      this._left = null;
+      this.removeAttribute('data-paused');
       const d = Number(this.duration);
       if (!d) return;
       this.style.setProperty('--_dur', d + 'ms');
-      let left = d, start = Date.now();
-      const run = () => { start = Date.now(); this._t = setTimeout(() => this.close(), left); };
-      this.onmouseenter = () => { clearTimeout(this._t); left -= Date.now() - start; };
-      this.onmouseleave = run;
-      run();
+      this._left = d;
+      // the mouse only: on a touch screen a tap would leave it paused (no pointer leaves after a tap); a finger pauses it in swipe()
+      this.onpointerenter = (e) => { if (e.pointerType === 'mouse') this.pause(); };
+      this.onpointerleave = (e) => { if (e.pointerType === 'mouse') this.resume(); };
+      this.resume();
     }
-    close() {
-      if (!this.emit('sav-close', {}, true)) return;
+    /** Stops the countdown (it goes on from there with resume()). */
+    pause() {
+      if (!this._t) return;
+      clearTimeout(this._t);
+      this._t = 0;
+      this._left -= Date.now() - this._start;
+      this.setAttribute('data-paused', '');
+    }
+    resume() {
+      if (this._t || this._left == null) return;
+      this.removeAttribute('data-paused');
+      this._start = Date.now();
+      this._t = setTimeout(() => this.close(), Math.max(0, this._left));
+    }
+    /** Touch screens: the toast follows the finger sideways; far enough (or fast) it goes away, otherwise it comes back. */
+    swipe(e) {
+      if (e.pointerType === 'mouse' || !e.isPrimary || e.composedPath().some((n) => n.classList?.contains('x'))) return;
+      const x0 = e.clientX, y0 = e.clientY, t0 = e.timeStamp, w = this.offsetWidth || 1;
+      let dx = 0, side = false, done = false;
+      this.pause();
+      const move = (m) => {
+        dx = m.clientX - x0;
+        if (!side && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(m.clientY - y0)) side = true;
+        if (side) { this.style.transform = `translateX(${dx}px)`; this.style.opacity = String(Math.max(0.15, 1 - Math.abs(dx) / w)); }
+      };
+      const up = (u) => {
+        if (done) return;
+        done = true;
+        removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+        const fast = Math.abs(dx) / Math.max(1, (u?.timeStamp || t0) - t0) > 0.5;
+        if (side && (Math.abs(dx) > w * 0.35 || (fast && Math.abs(dx) > 30)) && this.close(dx > 0 ? 1 : -1)) return;
+        const t = 180 * motion(this);
+        this.style.transition = `transform ${t}ms var(--sav-easing), opacity ${t}ms`;
+        requestAnimationFrame(() => { this.style.transform = ''; this.style.opacity = ''; });
+        setTimeout(() => { this.style.transition = ''; }, t + 20);
+        this.resume();
+      };
+      addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    }
+    /** Closes it (a toast goes away to the side: dir 1 right, -1 left, after a swipe). False when sav-close was cancelled. */
+    close(dir) {
+      if (!this.emit('sav-close', {}, true)) return false;
       if (this.hasAttribute('toast')) {
-        this.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(12px)' }], { duration: 180 * motion(this), easing: 'ease-in' }).onfinish = () => this.remove();
+        clearTimeout(this._t);
+        const from = { opacity: this.style.opacity || 1, transform: this.style.transform || 'none' };
+        const to = { opacity: 0, transform: dir ? `translateX(${dir * 110}%)` : 'translateX(12px)' };
+        this.animate([from, to], { duration: 180 * motion(this), easing: 'ease-in', fill: 'forwards' }).onfinish = () => this.remove();
       } else this.hidden = true;
+      return true;
     }
   }
   props(SavAlert, { variant: String, appearance: String, heading: String, closable: Boolean, noicon: Boolean, duration: Number });
@@ -999,6 +1051,14 @@
       :host([placement="bottom-start"]) { inset: auto auto 1rem 1rem; }
       :host([placement="top-start"]) { inset: 1rem auto auto 1rem; flex-direction: column-reverse; }
       ::slotted(*) { pointer-events: auto; }
+      /* phones: across the screen whatever the corner (start and end mean little there), clear of the notch and the home bar;
+         the three newest toasts at most, so they never cover the page (the older ones still close on their own time) */
+      @media (max-width: 640px) {
+        :host, :host([placement]) { --_g: .75rem; width: auto; transform: none;
+          inset: auto calc(var(--_g) + env(safe-area-inset-right)) calc(var(--_g) + env(safe-area-inset-bottom)) calc(var(--_g) + env(safe-area-inset-left)); }
+        :host([placement^="top"]) { inset: calc(var(--_g) + env(safe-area-inset-top)) calc(var(--_g) + env(safe-area-inset-right)) auto calc(var(--_g) + env(safe-area-inset-left)); }
+        ::slotted(:nth-last-child(n+4)) { display: none; }
+      }
     `;
     connectedCallback() {
       this.shadowRoot.innerHTML = '<slot></slot>';
@@ -1030,7 +1090,9 @@
     stack.append(t);
     // bring the stack above open dialogs
     if (supportsPopover) { if (stack.matches(':popover-open')) stack.hidePopover(); stack.showPopover(); }
-    t.animate([{ opacity: 0, transform: 'translateY(10px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 220 * motion(t), easing: 'cubic-bezier(.2,.7,.3,1)' });
+    // it comes in from the edge it sits against: from below at the bottom, from above at the top
+    const dy = placement.startsWith('top') ? -10 : 10;
+    t.animate([{ opacity: 0, transform: `translateY(${dy}px) scale(.98)` }, { opacity: 1, transform: 'none' }], { duration: 220 * motion(t), easing: 'cubic-bezier(.2,.7,.3,1)' });
     return t;
   };
 
@@ -1642,7 +1704,37 @@
       .ib:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
       .ib svg { width: 1rem; height: 1rem; }
       .cp .sws { margin: 0; }
+      :host(:not([compact])) .psw { display: none; }
       .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      /* sheet-on-mobile: on a phone the panel rises from the bottom, full width, with a handle (drag it down to close), the name of
+         the field and Done; the area, the sliders and the buttons grow for a finger */
+      .sheet-head { display: none; }
+      .done { border: 0; background: none; padding: .45rem .55rem; margin-inline-end: -.55rem; border-radius: var(--sav-radius-sm); font: inherit; font-weight: var(--sav-font-weight-bold);
+              color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); cursor: pointer; }
+      .done:focus-visible { outline: var(--sav-focus-width) solid var(--sav-color-focus); outline-offset: 1px; }
+      @keyframes sav-cp-sheet { from { transform: translateY(100%); } }
+      @media (max-width: 640px) {
+        :host([sheet-on-mobile]) .cp { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; max-height: 92dvh; margin: 0; overflow: hidden auto; overscroll-behavior: contain;
+          padding: 0 1.1rem calc(1.1rem + env(safe-area-inset-bottom)); gap: .95rem; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; font-size: var(--sav-font-size-md); }
+        :host([sheet-on-mobile]) .cp:popover-open, :host([sheet-on-mobile]) .cp.open { animation: sav-cp-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
+        :host([sheet-on-mobile]) .cp::before { transform: none; border-width: var(--sav-border-width) 0 0; }
+        :host([sheet-on-mobile]) .cp::after { display: none; }
+        :host([sheet-on-mobile]) .cp::backdrop { background: var(--sav-color-overlay); }
+        :host([sheet-on-mobile]) .sheet-head { display: flex; align-items: center; gap: .5rem; position: relative; flex: none; padding: 1.15rem 0 0; touch-action: none; }
+        :host([sheet-on-mobile]) .sheet-head::before { content: ""; position: absolute; top: .4rem; left: 50%; width: 2.5rem; height: 4px; margin-left: -1.25rem; border-radius: 99px; background: var(--sav-color-border-strong); }
+        :host([sheet-on-mobile]) .sheet-title { flex: 1; min-width: 0; font-weight: var(--sav-font-weight-bold); font-size: var(--sav-font-size-lg); }
+        :host([sheet-on-mobile]) .sv { height: min(14rem, 38dvh); flex: none; }
+        :host([sheet-on-mobile]) .track { height: 1.15rem; }
+        :host([sheet-on-mobile]) .th { width: 1.5rem; height: 1.5rem; }
+        :host([sheet-on-mobile]) .sls { gap: 1rem; }
+        :host([sheet-on-mobile]) .pv { width: 2.9rem; height: 2.9rem; }
+        :host([sheet-on-mobile]) .hx { height: 2.75rem; font-size: 16px; }
+        :host([sheet-on-mobile]) .ib { width: 2.75rem; height: 2.75rem; }
+        :host([sheet-on-mobile]) .ib svg { width: 1.2rem; height: 1.2rem; }
+        :host([sheet-on-mobile]) .psw:not(:empty) { display: flex; }
+        :host([sheet-on-mobile]) .cp .sws { gap: .55rem; }
+        :host([sheet-on-mobile]) .cp .sws button { width: 2.2rem; height: 2.2rem; }
+      }
       @media (prefers-reduced-motion: reduce) { .sws button { transition: none; } .cp:popover-open, .cp.open { animation: none; } }
     `];
     static get observedAttributes() { return [...FC, 'label', 'help', 'value', 'placeholder', 'swatches', 'clearable', 'compact', 'readonly', 'picker', 'alpha']; }
@@ -1659,6 +1751,7 @@
         <div class="sws" part="swatches" role="group" aria-label="${esc(T(this, 'Suggested colours'))}"></div>
         <div class="help" part="help-text" id="${id}-h"><slot name="help"></slot><span class="help-text"></span></div>
         <div class="cp float" id="${id}-p" part="panel" role="dialog" aria-label="${esc(T(this, 'Choose a colour'))}" ${supportsPopover ? 'popover="manual"' : ''}>
+          <div class="sheet-head" part="sheet-header"><span class="sheet-title"></span><button type="button" class="done">${esc(T(this, 'Done'))}</button></div>
           <div class="sv" part="area" role="slider" tabindex="0" aria-label="${esc(T(this, 'Saturation and brightness'))}" aria-valuemin="0" aria-valuemax="100"><span class="th"></span></div>
           <div class="row"><div class="sls">
             <div class="track hue" part="hue" role="slider" tabindex="0" aria-label="${esc(T(this, 'Hue'))}" aria-valuemin="0" aria-valuemax="360"><span class="th"></span></div>
@@ -1693,6 +1786,8 @@
       this.show();
     }
     disconnectedCallback() { this.close(false); }
+    /** True when the panel opens as a sheet: sheet-on-mobile, on a phone. */
+    get isSheet() { return this.hasAttribute('sheet-on-mobile') && MOBILE.matches; }
     /** picker: auto (the default) is the library's panel where the browser offers all of it (the eyedropper too: Chrome, Edge) and the
         system picker elsewhere (Safari, Firefox); custom is always the panel, native always the system picker */
     get custom() { const p = this.getAttribute('picker'); return p === 'native' ? false : p === 'custom' ? true : typeof window.EyeDropper === 'function'; }
@@ -1726,8 +1821,8 @@
       const list = (this.getAttribute('swatches') || '').split(/[\s,]+/).map((c) => this.norm(c)).filter(Boolean);
       const sw = list.map((c) => `<button type="button" data-c="${c}" style="--_v:${c}" aria-label="${c}" title="${c}" ${off ? 'disabled' : ''}></button>`).join('');
       this.$('.sws').innerHTML = sw;
-      // in the panel the suggestions show only when the field hides them (compact)
-      this.$('.psw').innerHTML = compact ? sw : '';
+      // in the panel the suggestions show only when the field and its own are out of sight (compact, or the panel as a sheet)
+      this.$('.psw').innerHTML = sw;
       // the eyedropper: the browser's own (Chrome, Edge); where there is none, on Apple devices the system colour picker has one (Safari, Firefox)
       const eye = this.$('.eye'), own = typeof window.EyeDropper === 'function';
       const apple = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -1824,11 +1919,34 @@
         catch (e) { if (e?.name !== 'AbortError') this.$('.sr').textContent = T(this, 'The browser did not allow picking a colour from the screen.'); }
         finally { this._picking = false; if (this.isOpen) this.$('.eye').focus({ preventScroll: true }); }
       });
-      // Escape closes; leaving the panel and the swatch closes it too
-      this.$('.cp').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(true); } });
-      this.$('.cp').addEventListener('focusout', () => setTimeout(() => { const a = this.shadowRoot.activeElement; if (this.isOpen && !this._picking && document.hasFocus() && (!a || !(a.closest('.cp') || a.closest('.sw')))) this.close(false); }, 0));
+      // Escape closes; leaving the panel and the swatch closes it too (not the sheet: on a phone a tap on the sheet would take the focus away)
+      const cp = this.$('.cp');
+      cp.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(true); } });
+      cp.addEventListener('focusout', () => setTimeout(() => { const a = this.shadowRoot.activeElement; if (this.isOpen && !this._sheet && !this._picking && document.hasFocus() && (!a || !(a.closest('.cp') || a.closest('.sw')))) this.close(false); }, 0));
       this._outside = (e) => { if (this.isOpen && !this._picking && !e.composedPath().includes(this)) this.close(false); };
-      this._reflow = () => { if (!this.isOpen) return; if (anchorGone(this.$('.box'))) { this.close(false); return; } this.place(); };
+      this._reflow = () => { if (!this.isOpen || this._sheet) return; if (anchorGone(this.$('.box'))) { this.close(false); return; } this.place(); };
+      // the sheet: Done, a tap on the dimmed page above it, the handle dragged down
+      this.$('.done').addEventListener('click', () => this.close(true));
+      cp.addEventListener('click', (e) => {
+        if (!this._sheet || e.target !== cp) return;
+        const r = cp.getBoundingClientRect();
+        if (e.clientY < r.top || e.clientX < r.left || e.clientX > r.right) this.close(true);
+      });
+      this.$('.sheet-head').addEventListener('pointerdown', (e) => {
+        if (!this._sheet || e.button > 0 || e.composedPath().some((n) => n.classList?.contains('done'))) return;
+        const y0 = e.clientY, h = cp.offsetHeight;
+        let dy = 0;
+        cp.style.transition = 'none';
+        const move = (m) => { dy = Math.max(0, m.clientY - y0); cp.style.transform = `translateY(${dy}px)`; };
+        const up = () => {
+          removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+          const t = 200 * motion(this);
+          cp.style.transition = `transform ${t}ms var(--sav-easing)`;
+          if (dy > Math.min(120, h * 0.3)) { cp.style.transform = 'translateY(100%)'; setTimeout(() => { this.close(true); cp.style.transform = cp.style.transition = ''; }, t); }
+          else { cp.style.transform = ''; setTimeout(() => { cp.style.transition = ''; }, t); }
+        };
+        addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+      });
     }
     place() { place(this.$('.cp'), this.$('.box'), 'bottom-start', 6); }
     /** opens the colour picker: the library's panel, or the system one with picker="native" (browsers allow that only after a user action) */
@@ -1838,18 +1956,25 @@
       if (this.isOpen) return;
       if (!this.emit('sav-show', {}, true)) return;
       this._at = this._v;
-      const cp = this.$('.cp'); showPop(cp); tiltWatch(cp); this.place(); this.paint();
+      const cp = this.$('.cp');
+      this._sheet = this.isSheet;
+      this.$('.sheet-title').textContent = this.getAttribute('label') || this.getAttribute('aria-label') || T(this, 'Choose a colour');
+      showPop(cp); tiltWatch(cp);
+      if (this._sheet) cp.style.left = cp.style.top = ''; else this.place();
+      this.paint();
       this.$('.swb').setAttribute('aria-expanded', 'true'); this.setAttribute('open', '');
       document.addEventListener('pointerdown', this._outside, true); addEventListener('scroll', this._reflow, true); addEventListener('resize', this._reflow);
       if (focus) this.$('.sv').focus({ preventScroll: true });
     }
     close(focusBack = false) {
       const cp = this.$('.cp'); if (!cp || !this.isOpen) return;
-      hidePop(cp); this.$('.swb').setAttribute('aria-expanded', 'false'); this.removeAttribute('open');
+      const sheet = this._sheet;
+      hidePop(cp); this.$('.swb').setAttribute('aria-expanded', 'false'); this.removeAttribute('open'); this._sheet = false;
       document.removeEventListener('pointerdown', this._outside, true); removeEventListener('scroll', this._reflow, true); removeEventListener('resize', this._reflow);
       if (this._v !== this._at) { this._at = this._v; this.markTouched(); this.emit('change', { value: this._v }); }
       this.emit('sav-hide');
-      if (focusBack) (this.hasAttribute('compact') ? this.$('.swb') : this.native)?.focus({ preventScroll: true });
+      // after the sheet the focus goes to the swatch, not to the code: on a phone the keyboard would come up
+      if (focusBack) (this.hasAttribute('compact') || sheet ? this.$('.swb') : this.native)?.focus({ preventScroll: true });
     }
     set(v, ev) {
       const h = v ? this.norm(v) : '';
@@ -1931,6 +2056,75 @@
   /* ================================================================== pickers: shared base */
 
   const MOBILE = typeof matchMedia === 'function' ? matchMedia('(max-width: 640px)') : { matches: false };
+
+  /* sheet-on-mobile: on a phone (up to 640px) the panel of a component opens from the bottom of the screen. The select and the
+     pickers draw their own sheet (search, calendar, time columns); the dropdown, the context menu, the info tip, the popover
+     and the dialog open in a sav-action-sheet of their own, made once inside its shadow root: the same handle, title, close button, drag down, overlay
+     and focus trap as every action sheet. What the panel shows (a slot, or the body it draws) moves into the sheet while it is open
+     and back into the panel after. The sheet's own events stay inside: the component sends its own. */
+  /** True when the component opens as a sheet now: sheet-on-mobile, on a phone. */
+  const sheetOn = (host) => host.hasAttribute('sheet-on-mobile') && MOBILE.matches;
+  class MobileSheet {
+    /** True when the component opens as a sheet now. */
+    static wanted(host) { return sheetOn(host) && !!customElements.get('sav-action-sheet'); }
+    constructor(host, opts = {}) { this.host = host; this.opts = opts; this.el = null; this.moved = []; this.active = false; }
+    make() {
+      if (this.el) return this.el;
+      const s = (this.el = document.createElement('sav-action-sheet'));
+      s.className = 'm-sheet';
+      s.setAttribute('part', 'sheet');
+      s.setAttribute('exportparts', this.opts.exportparts || 'panel: sheet-panel, handle: sheet-handle, header: sheet-header, title: sheet-title, close-button: sheet-close-button, body: sheet-body, footer: sheet-footer, cancel-button: sheet-cancel-button');
+      const own = (e) => e.target === s;
+      for (const n of ['sav-show', 'sav-after-show', 'sav-hide', 'sav-after-hide', 'sav-request-close', 'sav-select', 'change']) s.addEventListener(n, (e) => own(e) && e.stopPropagation());
+      s.addEventListener('sav-request-close', (e) => { if (own(e) && this.opts.onRequestClose && !this.opts.onRequestClose(e.detail.source)) e.preventDefault(); });
+      s.addEventListener('sav-hide', (e) => { if (!own(e)) return; this.active = false; this.opts.onHide?.(); });
+      s.addEventListener('sav-after-show', (e) => own(e) && this.opts.onAfterShow?.());
+      s.addEventListener('sav-after-hide', (e) => {
+        if (!own(e)) return;
+        this.restore();
+        // the focus goes back to what had it (the trigger, also inside another component), or to the trigger when that was nothing
+        // (opened from a script); not when the chosen action took it elsewhere (a dialog), only when it fell back on the page
+        const a = document.activeElement, back = this.back?.isConnected && this.back !== document.body ? this.back : this.opts.returnFocus?.();
+        this.back = null;
+        let fell = !a || a === document.body;
+        for (let n = this.host; n && !fell; n = n.parentNode || n.host) if (n === a) fell = true;
+        if (back && fell) back.focus?.({ preventScroll: true });
+        this.opts.onAfterHide?.();
+      });
+      this.host.shadowRoot.append(s);
+      return s;
+    }
+    /** Moves the nodes into the sheet and opens it; false while it is still closing. */
+    open(nodes, { label = '', attrs = {} } = {}) {
+      const s = this.make();
+      if (this.active || s.dlg?.open) return false;
+      for (const a of ['no-cancel', 'no-close', 'no-header', 'close-style', 'persistent']) s.removeAttribute(a);
+      for (const [k, v] of Object.entries(attrs)) if (v !== false && v != null) s.setAttribute(k, v === true ? '' : v);
+      s.setAttribute('label', label);
+      let a = document.activeElement;
+      while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement;
+      this.back = a;
+      this.moved = nodes.filter(Boolean).map((n) => [n, n.parentNode, n.nextSibling]);
+      for (const [n] of this.moved) s.append(n);
+      this.active = true;
+      s.show();
+      if (!s.dlg?.open) { this.active = false; this.restore(); return false; }
+      return true;
+    }
+    close() { if (this.active) this.el.hide(); }
+    restore() {
+      for (const [n, parent, next] of this.moved.reverse()) parent.insertBefore(n, next?.parentNode === parent ? next : null);
+      this.moved = [];
+    }
+  }
+  /** The sheet of a menu (dropdown, context menu): the sheet is in the shadow root, so ::part reaches inside it. */
+  const SHEET_MENU = `
+    .m-sheet::part(body) { padding: .2rem .45rem .6rem; }
+    .m-sheet[no-cancel]::part(body) { padding-bottom: calc(.6rem + env(safe-area-inset-bottom)); }
+    .items.in-sheet { padding: 0; overflow: visible; }
+    .items.in-sheet ::slotted(sav-menu-item) { --sav-menu-item-padding: .8rem .8rem; }
+    .items.in-sheet ::slotted(sav-divider) { --spacing: .35rem; }
+  `;
   /** a language tag the browser accepts, or undefined (a half-typed or wrong locale="…" must not break the component) */
   const safeLocale = (l) => { if (!l) return undefined; try { return Intl.getCanonicalLocales(l)[0]; } catch { return undefined; } };
   /** The locale of a component: its locale attribute, else the closest lang (also around a shadow root), like the words it writes. */
@@ -1970,11 +2164,14 @@
     /* sheet-on-mobile: on small screens the popup rises from the bottom, full width */
     @media (max-width: 640px) {
       :host([sheet-on-mobile]) .pop { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; min-width: 0; max-height: 85dvh; margin: 0;
-             border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .6rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); border: 0; }
+             border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 0 calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); border: 0; overflow: hidden; }
+      /* the side space is the body's, so what spans it (the search of the select) reaches the edges of the sheet */
+      :host([sheet-on-mobile]) .body { padding-left: .9rem; padding-right: .9rem; }
       :host([sheet-on-mobile]) .pop::before { transform: none; border-width: var(--sav-border-width) 0 0; }
       :host([sheet-on-mobile]) .pop::after { display: none; }
       :host([sheet-on-mobile]) .pop::backdrop { background: var(--sav-color-overlay); }
-      :host([sheet-on-mobile]) .sheet-head { display: flex; align-items: center; gap: .5rem; position: sticky; top: 0; z-index: 2; padding: .9rem .4rem .6rem; background: var(--sav-color-surface); }
+      /* the header is part of the panel (its surface is the panel's, edge to edge): only the body under it scrolls */
+      :host([sheet-on-mobile]) .sheet-head { display: flex; align-items: center; gap: .5rem; position: relative; flex: none; padding: 1.15rem 1rem .6rem 1.25rem; background: none; }
       :host([sheet-on-mobile]) .sheet-head::before { content: ""; position: absolute; top: .4rem; left: 50%; width: 2.5rem; height: 4px; margin-left: -1.25rem; border-radius: 99px; background: var(--sav-color-border-strong); }
     }
     .sheet-title { flex: 1; font-weight: var(--sav-font-weight-bold); font-size: var(--sav-font-size-lg); }
@@ -2033,7 +2230,7 @@
       this.sync();
     }
     get open() { return this.hasAttribute('open'); }
-    get isSheet() { return this.hasAttribute('sheet-on-mobile') && MOBILE.matches; }
+    get isSheet() { return sheetOn(this); }
     changed(name, v) {
       if (!this.trigger) return;
       if (name === 'value') { this.parse(v ?? ''); this._default = this.serialize(); this.refresh(); return; }
@@ -2131,6 +2328,7 @@
       .search svg { width: 1rem; height: 1rem; color: var(--sav-color-text-muted); flex: none; }
       .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: inherit; font: inherit; font-size: 16px; }
       @media (min-width: 641px) { .search input { font-size: inherit; } }
+      @media (max-width: 640px) { :host([sheet-on-mobile]) .search { margin: -.3rem -.9rem .3rem; padding: .55rem 1.3rem; } }
       /* opened above the field: the search goes to the bottom, so it is always next to the field */
       .pop[data-side="top"] .body { display: flex; flex-direction: column; }
       .pop[data-side="top"] .body > * { flex: none; }
@@ -2658,9 +2856,11 @@
     static endIcon = 'clock';
     static styles = [SIZES, FIELD, FLOAT, PICKER, `
       .pop { --popup-width: 16rem; --_pp: .4rem; min-width: max(var(--_pw, 0px), 11rem); }
-      .cols { display: flex; gap: .3rem; height: min(15rem, 50vh); }
+      .cols { display: flex; gap: .3rem; height: calc(min(15rem, 50vh) - 1.6rem); }
       .col { flex: 1; overflow-y: auto; scroll-snap-type: y proximity; scrollbar-width: thin; padding: 0 .1rem; }
-      .col-h { position: sticky; top: 0; z-index: 1; padding: .3rem; text-align: center; font-size: .72rem; font-weight: var(--sav-font-weight-bold); text-transform: uppercase; color: var(--sav-color-text-muted); background: var(--sav-color-surface); }
+      /* the names of the columns sit above them, outside what scrolls: on the panel itself, with no background of their own */
+      .cols-h { display: flex; gap: .3rem; }
+      .col-h { flex: 1; padding: .3rem .1rem; text-align: center; font-size: .72rem; font-weight: var(--sav-font-weight-bold); text-transform: uppercase; color: var(--sav-color-text-muted); }
       .t { position: relative; isolation: isolate; display: block; width: 100%; padding: .45rem 0; border: 0; background: none; color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: center; cursor: pointer; border-radius: var(--sav-radius-sm); scroll-snap-align: center; }
       .t::before { content: ""; position: absolute; inset: 1px 2px; z-index: -1; border-radius: inherit; background: var(--_cb, transparent); transform: rotate(var(--sav-knob-tilt, 0deg)); }
       .t:hover { --_cb: var(--sav-color-surface-2); }
@@ -2690,20 +2890,27 @@
       const [h, m] = (this._v || '').split(':').map(Number);
       const step = Math.max(1, Number(this.getAttribute('step')) || 5);
       const hours = this.h12 ? [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : Array.from({ length: 24 }, (_, i) => i);
-      const pm = h >= 12;
+      // with no time yet, the period of the current time is already chosen: the hour picked next goes with it
+      const pm = this._v ? h >= 12 : this.pendingPm();
       const hourOf = (x) => (this.h12 ? (x % 12) + (pm ? 12 : 0) : x);
-      const col = (title, items) => `<div class="col" role="listbox" aria-label="${title}"><div class="col-h">${title}</div>${items}</div>`;
+      const col = (name, items) => `<div class="col" role="listbox" aria-label="${esc(name)}">${items}</div>`;
+      const head = (title) => `<span class="col-h">${esc(title)}</span>`;
       const hh = hours.map((x) => `<button type="button" class="t${this._v && hourOf(x) === h ? ' sel' : ''}" data-h="${hourOf(x)}">${this.h12 ? x : pad(x)}</button>`).join('');
       const mm = Array.from({ length: Math.ceil(60 / step) }, (_, i) => i * step).map((x) => `<button type="button" class="t${this._v && x === m ? ' sel' : ''}" data-m="${x}">${pad(x)}</button>`).join('');
-      const ap = this.h12 ? col('', ['AM', 'PM'].map((x, i) => `<button type="button" class="t${this._v && (i === 1) === pm ? ' sel' : ''}" data-ap="${i}">${x}</button>`).join('')) : '';
-      this.$('.body').innerHTML = `<div class="cols">${col('Hour', hh)}${col('Min', mm)}${ap}</div>
+      const ap = this.h12 ? col(T(this, 'Morning or afternoon'), ['AM', 'PM'].map((x, i) => `<button type="button" class="t${(i === 1) === pm ? ' sel' : ''}" data-ap="${i}">${x}</button>`).join('')) : '';
+      this.$('.body').innerHTML = `<div class="cols-h" aria-hidden="true">${head(T(this, 'Hour'))}${head(T(this, 'Min'))}${this.h12 ? head(T(this, 'AM/PM')) : ''}</div>
+        <div class="cols">${col(T(this, 'Hours'), hh)}${col(T(this, 'Minutes'), mm)}${ap}</div>
         <div class="foot"><button type="button" class="lnk" data-act="now">${esc(T(this, 'Now'))}</button><button type="button" class="lnk" data-act="done">${esc(T(this, 'Done'))}</button></div>`;
       requestAnimationFrame(() => this.$$('.col .t.sel').forEach((b) => b.scrollIntoView({ block: 'center' })));
     }
-    focusInitial() { (this.$('.t.sel') || this.$('.t')).focus({ preventScroll: true }); }
+    /** 12 hours with no time yet: the period chosen so far (AM or PM), at first the one of the current time */
+    pendingPm() { return this._pm ?? new Date().getHours() >= 12; }
+    focusInitial() { (this.$('.t.sel[data-h]') || this.$('.t[data-h]')).focus({ preventScroll: true }); }
     bodyClick(e) {
       const b = e.target.closest('button'); if (!b) return;
-      let [h, m] = (this._v || '00:00').split(':').map(Number);
+      // no time yet: AM or PM only chooses the period, the time comes with the hour or the minutes
+      if (!this._v && b.dataset.ap !== undefined) { this._pm = b.dataset.ap === '1'; this.renderBody(); this.$(`.t[data-ap="${b.dataset.ap}"]`)?.focus({ preventScroll: true }); return; }
+      let [h, m] = (this._v || (this.h12 && this.pendingPm() ? '12:00' : '00:00')).split(':').map(Number);
       if (b.dataset.h !== undefined) h = Number(b.dataset.h);
       if (b.dataset.m !== undefined) m = Number(b.dataset.m);
       if (b.dataset.ap !== undefined) h = (h % 12) + (b.dataset.ap === '1' ? 12 : 0);
@@ -3445,7 +3652,8 @@
         const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
         if (!inside) this.requestClose('overlay');
       });
-      this.addEventListener('click', (e) => { if (e.target.closest?.('[data-sav-close]')) this.requestClose('button'); });
+      // (open as an action sheet, the dialog's sheet answers data-sav-close itself)
+      this.addEventListener('click', (e) => { if (!(this._sh?.el && e.composedPath().includes(this._sh.el)) && e.target.closest?.('[data-sav-close]')) this.requestClose('button'); });
       this.$$('slot').forEach((s) => s.addEventListener('slotchange', () => this.sync()));
       this.sync();
       if (this.open) this.show(true);
@@ -3498,20 +3706,43 @@
       ${panelLayer('dialog')}
       .foot { border-radius: 0 0 var(--sav-radius-lg) var(--sav-radius-lg); }
       .grab { display: none; }
-      /* sheet-on-mobile: on small screens the dialog becomes an action sheet that rises from the bottom */
-      @media (max-width: 640px) {
-        :host([sheet-on-mobile]) dialog { width: 100vw; max-width: 100vw; max-height: 92dvh; margin: auto 0 0; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; border: 0; padding-bottom: env(safe-area-inset-bottom); }
-        :host([sheet-on-mobile]) dialog::before { transform: none; border-width: var(--sav-border-width) 0 0; }
-        :host([sheet-on-mobile]) dialog::after { display: none; }
-        :host([sheet-on-mobile]) .grab { display: block; width: 2.5rem; height: 4px; margin: .55rem auto 0; border-radius: 99px; background: var(--sav-color-border-strong); flex: none; }
-        :host([sheet-on-mobile]) .head { padding-top: .6rem; }
-        :host([sheet-on-mobile]) .foot { flex-direction: column-reverse; align-items: stretch; }
-        :host([sheet-on-mobile]) ::slotted([slot="footer"]) { width: 100%; display: flex; }
-      }
+      /* sheet-on-mobile: on a phone the dialog opens as a sav-action-sheet (MobileSheet), its buttons one under the other,
+         the main one (the last) on top */
+      .m-sheet::part(footer) { flex-direction: column-reverse; }
     `];
-    get isSheet() { return this.hasAttribute('sheet-on-mobile') && matchMedia('(max-width: 640px)').matches; }
-    enterFrames() {
-      return this.isSheet ? [{ transform: 'translateY(100%)' }, { transform: 'none' }] : [{ opacity: 0, transform: 'translateY(12px) scale(.97)' }, { opacity: 1, transform: 'none' }];
+    enterFrames() { return [{ opacity: 0, transform: 'translateY(12px) scale(.97)' }, { opacity: 1, transform: 'none' }]; }
+    /** The action sheet the dialog becomes on a phone (sheet-on-mobile): its parts keep the dialog's names. */
+    get sheet() {
+      return (this._sh ||= new MobileSheet(this, {
+        exportparts: 'panel, handle, header, title, close-button, body, footer',
+        onRequestClose: (source) => this.emit('sav-request-close', { source }, true),
+        onHide: () => { this.open = false; this.emit('sav-hide'); },
+        onAfterShow: () => this.emit('sav-after-show'),
+        onAfterHide: () => this.emit('sav-after-hide'),
+      }));
+    }
+    async show(fromAttr) {
+      if (!fromAttr || this.dlg?.open || !MobileSheet.wanted(this)) return super.show(fromAttr);
+      if (this.sheet.active) return;
+      if (!this.emit('sav-show', {}, true)) { this.open = false; return; }
+      // title, content, header actions and footer go into the sheet's own slots (an empty footer would still show its band)
+      const nodes = [this.$('.body > slot')];
+      for (const name of ['label', 'header-actions', 'footer']) {
+        if (name !== 'label' && !this.hasSlot(name)) continue;
+        const sl = this.$(`slot[name="${name}"]`); sl.slot = name; nodes.push(sl);
+      }
+      const on = (a) => this.hasAttribute(a);
+      if (!this.sheet.open(nodes, { label: this.label || '', attrs: { 'no-cancel': true, 'no-close': on('no-close'), 'no-header': on('no-header'), persistent: on('persistent') } })) { this.open = false; return; }
+      this.querySelector('[autofocus]')?.focus();
+    }
+    async hide(fromAttr) {
+      if (!this._sh?.el?.dlg?.open) return super.hide(fromAttr);
+      if (!fromAttr) this.open = false;
+      else this._sh.close();
+    }
+    sync() {
+      super.sync();
+      if (this._sh?.active) this._sh.el.setAttribute('label', this.label || '');
     }
   }
   define('sav-dialog', SavDialog);
@@ -4155,7 +4386,7 @@
       const sub = this.hasSubmenu;
       this.toggleAttribute('data-sub', sub);
       const box = this.parentElement?.closest('sav-menu, sav-context-menu');
-      this.toggleAttribute('data-in-flyout', !!box && (box.localName === 'sav-context-menu' || box.hasAttribute('data-flyout')));
+      this.toggleAttribute('data-in-flyout', !!box && (box.localName === 'sav-context-menu' ? !box.hasAttribute('data-sheet') : box.hasAttribute('data-flyout')));
       if (sub) { this.setAttribute('aria-haspopup', 'menu'); this.setAttribute('aria-expanded', String(this.open)); } else { this.removeAttribute('aria-haspopup'); this.removeAttribute('aria-expanded'); }
       // in a rail only the icon shows: the label is the tooltip and the accessible name
       const label = [...this.childNodes].filter((n) => n.nodeType === 3 || (n.nodeType === 1 && !n.slot)).map((n) => n.textContent).join('').trim();
@@ -4185,26 +4416,14 @@
       ::slotted(sav-divider) { --spacing: .3rem; }
       ::slotted(hr) { border: 0; border-top: var(--sav-border-width) solid var(--sav-color-border); margin: .3rem 0; }
       @keyframes sav-menu { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
-      @keyframes sav-sheet { from { transform: translateY(100%); } }
-      .sheet-head { display: none; }
-      @media (max-width: 640px) {
-        :host([sheet-on-mobile]) .menu { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; min-width: 0; max-height: 85dvh; margin: 0;
-          border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .3rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); border: 0; }
-        :host([sheet-on-mobile]) .menu::before { transform: none; border-width: var(--sav-border-width) 0 0; }
-        :host([sheet-on-mobile]) .menu::after { display: none; }
-        :host([sheet-on-mobile]) .menu::backdrop { background: var(--sav-color-overlay); }
-        :host([sheet-on-mobile]) .sheet-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1; padding: 1rem .8rem .5rem; background: var(--sav-color-surface); font-weight: var(--sav-font-weight-bold); }
-        :host([sheet-on-mobile]) .sheet-head::before { content: ""; position: absolute; top: .4rem; left: 50%; width: 2.5rem; height: 4px; margin-left: -1.25rem; border-radius: 99px; background: var(--sav-color-border-strong); }
-        :host([sheet-on-mobile]) ::slotted(sav-menu-item) { --sav-menu-item-padding: .8rem .9rem; }
-      }
-      .done { border: 0; background: none; color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); font: inherit; font-weight: var(--sav-font-weight-bold); cursor: pointer; }
+      ${SHEET_MENU}
     `];
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<slot name="trigger" part="trigger"></slot><div class="menu float" part="panel" role="menu" ${supportsPopover ? 'popover="auto"' : ''}><div class="sheet-head"><span class="sheet-title"></span><button class="done" type="button">${esc(T(this, 'Done'))}</button></div><div class="items"><slot></slot></div></div>`;
+      this.shadowRoot.innerHTML = `<slot name="trigger" part="trigger"></slot><div class="menu float" part="panel" ${supportsPopover ? 'popover="auto"' : ''}><div class="items" role="menu"><slot></slot></div></div>`;
       const menu = (this.menu = this.$('.menu'));
       tiltWatch(menu);
-      this.$('.done').addEventListener('click', () => this.hide());
+      this.initSheet();
       this.$('slot[name="trigger"]').addEventListener('click', () => {
         if (Date.now() - (this._closedAt || 0) < 150) return; // light dismiss just closed it
         this.open ? this.hide() : this.show();
@@ -4213,14 +4432,30 @@
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); this.show(e.key === 'ArrowUp' ? 'last' : 'first'); }
       });
       menu.addEventListener('toggle', (e) => { if (e.newState === 'closed') this.afterHide(); });
-      menu.addEventListener('keydown', (e) => this.onKey(e));
-      menu.addEventListener('click', (e) => {
+      // on the items, not on the panel: on a phone they move into the action sheet
+      const items = this.$('.items');
+      items.addEventListener('keydown', (e) => this.onKey(e));
+      items.addEventListener('click', (e) => {
         const item = e.target.closest('sav-menu-item');
         if (!item || item.hasAttribute('disabled')) return;
         this.choose(item);
       });
       // browsers without popovers: a press outside closes it (removed again when the element leaves the page)
-      if (!supportsPopover) { this._outside = (e) => { if (this.open && !e.composedPath().includes(this)) this.hide(); }; document.addEventListener('pointerdown', this._outside); }
+      if (!supportsPopover) { this._outside = (e) => { if (this.open && !this.sheet && !e.composedPath().includes(this)) this.hide(); }; document.addEventListener('pointerdown', this._outside); }
+    }
+    /** sheet-on-mobile: on a phone the items open in a sav-action-sheet, titled by label (or the text of the trigger) */
+    initSheet() { this._sheet = new MobileSheet(this, { onHide: () => this.afterHide(), returnFocus: () => (this.localName === 'sav-dropdown' ? this.trigger : null) }); }
+    /** True while the menu is open as an action sheet. */
+    get sheet() { return !!this._sheet?.active; }
+    openSheet(label) {
+      const items = this.$('.items');
+      // several choices: the sheet closes with Done, there is nothing to cancel
+      const many = this.multiple || this.hasAttribute('stay-open');
+      if (!this._sheet.open([items], { label, attrs: { 'no-cancel': many, 'close-style': many ? 'text' : null } })) return false;
+      items.classList.add('in-sheet');
+      label ? items.setAttribute('aria-label', label) : items.removeAttribute('aria-label');
+      this._sheet.el.addEventListener('sav-after-hide', () => items.classList.remove('in-sheet'), { once: true });
+      return true;
     }
     get items() { return [...this.querySelectorAll('sav-menu-item')].filter((i) => !i.hasAttribute('disabled') && !i.closest('[hidden]')); }
     get trigger() { return this.querySelector(':scope > [slot="trigger"]'); }
@@ -4228,22 +4463,22 @@
     show(focus = 'first') {
       if (this.disabled || this.open) return;
       if (!this.emit('sav-show', {}, true)) return;
-      showPop(this.menu);
+      if (this.multiple) this.querySelectorAll('sav-menu-item:not([type])').forEach((i) => i.setAttribute('type', 'checkbox'));
+      if (MobileSheet.wanted(this)) { if (!this.openSheet(this.getAttribute('label') || this.trigger?.textContent.trim() || '')) return; }
+      else showPop(this.menu);
       this.setAttribute('open', '');
       this.trigger?.setAttribute('aria-expanded', 'true');
       this.trigger?.toggleAttribute('data-open', true); // a tilted trigger straightens while its menu is open
-      if (this.multiple) this.querySelectorAll('sav-menu-item:not([type])').forEach((i) => i.setAttribute('type', 'checkbox'));
-      this.$('.sheet-title').textContent = this.getAttribute('label') || this.trigger?.textContent.trim() || '';
-      const t = this.trigger || this;
-      const sheet = () => this.hasAttribute('sheet-on-mobile') && MOBILE.matches;
-      if (!sheet()) place(this.menu, t, this.placement || 'bottom-start', 6);
-      this._reflow ||= () => { if (!this.open || sheet()) return; const a = this.trigger || this; if (anchorGone(a)) { this.hide(); return; } place(this.menu, a, this.placement || 'bottom-start', 6); };
-      addEventListener('scroll', this._reflow, true);
-      addEventListener('resize', this._reflow);
+      if (!this.sheet) {
+        place(this.menu, this.trigger || this, this.placement || 'bottom-start', 6);
+        this._reflow ||= () => { if (!this.open || this.sheet) return; const a = this.trigger || this; if (anchorGone(a)) { this.hide(); return; } place(this.menu, a, this.placement || 'bottom-start', 6); };
+        addEventListener('scroll', this._reflow, true);
+        addEventListener('resize', this._reflow);
+      }
       const items = this.items;
       (focus === 'last' ? items[items.length - 1] : items[0])?.focus({ preventScroll: true });
     }
-    hide() { hidePop(this.menu); if (!supportsPopover) this.afterHide(); }
+    hide() { if (this.sheet) { this._sheet.close(); return; } hidePop(this.menu); if (!supportsPopover) this.afterHide(); }
     afterHide() {
       if (!this.open) return;
       this._closedAt = Date.now();
@@ -4274,7 +4509,7 @@
       else if (e.key === 'Home') n = items[0];
       else if (e.key === 'End') n = items[items.length - 1];
       else if ((e.key === 'Enter' || e.key === ' ') && cur >= 0) { e.preventDefault(); this.choose(items[cur]); return; }
-      else if (e.key === 'Tab') { this.hide(); return; }
+      else if (e.key === 'Tab') { if (!this.sheet) this.hide(); return; } // in the sheet Tab reaches its close and Cancel buttons
       else if (e.key === 'Escape' && !supportsPopover) { this.hide(); this.trigger?.focus(); return; }
       else if (e.key.length === 1) { // type-ahead
         const k = e.key.toLowerCase();
@@ -4311,23 +4546,25 @@
     `];
     connectedCallback() {
       if (!this.shadowRoot.firstChild) {
-        this.shadowRoot.innerHTML = `<slot name="target" part="target"></slot><div class="menu float" part="panel" role="menu" ${supportsPopover ? 'popover="manual"' : ''}><div class="sheet-head"><span class="sheet-title"></span><button class="done" type="button">${esc(T(this, 'Done'))}</button></div><div class="items"><slot></slot></div></div>`;
+        this.shadowRoot.innerHTML = `<slot name="target" part="target"></slot><div class="menu float" part="panel" ${supportsPopover ? 'popover="manual"' : ''}><div class="items" role="menu"><slot></slot></div></div>`;
         const menu = (this.menu = this.$('.menu'));
         tiltWatch(menu);
-        this.$('.done').addEventListener('click', () => this.hide());
+        this.initSheet();
         menu.addEventListener('toggle', (e) => { if (e.newState === 'closed') this.afterHide(); });
-        menu.addEventListener('keydown', (e) => this.onKey(e));
-        menu.addEventListener('click', (e) => {
+        // on the items, not on the panel: on a phone they move into the action sheet
+        const items = this.$('.items');
+        items.addEventListener('keydown', (e) => this.onKey(e));
+        items.addEventListener('click', (e) => {
           const path = e.composedPath(), item = path.find((n) => n.localName === 'sav-menu-item');
           // a click on the padding, a label or a divider of a submenu belongs to no item
           if (!item || item.hasAttribute('disabled') || path.slice(0, path.indexOf(item)).some((n) => n.localName === 'sav-menu')) return;
           this.choose(item);
         });
         // only a real move counts: a menu that opens under a pointer at rest does not take the item from the arrow keys
-        menu.addEventListener('pointermove', (e) => this.hover(e));
-        menu.addEventListener('contextmenu', (e) => e.preventDefault());
+        items.addEventListener('pointermove', (e) => this.hover(e));
+        items.addEventListener('contextmenu', (e) => e.preventDefault());
         // pressing an item does not move the focus: a text field that has it keeps it (and its caret) after the choice
-        menu.addEventListener('mousedown', (e) => e.preventDefault());
+        items.addEventListener('mousedown', (e) => e.preventDefault());
         // a submenu opened from the keyboard inside another submenu (sav-menu) is placed too
         this.addEventListener('sav-toggle', (e) => { const i = e.detail?.item; if (i?.open && this.contains(i)) this.placeSub(i); });
         this.$('slot:not([name])').addEventListener('slotchange', () => this.sync());
@@ -4337,14 +4574,15 @@
         this._keep = (e) => this.onDown(e);
         this._docKey = (e) => this.onDocKey(e);
         // a press outside, a scroll, a resize or leaving the window closes it (a manual popover: the right click must not close it again)
-        this._outside = (e) => { if (!e.composedPath().includes(this.menu)) this.hide(); };
+        this._outside = (e) => { if (!this.inPanel(e)) this.hide(); };
         this._away = () => { if (!this.sheet) this.hide(); };
       }
       this.attach();
     }
     disconnectedCallback() { this.detach(); if (this.open) { this.hide(); this.afterHide(); } }
     changed(name) { if (name === 'for') { this._retried = false; this.attach(); } }
-    get sheet() { return this.hasAttribute('sheet-on-mobile') && MOBILE.matches; }
+    /** True when the event happened in the open menu (its panel, or its action sheet on a phone). */
+    inPanel(e) { const p = e.composedPath(); return p.includes(this.menu) || (!!this._sheet?.el && p.includes(this._sheet.el)); }
     /** The area whose right click opens the menu: set from script, or named by for, or the elements inside with slot="target". */
     get target() {
       if (this._target) return this._target;
@@ -4385,11 +4623,11 @@
         keeps it, with its caret and its selection, as with the menu of the system. */
     onDown(e) {
       const ctx = e.button === 2 || (e.button === 0 && e.ctrlKey && /Mac/i.test(navigator.platform));
-      if (ctx && !this.disabled && !this.inField(e) && !e.composedPath().includes(this.menu)) e.preventDefault();
+      if (ctx && !this.disabled && !this.inField(e) && !this.inPanel(e)) e.preventDefault();
     }
     onContext(e) {
       if (e.__savContext) return; // a context menu inside this area already answered (or let the browser's menu show)
-      if (e.composedPath().includes(this.menu)) { e.preventDefault(); return; }
+      if (this.inPanel(e)) { e.preventDefault(); return; }
       // something inside the area already answered the right click (a menu of its own, a canvas that uses it): nothing here
       if (e.defaultPrevented) return;
       if (this.disabled || this.inField(e)) return;
@@ -4405,13 +4643,13 @@
     /** Shift F10 and the menu key, also in browsers that send no contextmenu event for them (Safari). */
     onAreaKey(e) {
       if (!((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu') || e.defaultPrevented) return;
-      if (this.disabled || this.inField(e) || e.composedPath().includes(this.menu)) return;
+      if (this.disabled || this.inField(e) || this.inPanel(e)) return;
       const [x, y] = this.under();
       if (this.show(x, y, e.target, true)) e.preventDefault();
     }
     /** Touch screens: a long press opens it (iPhone and iPad have no contextmenu event); moving the finger cancels it. */
     onPress(e) {
-      if (e.pointerType !== 'touch' || !e.isPrimary || this.disabled || this.inField(e) || e.composedPath().includes(this.menu)) return;
+      if (e.pointerType !== 'touch' || !e.isPrimary || this.disabled || this.inField(e) || this.inPanel(e)) return;
       const on = this._on, x = e.clientX, y = e.clientY, target = e.target;
       const stop = () => { clearTimeout(t); on.removeEventListener('pointermove', move); on.removeEventListener('pointerup', stop); on.removeEventListener('pointercancel', stop); };
       const move = (m) => { if (Math.hypot(m.clientX - x, m.clientY - y) > 10) stop(); };
@@ -4441,17 +4679,27 @@
       if (typeof x !== 'number' || typeof y !== 'number') { [x, y] = this.under(); focus = true; }
       if (!this.emit('sav-show', { target, x, y }, true)) return false;
       const again = this.open;
+      if (again && this.sheet) return true; // the sheet covers the page: it stays as it is
       if (!again) this._back = document.activeElement;
       this.contextTarget = target;
       this._hovered = null;
+      const label = this.getAttribute('label') || '';
+      const items = this.$('.items');
+      label ? items.setAttribute('aria-label', label) : items.removeAttribute('aria-label');
+      // on a phone: a sav-action-sheet, its submenus open in place under their item
+      const sheet = !again && MobileSheet.wanted(this);
+      this.toggleAttribute('data-sheet', sheet);
       this.sync();
       this.querySelectorAll('sav-menu-item[open]').forEach((i) => (i.open = false));
-      const label = this.getAttribute('label');
-      label ? this.menu.setAttribute('aria-label', label) : this.menu.removeAttribute('aria-label');
-      this.$('.sheet-title').textContent = label || '';
+      if (sheet) {
+        if (!this.openSheet(label)) { this.removeAttribute('data-sheet'); this.sync(); return false; }
+        this.setAttribute('open', '');
+        this.items[0]?.focus({ preventScroll: true }); // like every action sheet: the first action takes the focus
+        return true;
+      }
       showPop(this.menu);
       this.setAttribute('open', '');
-      if (!this.sheet) this.placeAt(x, y);
+      this.placeAt(x, y);
       if (!again) {
         document.addEventListener('pointerdown', this._outside, true);
         addEventListener('scroll', this._away, true);
@@ -4478,7 +4726,7 @@
     /** A submenu flies out on the right, or on the left when there is no room; it moves up to stay on screen. */
     placeSub(item) {
       const sub = item.shadowRoot?.querySelector('.sub');
-      if (!sub) return;
+      if (!sub || this.sheet) return;
       const m = 8, vw = document.documentElement.clientWidth, vh = window.innerHeight;
       item.removeAttribute('data-flip');
       item.style.setProperty('--_sub-dy', '0px');
@@ -4491,6 +4739,7 @@
       if (r.bottom > vh - m) item.style.setProperty('--_sub-dy', `${Math.round(Math.max(m - r.top, vh - m - r.bottom))}px`);
     }
     hide() {
+      if (this.sheet) { this._sheet.close(); return; } // the sheet gives the focus back itself
       this._restore = this.ownsFocus(); // the focus is given back only if the menu had taken it
       hidePop(this.menu);
       if (!supportsPopover) this.afterHide();
@@ -4519,6 +4768,7 @@
       // a right click while it is open closes it and opens it again at once: then nothing is closed
       if (!this.open || (supportsPopover && this.menu.matches(':popover-open'))) return;
       this.removeAttribute('open');
+      if (this.hasAttribute('data-sheet')) { this.removeAttribute('data-sheet'); this.sync(); }
       this.querySelectorAll('sav-menu-item[open]').forEach((i) => (i.open = false));
       clearTimeout(this._hoverT);
       document.removeEventListener('pointerdown', this._outside, true);
@@ -4536,7 +4786,8 @@
     /** Submenus inside get the panel of the context menu; the items learn that their submenus fly out. */
     sync() {
       const subs = this.querySelectorAll(':scope > sav-menu-item sav-menu[slot="submenu"]');
-      subs.forEach((m) => { m.setAttribute('data-nested', ''); m.setAttribute('data-flyout', ''); m.setAttribute('data-context', ''); });
+      const sheet = this.hasAttribute('data-sheet');
+      subs.forEach((m) => { m.setAttribute('data-nested', ''); m.toggleAttribute('data-flyout', !sheet); m.setAttribute('data-context', ''); m.toggleAttribute('data-sheet', sheet); });
       subs.forEach((m) => m.sync?.());
       this.querySelectorAll(':scope > sav-menu-item, :scope > sav-menu-item sav-menu-item').forEach((i) => i.sync?.());
       this.toggleAttribute('data-has-sub', subs.length > 0);
@@ -4566,7 +4817,7 @@
       }, 160);
     }
     choose(item) {
-      if (item.hasSubmenu) { if (!item.open) this.openSub(item); return; }
+      if (item.hasSubmenu) { if (!item.open) this.openSub(item); else if (this.sheet) item.open = false; return; } // in the sheet a tap folds it again
       const check = item.getAttribute('type') === 'checkbox';
       if (check) item.checked = !item.checked;
       const detail = { item, value: item.value, checked: check ? item.checked : undefined, target: this.contextTarget };
@@ -4578,7 +4829,7 @@
     onKey(e) {
       if (e.defaultPrevented) return; // a submenu (sav-menu) already moved or went back
       const it = e.target.closest?.('sav-menu-item');
-      if (e.key === 'Tab') { e.preventDefault(); this.hide(); return; }
+      if (e.key === 'Tab') { if (this.sheet) return; e.preventDefault(); this.hide(); return; } // in the sheet Tab reaches its buttons
       if (e.key === 'Escape') { e.preventDefault(); if (it?.open) it.open = false; else this.hide(); return; }
       if (it && it.parentElement !== this) return; // inside a submenu: sav-menu handles the arrows
       if (it?.hasSubmenu && (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ')) {
@@ -4623,25 +4874,20 @@
       .x { display: inline-flex; margin: -.3rem -.4rem 0 auto; padding: .25rem; border: 0; border-radius: var(--sav-radius-sm); background: none; color: var(--sav-color-text-muted); cursor: pointer; }
       .x svg { width: .95rem; height: .95rem; }
       @keyframes sav-tip { from { opacity: 0; transform: scale(.97); } }
-      @keyframes sav-sheet { from { transform: translateY(100%); } }
-      @media (max-width: 640px) {
-        :host([sheet-on-mobile]) .tip { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 1.2rem 1.1rem calc(1.2rem + env(safe-area-inset-bottom)); font-size: var(--sav-font-size-md); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
-        :host([sheet-on-mobile]) .arr { display: none; }
-        :host([sheet-on-mobile]) .tip::before { transform: none; }
-        :host([sheet-on-mobile]) .tip::after { display: none; }
-        :host([sheet-on-mobile]) .tip::backdrop { background: var(--sav-color-overlay); }
-      }
+      /* sheet-on-mobile: on a phone the text opens in a sav-action-sheet (MobileSheet) */
+      .m-sheet::part(body) { padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
     `];
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
       const id = nextId('info');
       this.shadowRoot.innerHTML = `<button class="tr" part="trigger" type="button" aria-expanded="false" aria-controls="${id}"><slot name="trigger"></slot><span class="lab"></span></button>
-        <div class="tip float" part="body" id="${id}" role="dialog" ${supportsPopover ? 'popover="auto"' : ''}><div class="head"><div class="h" part="heading"></div><button class="x" type="button" aria-label="${esc(T(this, 'Close'))}">${svgIcon('x')}</button></div><slot></slot><span class="txt"></span><span class="arr" aria-hidden="true"></span></div>`;
+        <div class="tip float" part="body" id="${id}" role="dialog" ${supportsPopover ? 'popover="auto"' : ''}><div class="head"><div class="h" part="heading"></div><button class="x" type="button" aria-label="${esc(T(this, 'Close'))}">${svgIcon('x')}</button></div><div class="content"><slot></slot><span class="txt"></span></div><span class="arr" aria-hidden="true"></span></div>`;
       // inside a <label> a click must not toggle the control it belongs to
       this.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
       this.$('.tr').addEventListener('click', () => (Date.now() - (this._closedAt || 0) < 150 ? 0 : this.open ? this.hide() : this.show()));
       this.$('.x').addEventListener('click', () => this.hide());
       this.$('.tip').addEventListener('toggle', (e) => { if (e.newState === 'closed') this.afterHide(); });
+      this._sheet = new MobileSheet(this, { onHide: () => this.afterHide(), returnFocus: () => this.$('.tr') });
       this.$('slot[name="trigger"]').addEventListener('slotchange', () => this.sync());
       this.sync();
     }
@@ -4660,18 +4906,24 @@
     }
     get open() { return this.hasAttribute('open'); }
     show() {
+      if (this.open) return;
       const tip = this.$('.tip');
-      tiltWatch(tip); showPop(tip);
+      // sheet-on-mobile: on a phone the text opens in a sav-action-sheet, titled by the heading (or the label)
+      if (MobileSheet.wanted(this)) {
+        const title = this.getAttribute('heading') || this.getAttribute('label') || T(this, 'More information');
+        if (!this._sheet.open([this.$('.content')], { label: title, attrs: { 'no-cancel': true } })) return;
+      } else {
+        tiltWatch(tip); showPop(tip);
+        place(tip, this.$('.tr'), this.getAttribute('placement') || 'top', 10);
+        this._reflow ||= () => { if (!this.open || this._sheet.active) return; if (anchorGone(this.$('.tr'))) { this.hide(); return; } place(tip, this.$('.tr'), this.getAttribute('placement') || 'top', 10); };
+        addEventListener('scroll', this._reflow, true);
+        addEventListener('resize', this._reflow);
+      }
       this.setAttribute('open', '');
       this.$('.tr').setAttribute('aria-expanded', 'true');
-      const sheet = () => this.hasAttribute('sheet-on-mobile') && MOBILE.matches;
-      if (!sheet()) place(tip, this.$('.tr'), this.getAttribute('placement') || 'top', 10);
-      this._reflow ||= () => { if (!this.open || sheet()) return; if (anchorGone(this.$('.tr'))) { this.hide(); return; } place(tip, this.$('.tr'), this.getAttribute('placement') || 'top', 10); };
-      addEventListener('scroll', this._reflow, true);
-      addEventListener('resize', this._reflow);
       this.emit('sav-show');
     }
-    hide() { hidePop(this.$('.tip')); if (!supportsPopover) this.afterHide(); }
+    hide() { if (this._sheet.active) { this._sheet.close(); return; } hidePop(this.$('.tip')); if (!supportsPopover) this.afterHide(); }
     afterHide() {
       if (!this.open) return;
       this._closedAt = Date.now();
@@ -5227,7 +5479,7 @@
       .seg button[aria-checked="true"] { color: var(--sav-color-text); --_b: var(--sav-color-surface); --_bi: var(--sav-sheen, none); --_s: var(--sav-tab-segment-shadow, var(--sav-shadow-sm)); }
       :host([icons-only]) .seg .t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     `];
-    static get observedAttributes() { return ['value', 'appearance', 'icons-only', 'apply', 'size', 'no-auto']; }
+    static get observedAttributes() { return ['value', 'appearance', 'icons-only', 'apply', 'size', 'no-auto', 'label', 'sheet-on-mobile']; }
     /** The choices: light, dark and auto, or only light and dark with no-auto. */
     get themes() { return this.hasAttribute('no-auto') ? THEMES.filter(([k]) => k !== 'auto') : THEMES; }
     get value() {
@@ -5248,16 +5500,35 @@
           e.preventDefault(); const list = this.themes, i = list.findIndex(([k]) => k === this.value); const n = list[(i + d + list.length) % list.length][0]; this.pick(n); this.$(`[data-v="${n}"]`).focus();
         });
       } else {
-        const cur = this.themes.find(([k]) => k === v) || this.themes[this.themes.length - 1];
-        this.shadowRoot.innerHTML = `<sav-dropdown part="base" label="${esc(this.getAttribute('label') || T(this, 'Theme'))}">
-          <sav-button slot="trigger" size="${esc(this.getAttribute('size') || 'md')}" appearance="outline" variant="neutral" ${this.hasAttribute('icons-only') ? `label="${esc(T(this, 'Theme: {name}', { name: T(this, cur[1]) }))}"` : ''}><sav-icon slot="prefix" name="${cur[2]}"></sav-icon>${this.hasAttribute('icons-only') ? '' : esc(T(this, cur[1]))}<sav-icon slot="suffix" name="chevron-down"></sav-icon></sav-button>
-          ${this.themes.map(([k, l, ic]) => `<sav-menu-item type="checkbox" value="${k}" ${k === v ? 'checked' : ''}><sav-icon slot="prefix" name="${ic}"></sav-icon>${esc(T(this, l))}</sav-menu-item>`).join('')}</sav-dropdown>`;
-        this.$('sav-dropdown').addEventListener('sav-select', (e) => this.pick(e.detail.value));
+        // a menu (sheet-on-mobile: an action sheet on phones); a choice updates it in place and closes it
+        this.shadowRoot.innerHTML = `<sav-dropdown part="base" label="${esc(this.getAttribute('label') || T(this, 'Theme'))}" ${this.hasAttribute('sheet-on-mobile') ? 'sheet-on-mobile' : ''}>
+          <sav-button slot="trigger" size="${esc(this.getAttribute('size') || 'md')}" appearance="outline" variant="neutral"></sav-button>
+          ${this.themes.map(([k, l, ic]) => `<sav-menu-item type="checkbox" value="${k}"><sav-icon slot="prefix" name="${ic}"></sav-icon>${esc(T(this, l))}</sav-menu-item>`).join('')}</sav-dropdown>`;
+        const dd = this.$('sav-dropdown');
+        // the menu's own change (a list of ticked items) stays inside: the theme choice sends its own, with the theme
+        dd.addEventListener('change', (e) => { if (e.target === dd) e.stopPropagation(); });
+        dd.addEventListener('sav-select', (e) => {
+          e.stopPropagation();
+          const sheet = dd.sheet;
+          this.pick(e.detail.value);
+          dd.hide();
+          if (!sheet) dd.trigger?.focus(); // the sheet gives the focus back itself
+        });
+        this.sync();
       }
     }
-    sync() { this.render(); }
+    /** Shows the value: the chosen button, or the trigger and the tick of the menu (without drawing the menu again: it may be open). */
+    sync() {
+      const dd = this.$('sav-dropdown');
+      if (!dd) { this.render(); return; }
+      const v = this.value, cur = this.themes.find(([k]) => k === v) || this.themes[this.themes.length - 1], icons = this.hasAttribute('icons-only');
+      const tr = dd.querySelector('[slot="trigger"]');
+      tr.innerHTML = `<sav-icon slot="prefix" name="${cur[2]}"></sav-icon>${icons ? '' : esc(T(this, cur[1]))}<sav-icon slot="suffix" name="chevron-down"></sav-icon>`;
+      icons ? tr.setAttribute('label', T(this, 'Theme: {name}', { name: T(this, cur[1]) })) : tr.removeAttribute('label');
+      dd.querySelectorAll('sav-menu-item').forEach((i) => i.toggleAttribute('checked', i.value === cur[0]));
+    }
     pick(v) {
-      if (v === this.getAttribute('value')) { this.render(); return; }
+      if (v === this.getAttribute('value')) { this.sync(); return; }
       this.setAttribute('value', v);
       if (this.hasAttribute('apply')) window.Sav?.setMode?.(v);
       this.emit('change', { value: v });
@@ -6308,6 +6579,9 @@
       /* a submenu of sav-context-menu: the same panel as the menu it flies out of */
       :host([data-context]) .m { position: relative; gap: 0; padding: .3rem 0; min-width: var(--min-width, 12rem); }
       ${panelLayer(':host([data-context]) .m')}
+      /* … opened as an action sheet on a phone: the submenu opens in place, under its item */
+      :host([data-context][data-sheet]) .m { padding: 2px 0 2px .9rem; min-width: 0; }
+      :host([data-context][data-sheet]) .m::before, :host([data-context][data-sheet]) .m::after { display: none; }
     `;
     static get observedAttributes() { return ['collapsed', 'orientation', 'label', 'auto-text']; }
     connectedCallback() {
@@ -6383,10 +6657,13 @@
 
   /* ================================================================== sav-bottom-nav */
 
-  /** The bar at the bottom of a phone app: 3–5 destinations with icon and label, a badge, the current one marked. */
+  /** The bar at the bottom of a phone app: 3–5 destinations with icon and label, a badge, the current one marked.
+      More than max-items (5): the first four stay and a fifth, More (three dots; more-label, more-icon), opens an action sheet with the others. A way out,
+      not a design: keep the bar to 3–5 destinations whenever you can (hidden destinations are found less). */
   class SavBottomNav extends SavElement {
     static styles = `
       :host { display: block; }
+      ::slotted(:is([data-overflow], [hidden])), .more[hidden] { display: none; }
       :host([fixed]) { position: fixed; inset: auto 0 0 0; z-index: 900; }
       @media (min-width: 761px) { :host([fixed][mobile-only]) { display: none; } }
       nav { display: flex; padding: .35rem .4rem calc(.35rem + env(safe-area-inset-bottom)); background: color-mix(in oklab, var(--sav-color-surface) 92%, transparent); background-image: var(--sav-sheen, none);
@@ -6395,12 +6672,64 @@
     `;
     connectedCallback() {
       if (this.shadowRoot.firstChild) return;
-      this.shadowRoot.innerHTML = `<nav part="base" aria-label="${esc(this.getAttribute('label') || T(this, 'Main'))}"><slot></slot></nav>`;
+      this.shadowRoot.innerHTML = `<nav part="base" aria-label="${esc(this.getAttribute('label') || T(this, 'Main'))}"><slot></slot>`
+        + `<sav-bottom-nav-item class="more" part="more" icon="more-horizontal" data-more hidden></sav-bottom-nav-item></nav>`;
       this.addEventListener('click', (e) => {
         const it = e.target.closest('sav-bottom-nav-item'); if (!it) return;
         if (!it.hasAttribute('href')) { this.querySelectorAll('sav-bottom-nav-item').forEach((x) => x.toggleAttribute('current', x === it)); }
         this.emit('sav-select', { item: it, value: it.getAttribute('value') ?? it.getAttribute('label') });
       });
+      this.$('.more').addEventListener('click', () => this.openMore());
+      this.$('slot').addEventListener('slotchange', () => this.sync());
+      // a destination added, removed, renamed or made current: the bar and More follow
+      new MutationObserver(() => this.sync()).observe(this, { childList: true, subtree: true, attributes: true, attributeFilter: ['current', 'label', 'icon', 'badge', 'hidden'] });
+      this.sync();
+    }
+    static get observedAttributes() { return ['label', 'max-items', 'more-label', 'more-icon']; }
+    changed(name) { if (name === 'label') this.$('nav')?.setAttribute('aria-label', this.getAttribute('label') || T(this, 'Main')); this.sync(); }
+    get items() { return [...this.querySelectorAll(':scope > sav-bottom-nav-item')].filter((i) => !i.hidden); }
+    /** The destinations in the More sheet: none while they fit, else all but the first max-items − 1. */
+    get overflow() { const all = this.items, max = Math.max(2, Number(this.getAttribute('max-items')) || 5); return all.length > max ? all.slice(max - 1) : []; }
+    sync() {
+      const more = this.$('.more'); if (!more) return;
+      const over = this.overflow;
+      this.querySelectorAll(':scope > sav-bottom-nav-item').forEach((i) => i.toggleAttribute('data-overflow', over.includes(i)));
+      more.hidden = !over.length;
+      // More, its words and its icon: more-label and more-icon (default More, three dots)
+      more.setAttribute('label', this.getAttribute('more-label') || T(this, 'More'));
+      more.setAttribute('icon', this.getAttribute('more-icon') || 'more-horizontal');
+      // the current page is among the hidden ones: More shows it (and a dot when one of them has a badge)
+      more.toggleAttribute('data-current', over.some((i) => i.hasAttribute('current')));
+      more.toggleAttribute('data-dot', over.some((i) => i.getAttribute('badge')));
+    }
+    /** Opens the sheet with the destinations that do not fit; choosing one is like pressing it in the bar. */
+    async openMore() {
+      const over = this.overflow; if (!over.length || this._sheet?.open) return;
+      let s = this._sheet;
+      if (!s) {
+        s = this._sheet = document.createElement('sav-action-sheet');
+        s.setAttribute('part', 'more-sheet');
+        // its own events stay inside: the bar sends sav-select itself
+        for (const n of ['sav-show', 'sav-after-show', 'sav-hide', 'sav-after-hide', 'sav-request-close', 'sav-select', 'change']) s.addEventListener(n, (e) => e.target === s && e.stopPropagation());
+        this.shadowRoot.append(s);
+      }
+      s.setAttribute('label', this.getAttribute('more-label') || T(this, 'More'));
+      s.replaceChildren(...over.map((it, i) => {
+        const m = document.createElement('sav-menu-item');
+        m.setAttribute('value', String(i));
+        if (it.hasAttribute('current')) m.setAttribute('current', '');
+        const ic = document.createElement('sav-icon'); ic.slot = 'prefix'; ic.setAttribute('name', it.getAttribute('icon') || 'circle'); m.append(ic);
+        m.append(document.createTextNode(it.getAttribute('label') || ''));
+        const b = it.getAttribute('badge');
+        if (b) { const sb = document.createElement('sav-badge'); sb.slot = 'suffix'; sb.setAttribute('pill', ''); sb.setAttribute('size', 'sm'); sb.textContent = b; m.append(sb); }
+        return m;
+      }));
+      const more = this.$('.more').shadowRoot?.querySelector('.i');
+      more?.setAttribute('aria-expanded', 'true');
+      const v = await s.pick();
+      more?.setAttribute('aria-expanded', 'false');
+      // as if it were pressed in the bar: a link opens, a button becomes current and sends sav-select
+      if (v !== null) over[Number(v)]?.shadowRoot?.querySelector('.i')?.click();
     }
   }
   define('sav-bottom-nav', SavBottomNav);
@@ -6412,20 +6741,23 @@
            font: inherit; font-size: .72rem; font-weight: var(--sav-font-weight-semibold); text-decoration: none; cursor: pointer; min-height: 48px; }
       .ic { position: relative; isolation: isolate; display: grid; place-items: center; width: 3.2rem; height: 1.85rem; }
       .ic::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--sav-radius-pill); background: transparent; transform: rotate(var(--sav-knob-tilt, 0deg)) scale(.6); opacity: 0; transition: transform calc(.25s * var(--sav-motion, 1)) var(--sav-easing), opacity calc(.2s * var(--sav-motion, 1)); }
-      :host([current]) .i { color: var(--sav-color-text); }
-      :host([current]) .ic::before { background: color-mix(in oklab, var(--sav-color-primary) 22%, transparent); transform: rotate(calc(var(--sav-knob-tilt, 0deg) * .5)) scale(1); opacity: 1; box-shadow: ${INK()}; }
+      :host(:is([current], [data-current])) .i { color: var(--sav-color-text); }
+      :host(:is([current], [data-current])) .ic::before { background: color-mix(in oklab, var(--sav-color-primary) 22%, transparent); transform: rotate(calc(var(--sav-knob-tilt, 0deg) * .5)) scale(1); opacity: 1; box-shadow: ${INK()}; }
       ::slotted(sav-icon), .ic sav-icon { font-size: 1.3rem; }
       .b { position: absolute; top: -.15rem; right: .45rem; }
+      .b[dot] { top: .1rem; right: .8rem; }
       .l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     `;
-    static get observedAttributes() { return ['label', 'icon', 'href', 'badge', 'current']; }
+    static get observedAttributes() { return ['label', 'icon', 'href', 'badge', 'current', 'data-dot']; }
     connectedCallback() { this.render(); }
     changed() { this.render(); }
     render() {
       const href = this.getAttribute('href'), tag = href ? 'a' : 'button';
       const badge = this.getAttribute('badge');
-      this.shadowRoot.innerHTML = `<${tag} class="i" part="base" ${href ? `href="${esc(href)}"` : 'type="button"'} ${this.hasAttribute('current') ? 'aria-current="page"' : ''}>
-        <span class="ic"><sav-icon name="${esc(this.getAttribute('icon') || 'circle')}"></sav-icon>${badge ? `<sav-badge class="b" pill size="sm">${esc(badge)}</sav-badge>` : ''}</span><span class="l">${esc(this.getAttribute('label') || '')}</span></${tag}>`;
+      // More (made by the bar) opens a sheet: a button that says so
+      const more = this.hasAttribute('data-more') ? 'aria-haspopup="dialog" aria-expanded="false"' : '';
+      this.shadowRoot.innerHTML = `<${tag} class="i" part="base" ${href ? `href="${esc(href)}"` : 'type="button"'} ${this.hasAttribute('current') ? 'aria-current="page"' : ''} ${more}>
+        <span class="ic"><sav-icon name="${esc(this.getAttribute('icon') || 'circle')}"></sav-icon>${badge ? `<sav-badge class="b" pill size="sm">${esc(badge)}</sav-badge>` : this.hasAttribute('data-dot') ? '<sav-badge class="b" dot></sav-badge>' : ''}</span><span class="l">${esc(this.getAttribute('label') || '')}</span></${tag}>`;
     }
   }
   define('sav-bottom-nav-item', SavBottomNavItem);
@@ -8119,10 +8451,8 @@
       .x[hidden] { display: none; }
       @keyframes sav-pop { from { opacity: 0; transform: translateY(4px) scale(.98); } }
       @media (prefers-reduced-motion: reduce) { .pop:popover-open, .pop.open { animation: none; } }
-      @media (max-width: 640px) {
-        :host([sheet-on-mobile]) .pop { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding-bottom: calc(1.2rem + env(safe-area-inset-bottom)); }
-        :host([sheet-on-mobile]) .pop::before { transform: none; } :host([sheet-on-mobile]) .pop::after { display: none; }
-      }
+      /* sheet-on-mobile: on a phone the content opens in a sav-action-sheet (MobileSheet) */
+      .m-sheet::part(body) { padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
     `];
     static get observedAttributes() { return ['heading', 'no-close', 'label']; }
     connectedCallback() {
@@ -8137,7 +8467,8 @@
       this.$('.x').addEventListener('click', () => this.hide());
       this.$('.pop').addEventListener('toggle', (e) => { if (e.newState === 'closed') this.afterHide(); });
       this.$('.pop').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); this.hide(); } });
-      if (!supportsPopover) { this._outside = (e) => { if (this.open && !e.composedPath().includes(this)) this.hide(); }; document.addEventListener('pointerdown', this._outside); }
+      this._sheet = new MobileSheet(this, { onHide: () => this.afterHide(), returnFocus: () => this.trigger });
+      if (!supportsPopover) { this._outside = (e) => { if (this.open && !this._sheet.active && !e.composedPath().includes(this)) this.hide(); }; document.addEventListener('pointerdown', this._outside); }
       this.sync();
     }
     disconnectedCallback() { if (this._outside) document.removeEventListener('pointerdown', this._outside); if (this.open) this.hide(); }
@@ -8153,12 +8484,17 @@
     get open() { return this.hasAttribute('open'); }
     show() {
       const pop = this.$('.pop'), t = this.trigger; if (!t || this.open) return;
-      tiltWatch(pop); showPop(pop);
+      // sheet-on-mobile: on a phone the content opens in a sav-action-sheet, titled by the heading (or the label)
+      if (MobileSheet.wanted(this)) {
+        const title = this.getAttribute('heading') || this.getAttribute('label') || T(this, 'Details');
+        if (!this._sheet.open([this.$('.pop > slot:not([name])')], { label: title, attrs: { 'no-cancel': true, 'no-close': this.hasAttribute('no-close') } })) return;
+      } else {
+        tiltWatch(pop); showPop(pop);
+        place(pop, t, this.getAttribute('placement') || 'bottom-start', 8);
+        this._reflow ||= () => { if (!this.open || this._sheet.active) return; if (anchorGone(this.trigger)) { this.hide(); return; } place(pop, this.trigger, this.getAttribute('placement') || 'bottom-start', 8); };
+        addEventListener('scroll', this._reflow, true); addEventListener('resize', this._reflow);
+      }
       this.setAttribute('open', ''); t.setAttribute('aria-expanded', 'true');
-      const sheet = () => this.hasAttribute('sheet-on-mobile') && MOBILE.matches;
-      if (!sheet()) place(pop, t, this.getAttribute('placement') || 'bottom-start', 8);
-      this._reflow ||= () => { if (!this.open || sheet()) return; if (anchorGone(this.trigger)) { this.hide(); return; } place(pop, this.trigger, this.getAttribute('placement') || 'bottom-start', 8); };
-      addEventListener('scroll', this._reflow, true); addEventListener('resize', this._reflow);
       // the focus moves into the panel (its first field or button), and comes back to the trigger when it closes
       setTimeout(() => { if (!this.open) return; const F = 'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"]), sav-input, sav-select, sav-textarea, sav-button, sav-checkbox, sav-switch, sav-copy-button, sav-search';
         const f = [...this.querySelectorAll(`:scope > :not([slot]) :is(${F}), :scope > :is(${F}):not([slot])`)].find((x) => !x.disabled && x.getClientRects().length); (f || this.$('.x:not([hidden])'))?.focus(); }, 30);
@@ -8166,7 +8502,7 @@
     }
     /** the focus is in the panel (checked directly: :focus-within does not match while the window is in the background) */
     get hasFocus() { return !!this.shadowRoot.activeElement || (this.contains(document.activeElement) && !this.trigger?.contains(document.activeElement)); }
-    hide() { this._hadFocus = this.hasFocus; hidePop(this.$('.pop')); if (!supportsPopover) this.afterHide(); }
+    hide() { if (this._sheet.active) { this._sheet.close(); return; } this._hadFocus = this.hasFocus; hidePop(this.$('.pop')); if (!supportsPopover) this.afterHide(); }
     afterHide() {
       if (!this.open) return;
       this._closedAt = Date.now();

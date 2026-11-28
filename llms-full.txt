@@ -235,7 +235,7 @@ Example — Appearances:
 
 ### Toast — `Sav.toast()`
 
-Short notifications that stack in a corner and close themselves. Hovering pauses the timer.
+Short notifications that stack in a corner and close themselves. Hovering pauses the timer. On phones they go across the bottom (or the top) of the screen, clear of the notch and the home bar, three at most at a time; touching one pauses it and a swipe to the side closes it.
 
 Documentation: https://www.savcomponents.com/#toast
 
@@ -688,6 +688,7 @@ Attributes:
 - `swatches` (string): Suggested colours, separated by commas: #ef4444,#22c55e…
 - `clearable` (boolean): A button to leave it empty (no colour).
 - `compact` (boolean): Only the swatch: a small square that opens the picker.
+- `sheet-on-mobile` (boolean): On screens up to 640px the panel rises from the bottom, full width: a bigger area, sliders and buttons for a finger, the name of the field and Done; drag the handle down or tap outside to close it.
 - `size` (sm · md · lg): 
 - `name · disabled · readonly · required`: Like any form field.
 
@@ -701,6 +702,8 @@ CSS parts:
 - `c`: l
 - `s`: w
 - `h`: e
+- `p`: a
+- `s`: h
 
 Events:
 
@@ -857,12 +860,11 @@ Example — Day, month, year:
 <sav-date-picker label="Day and time" mode="datetime" placeholder="Pick a moment" value="2026-11-16T10:30"></sav-date-picker>
 ```
 
-Example — Limits, language, phones:
+Example — Limits, language:
 
 ```html
 <sav-date-picker label="Check-in" min="2026-11-16" max="2027-03-31" help="From today to the end of March." clearable sheet-on-mobile></sav-date-picker>
 <sav-date-picker label="Data (italiano)" locale="it-IT" value="2026-12-25" format="full"></sav-date-picker>
-<sav-date-picker label="Native picker on phones" native-on-mobile></sav-date-picker>
 ```
 
 ### Time picker — `<sav-time-picker>`
@@ -898,6 +900,14 @@ Example — Basic:
 <sav-time-picker label="Every 15 minutes" step="15" placeholder="Pick a time" sheet-on-mobile></sav-time-picker>
 <sav-time-picker label="12 hours" hour-cycle="12" value="18:45"></sav-time-picker>
 <sav-time-picker label="Office hours" min="08:00" max="18:00" native-on-mobile help="From 8 to 18."></sav-time-picker>
+```
+
+Example — On phones:
+
+```html
+<sav-time-picker label="Sheet from the bottom" sheet-on-mobile placeholder="Try it at phone width"></sav-time-picker>
+<sav-time-picker label="Columns under the field" placeholder="As on wide screens"></sav-time-picker>
+<sav-time-picker label="The phone's own picker" native-on-mobile placeholder="Native on phones"></sav-time-picker>
 ```
 
 ### Checkbox & Switch — `<sav-checkbox · sav-switch>`
@@ -1288,6 +1298,13 @@ Example — One or many:
 <sav-country-choice label="Shipping to" multiple value="IT,FR,DE" code="alpha2" style="max-width: 24rem"></sav-country-choice>
 ```
 
+Example — On phones:
+
+```html
+<sav-country-choice label="Sheet from the bottom" sheet-on-mobile placeholder="Try it at phone width" style="max-width: 20rem"></sav-country-choice>
+<sav-country-choice label="List under the field" placeholder="As on wide screens" style="max-width: 20rem"></sav-country-choice>
+```
+
 ### Theme choice — `<sav-theme-choice>`
 
 Light, Dark or Auto (follows the system), each with its icon: a menu or buttons. no-auto leaves only Light and Dark. With apply it switches the page by itself.
@@ -1303,6 +1320,8 @@ Attributes:
 - `apply` (boolean): Calls Sav.setMode() on change.
 - `label` (string): Name for screen readers (default "Theme").
 - `size` (sm · md · lg): 
+- `sheet-on-mobile` (boolean): With the menu: on phones it opens as an action sheet (sav-action-sheet), titled by label.
+- `label` (string): Name of the choice (default Theme): for screen readers, and the title of the sheet on phones.
 
 Events:
 
@@ -1894,8 +1913,8 @@ Example — History, with avatars and relative times:
 
 ```html
 <sav-timeline style="max-width: 26rem">
-  <sav-timeline-item heading="Ada changed the title" icon="pencil"><sav-relative-time datetime="2026-11-28T03:03:43.838Z"></sav-relative-time></sav-timeline-item>
-  <sav-timeline-item heading="Alan left a comment" icon="message-circle">“Looks good to me.” · <sav-relative-time datetime="2026-11-28T00:08:43.839Z"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Ada changed the title" icon="pencil"><sav-relative-time datetime="2026-11-28T03:53:44.928Z"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Alan left a comment" icon="message-circle">“Looks good to me.” · <sav-relative-time datetime="2026-11-28T00:58:44.934Z"></sav-relative-time></sav-timeline-item>
   <sav-timeline-item heading="Build failed" variant="danger" icon="x">2 tests did not pass · yesterday</sav-timeline-item>
 </sav-timeline>
 ```
@@ -1944,11 +1963,11 @@ Example — Past, future, and dates:
 
 ```html
 <ul style="margin: 0; line-height: 1.9">
-  <li>Saved <sav-relative-time datetime="2026-11-28T03:08:23.839Z"></sav-relative-time></li>
-  <li>Edited <sav-relative-time datetime="2026-11-28T02:26:43.839Z"></sav-relative-time></li>
-  <li>Created <sav-relative-time datetime="2026-11-27T03:08:43.839Z"></sav-relative-time></li>
-  <li>Renews <sav-relative-time datetime="2026-12-10T03:08:43.839Z"></sav-relative-time></li>
-  <li>In Italian: <sav-relative-time locale="it" datetime="2026-11-28T00:08:43.839Z"></sav-relative-time></li>
+  <li>Saved <sav-relative-time datetime="2026-11-28T03:58:24.935Z"></sav-relative-time></li>
+  <li>Edited <sav-relative-time datetime="2026-11-28T03:16:44.935Z"></sav-relative-time></li>
+  <li>Created <sav-relative-time datetime="2026-11-27T03:58:44.935Z"></sav-relative-time></li>
+  <li>Renews <sav-relative-time datetime="2026-12-10T03:58:44.935Z"></sav-relative-time></li>
+  <li>In Italian: <sav-relative-time locale="it" datetime="2026-11-28T00:58:44.935Z"></sav-relative-time></li>
   <li>As a date: <sav-relative-time format="date" datetime="2026-11-01T09:00"></sav-relative-time></li>
 </ul>
 ```
@@ -2253,7 +2272,7 @@ Example — Narrow (the ⋯ menu), chosen controls, the browser’s player:
 
 ### Dialog — `<sav-dialog>`
 
-A modal window built on the native <dialog>: focus trap, Esc and click outside to close. With sheet-on-mobile it becomes an action sheet on phones (the first demo has it: try it at phone width).
+A modal window built on the native <dialog>: focus trap, Esc and click outside to close. With sheet-on-mobile it opens as an action sheet (sav-action-sheet) on phones: handle, drag down to close, title and close button; its buttons go one under the other (try it at phone width).
 
 Documentation: https://www.savcomponents.com/#dialog
 
@@ -2261,7 +2280,7 @@ Attributes:
 
 - `open` (boolean): Shows the dialog.
 - `label` (string): Title.
-- `sheet-on-mobile` (boolean): On screens up to 640px wide it opens as an action sheet from the bottom, with full-width buttons.
+- `sheet-on-mobile` (boolean): On screens up to 640px wide it opens as an action sheet (sav-action-sheet) from the bottom, with full-width buttons.
 - `persistent` (boolean): Clicking outside does not close it.
 - `no-header · no-close` (boolean): 
 - `--width` (CSS): Default 32rem.
@@ -2300,6 +2319,23 @@ Example — Basic:
     <sav-input label="Password" type="password" password-toggle></sav-input>
   </div>
   <sav-button slot="footer" block data-sav-close>Continue</sav-button>
+</sav-dialog>
+```
+
+Example — On phones:
+
+```html
+<sav-button onclick="document.getElementById('demo-dialog-sheet').show()">Action sheet</sav-button>
+<sav-dialog id="demo-dialog-sheet" label="Archive the chat?" sheet-on-mobile>
+  You can find it again in Archived.
+  <sav-button slot="footer" appearance="ghost" variant="neutral" data-sav-close>Cancel</sav-button>
+  <sav-button slot="footer" data-sav-close>Archive</sav-button>
+</sav-dialog>
+<sav-button appearance="outline" onclick="document.getElementById('demo-dialog-middle').show()">Window in the middle</sav-button>
+<sav-dialog id="demo-dialog-middle" label="Archive the chat?">
+  You can find it again in Archived.
+  <sav-button slot="footer" appearance="ghost" variant="neutral" data-sav-close>Cancel</sav-button>
+  <sav-button slot="footer" data-sav-close>Archive</sav-button>
 </sav-dialog>
 ```
 
@@ -2440,8 +2476,8 @@ Attributes:
 
 - `placement` (bottom-start · bottom-end · top-start · top-end · right-start …): 
 - `multiple` (boolean): Every item is a checkbox and the menu stays open; read the choices from value.
-- `sheet-on-mobile` (boolean): On phones the menu rises from the bottom.
-- `label` (string): Title of the sheet on phones.
+- `sheet-on-mobile` (boolean): On phones the menu opens as an action sheet (sav-action-sheet): handle, title, close button and Cancel (Done, with multiple or stay-open).
+- `label` (string): Title of the sheet on phones (default: the text of the trigger).
 - `stay-open` (boolean): Keeps it open after a choice.
 - `disabled` (boolean): 
 - `--min-width · --max-height` (CSS): 
@@ -2502,7 +2538,7 @@ Attributes:
 
 - `for` (id): The element whose right click opens the menu. Without it, the elements inside with slot="target" are the area.
 - `label` (string): Name of the menu for screen readers, and title of the sheet on phones.
-- `sheet-on-mobile` (boolean): On phones the menu rises from the bottom.
+- `sheet-on-mobile` (boolean): On phones the menu opens as an action sheet (sav-action-sheet), titled by label; submenus open in place under their item.
 - `stay-open` (boolean): Keeps it open after a choice.
 - `disabled` (boolean): The browser’s own menu shows again.
 - `--min-width · --max-height` (CSS): 
@@ -2591,7 +2627,7 @@ Attributes:
 - `variant` (neutral · primary): 
 - `size` (sm · md): 
 - `placement` (top · bottom · left · right): Default top; it flips when there is no room.
-- `sheet-on-mobile` (boolean): On phones the box rises from the bottom.
+- `sheet-on-mobile` (boolean): On phones the text opens in an action sheet (sav-action-sheet), titled by the heading or the label.
 
 Slots:
 
@@ -2664,7 +2700,7 @@ Attributes:
 - `heading` (string): A title at the top of the panel (also its name for screen readers).
 - `placement` (bottom-start · bottom · bottom-end · top-start · top · top-end · left · right · right-start): Where the panel opens (it flips when there is no room). Default bottom-start.
 - `no-close` (boolean): No × button (Esc and a click outside still close it).
-- `sheet-on-mobile` (boolean): On phones it slides up from the bottom.
+- `sheet-on-mobile` (boolean): On phones the content opens in an action sheet (sav-action-sheet), titled by the heading or the label.
 - `label` (string): Name for screen readers when there is no heading.
 - `--width` (CSS): Widest the panel gets (default 20rem).
 
@@ -3001,7 +3037,7 @@ Example — Links in the centre, floating, with buttons:
 
 ### Bottom navigation — `<sav-bottom-nav · sav-bottom-nav-item>`
 
-The bar at the bottom of a phone app: 3–5 destinations with icon and label, a badge, the current one marked. With fixed it sticks to the bottom; with mobile-only it hides on wide screens.
+The bar at the bottom of a phone app: 3–5 destinations with icon and label, a badge, the current one marked. With fixed it sticks to the bottom; with mobile-only it hides on wide screens. With more than five, the first four stay and a fifth, More, opens an action sheet with the others. [object Object]
 
 Documentation: https://www.savcomponents.com/#bottom-nav
 
@@ -3011,6 +3047,8 @@ Attributes:
 - `mobile-only` (boolean): With fixed: hidden above 760px.
 - `label` (string): Name of the navigation.
 - `icon · label · href · badge · current · value`: sav-bottom-nav-item.
+- `max-items` (number): Most destinations in sight (default 5): with more, the last place becomes More, an action sheet with the others.
+- `more-label · more-icon` (string): The words and the icon of More (default More, three dots).
 
 Events:
 
@@ -3024,6 +3062,20 @@ Example — Four destinations:
   <sav-bottom-nav-item icon="search" label="Search"></sav-bottom-nav-item>
   <sav-bottom-nav-item icon="bell" label="Alerts" badge="3"></sav-bottom-nav-item>
   <sav-bottom-nav-item icon="user" label="Profile"></sav-bottom-nav-item>
+</sav-bottom-nav>
+```
+
+Example — More than five (avoid it if you can):
+
+```html
+<sav-bottom-nav label="Main" style="width: 100%; max-width: 24rem">
+  <sav-bottom-nav-item icon="home" label="Home" current></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="search" label="Search"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="bell" label="Alerts" badge="3"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="user" label="Profile"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="bookmark" label="Saved"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="settings" label="Settings" badge="1"></sav-bottom-nav-item>
+  <sav-bottom-nav-item icon="help-circle" label="Help"></sav-bottom-nav-item>
 </sav-bottom-nav>
 ```
 
