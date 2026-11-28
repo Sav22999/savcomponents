@@ -6,6 +6,8 @@
   - It copies only those two files into `v/<Sav.version>/`.
   - A released folder never changes: for a new release, bump `Sav.version` in `dist/sav.js` first.
   - The header comments of both files carry the version too.
+  - Pushing a new `v/<version>/` to main publishes it as a GitHub release (tag `v<version>`, a zip, the notes from `CHANGELOG.md`):
+    `.github/workflows/release.yml` runs `tools/github-release.sh`. `DRY_RUN=1 sh tools/github-release.sh` shows what it would do.
 - **The icons have their own version**, separate from the library, so they are not copied into every library version.
   - They live once in `icons/<iconsVersion>/`: the SVG files, `index.json` (names and search words), `aliases.json` (old names) and the Lucide licence.
   - `Sav.iconsVersion` in `dist/sav.js` says which set a library version uses.

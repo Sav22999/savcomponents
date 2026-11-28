@@ -1,0 +1,29 @@
+# Every version released with tools/release.sh (a new v/<version>/ folder) becomes a GitHub release when it reaches main:
+# the tag v<version>, a zip of the library and its notes from CHANGELOG.md. Versions already released are left alone.
+# Free on a public repository. It can also be started by hand from the Actions tab (Run workflow).
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: ['v/**', 'tools/github-release.sh', '.github/workflows/release.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create tags and releases
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # the whole history: each tag points at the last commit that changed its v/<version>/
+      - name: Publish the versions that have no release yet
+        run: sh tools/github-release.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
