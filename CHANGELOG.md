@@ -2,6 +2,17 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.3.0 — 2026-11-28
+
+- New component: action sheet (`sav-action-sheet`). A list of actions, or any content, that rises from the bottom of the screen:
+  a handle to drag it down to close it (and up to unfold it, with `expandable`), a title with a close button (an icon, or a word with
+  `close-style="text"`), and a tinted footer with Cancel and any buttons of your own (`slot="footer"`, side by side with
+  `footer-layout="row"`). Its rows are the items of the dropdown (`sav-menu-item`, `sav-menu-label`, `sav-divider`, checkbox and
+  danger items), bigger for a finger, with the arrow keys, Home, End and type-ahead; choosing one closes it (`stay-open` keeps it).
+  `size="half"` or `"full"` sets its height; on wide screens it stays at the bottom, `--width` wide, or opens in the middle with
+  `placement="center"`. `sheet.pick()` opens it and resolves with the value chosen (null when it closes without a choice);
+  `Sav.actionSheet({ label, items })` builds one from a list and does the same. The panel is the popup panel of every style.
+
 ## 1.2.2 — 2026-11-28
 
 - Sheets on phones (`sheet-on-mobile` of the dialog, the dropdown, the popover and the select): the panel reaches the edges of the

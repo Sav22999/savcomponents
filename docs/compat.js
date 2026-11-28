@@ -50,6 +50,7 @@
     'info-tip': [POPOVER], popover: [POPOVER], search: [POPOVER], 'chip-input': [POPOVER],
     dialog: [['Modal', 'ok', 'Built on the native <dialog>: focus trap and Escape in every browser.'], MOTION],
     drawer: [['Modal', 'ok', 'Built on the native <dialog>.'], MOTION],
+    'action-sheet': [['Modal', 'ok', 'Built on the native <dialog>: focus trap and Escape in every browser.'], ['Safe area', 'ok', 'The footer keeps clear of the home bar of iPhones (env(safe-area-inset-bottom), with viewport-fit=cover).'], MOTION],
     command: [['Shortcut', 'differs', '⌘ K on macOS, iOS and iPadOS, Ctrl K elsewhere. Firefox uses Ctrl K for its search bar: the palette takes it only while the page has the focus.']],
     'copy-button': [['Copying', 'fallback', 'Needs a secure page (https or localhost) for the Clipboard API; elsewhere it falls back to the older copy command, which some browsers refuse.']],
     'favourite-button': [['Remembering', 'differs', 'Kept in the browser (localStorage): private windows may forget it when closed.']],

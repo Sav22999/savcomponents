@@ -52,7 +52,7 @@
   }
   const comps = () => D().docs.filter((d) => baseOf(d));
   /** overlays are closed at first: the code gets a button that opens them */
-  const OPENER = { dialog: 'Open the dialog', drawer: 'Open the drawer', command: 'Open the command palette' };
+  const OPENER = { dialog: 'Open the dialog', drawer: 'Open the drawer', 'action-sheet': 'Open the action sheet', command: 'Open the command palette' };
   const lit = (v) => (typeof v === 'boolean' || (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v)) ? String(v) : `'${String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`);
   const camelKey = (k) => k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
   /** the toast is a function: Sav.toast('message', { options }) */
@@ -322,6 +322,7 @@
     KK('sav-button[slot="footer"]', 'Button', [KF('text', 'Text'), KF('enum@variant:primary|neutral|success|warning|danger', 'Colour'), KF('enum@appearance:solid|outline|soft|ghost', 'Appearance'), KF('?data-sav-close', `Closes the ${what}`), KF('?block', 'Full width')]),
     KK('sav-button[slot="header-actions"]', 'Header button', [KF('@label', 'Name'), KF('icon@icon', 'Icon')], { init: { icon: 'ellipsis', appearance: 'ghost', variant: 'neutral', size: 'sm' } })];
   ITEMS.dialog = MODAL('dialog'); ITEMS.drawer = MODAL('drawer');
+  ITEMS['action-sheet'] = [...MENU.slice(1), KK('sav-button[slot="footer"]', 'Button', [KF('text', 'Text'), KF('enum@variant:primary|neutral|success|warning|danger', 'Colour'), KF('?data-sav-close', 'Closes the sheet')])];
   const ONE_OF = ['aria-current', 'current', 'active', 'selected', 'open', 'checked', 'expanded', 'disabled', 'data-no-drag', 'status', 'badge'];
   const fType = (spec) => (spec === 'text' ? 'text' : spec === 'pre-icon' ? 'icon' : spec[0] === '?' ? 'bool' : spec.startsWith('icon@') ? 'icon' : spec.startsWith('enum@') ? 'enum' : 'text');
   const fAttr = (spec) => spec.replace(/^(\?|@|icon@|enum@)/, '').replace(/[:=].*$/, '');

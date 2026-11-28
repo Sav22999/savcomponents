@@ -1,17 +1,17 @@
-# SavComponents 1.2.2
+# SavComponents 1.3.0
 
-> SavComponents (www.savcomponents.com) is a free, open-source (MIT) library of 82 web components for websites and web apps, by Saverio Morelli: buttons, fields, pickers, dialogs, tabs, tables, charts and more, written as plain HTML tags (<sav-button>, <sav-input>, <sav-dialog>…). No framework and no build step: one stylesheet and one script. Themes with CSS custom properties, light and dark modes and five styles (Soft, Tilt, Sharp, Brutal, Glass). Accessible (keyboard, screen readers), English and Italian built in.
+> SavComponents (www.savcomponents.com) is a free, open-source (MIT) library of 83 web components for websites and web apps, by Saverio Morelli: buttons, fields, pickers, dialogs, tabs, tables, charts and more, written as plain HTML tags (<sav-button>, <sav-input>, <sav-dialog>…). No framework and no build step: one stylesheet and one script. Themes with CSS custom properties, light and dark modes and five styles (Soft, Tilt, Sharp, Brutal, Glass). Accessible (keyboard, screen readers), English and Italian built in.
 
 ## Use it on any site
 
 ```html
-<link rel="stylesheet" href="https://www.savcomponents.com/v/1.2.2/sav.css">
-<script src="https://www.savcomponents.com/v/1.2.2/sav.js" defer></script>
+<link rel="stylesheet" href="https://www.savcomponents.com/v/1.3.0/sav.css">
+<script src="https://www.savcomponents.com/v/1.3.0/sav.js" defer></script>
 
 <sav-button>Hello</sav-button>
 ```
 
-- The address contains the version (1.2.2 is the latest): a site keeps working the same way when a newer release comes out.
+- The address contains the version (1.3.0 is the latest): a site keeps working the same way when a newer release comes out.
 - Styles: add a class to <html>: sav-style-tilt, sav-style-sharp, sav-style-brutal or sav-style-glass (Soft is the default). Modes: sav-theme-light, sav-theme-dark or sav-theme-auto.
 - Theming: override CSS custom properties such as --sav-color-primary, --sav-color-bg, --sav-radius, --sav-font after sav.css; the customiser on the site exports them, and a theme saved with an account has its own link (/theme/<id>.css).
 - Languages: the words the components write follow <html lang>; add one with Sav.addStrings(lang, {English: translation}).
@@ -1894,8 +1894,8 @@ Example — History, with avatars and relative times:
 
 ```html
 <sav-timeline style="max-width: 26rem">
-  <sav-timeline-item heading="Ada changed the title" icon="pencil"><sav-relative-time datetime="2026-11-28T02:46:34.349Z"></sav-relative-time></sav-timeline-item>
-  <sav-timeline-item heading="Alan left a comment" icon="message-circle">“Looks good to me.” · <sav-relative-time datetime="2026-11-27T23:51:34.355Z"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Ada changed the title" icon="pencil"><sav-relative-time datetime="2026-11-28T03:01:47.483Z"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Alan left a comment" icon="message-circle">“Looks good to me.” · <sav-relative-time datetime="2026-11-28T00:06:47.494Z"></sav-relative-time></sav-timeline-item>
   <sav-timeline-item heading="Build failed" variant="danger" icon="x">2 tests did not pass · yesterday</sav-timeline-item>
 </sav-timeline>
 ```
@@ -1944,11 +1944,11 @@ Example — Past, future, and dates:
 
 ```html
 <ul style="margin: 0; line-height: 1.9">
-  <li>Saved <sav-relative-time datetime="2026-11-28T02:51:14.355Z"></sav-relative-time></li>
-  <li>Edited <sav-relative-time datetime="2026-11-28T02:09:34.356Z"></sav-relative-time></li>
-  <li>Created <sav-relative-time datetime="2026-11-27T02:51:34.356Z"></sav-relative-time></li>
-  <li>Renews <sav-relative-time datetime="2026-12-10T02:51:34.356Z"></sav-relative-time></li>
-  <li>In Italian: <sav-relative-time locale="it" datetime="2026-11-27T23:51:34.356Z"></sav-relative-time></li>
+  <li>Saved <sav-relative-time datetime="2026-11-28T03:06:27.494Z"></sav-relative-time></li>
+  <li>Edited <sav-relative-time datetime="2026-11-28T02:24:47.494Z"></sav-relative-time></li>
+  <li>Created <sav-relative-time datetime="2026-11-27T03:06:47.494Z"></sav-relative-time></li>
+  <li>Renews <sav-relative-time datetime="2026-12-10T03:06:47.494Z"></sav-relative-time></li>
+  <li>In Italian: <sav-relative-time locale="it" datetime="2026-11-28T00:06:47.494Z"></sav-relative-time></li>
   <li>As a date: <sav-relative-time format="date" datetime="2026-11-01T09:00"></sav-relative-time></li>
 </ul>
 ```
@@ -2337,6 +2337,98 @@ Example — Placements:
 </sav-drawer>
 <sav-drawer id="drw-start" label="Menu" placement="start" style="--size: 17rem">Navigation goes here.</sav-drawer>
 <sav-drawer id="drw-bottom" label="Share" placement="bottom" style="--size: 14rem">A bottom sheet, handy on phones.</sav-drawer>
+```
+
+### Action sheet — `<sav-action-sheet · sav-menu-item>`
+
+A list of actions that rises from the bottom of the screen, as on phones: a handle to drag it down, a title with a close button (an icon or a word such as Done), the actions, and a tinted footer with Cancel and any buttons of your own. On wide screens it stays at the bottom, as wide as --width, or opens in the middle with placement="center". It can hold any content too, and scrolls inside when it is taller than the screen. pick() and Sav.actionSheet() give back the chosen action.
+
+Documentation: https://www.savcomponents.com/#action-sheet
+
+Attributes:
+
+- `open` (boolean): Shows the sheet.
+- `label` (string): Title (also the name of the sheet and of its list for screen readers).
+- `close-style` (icon · text): The button at the top right: an icon (default ×) or a word (default “Done”, in the language of the page).
+- `close-label` (string): The word of the text button, or the name of the icon button for screen readers (default “Close”).
+- `close-icon` (icon name): Another icon instead of the × (chevron-down, for example).
+- `no-close · no-header · no-handle` (boolean): Hide the button at the top, the whole title row, or the handle.
+- `no-cancel · cancel-label` (boolean · string): Without the Cancel button in the footer, or with another word on it.
+- `footer-layout` (stack · row · row-always): Footer buttons one under the other at full width (default); row puts them side by side on screens wider than 640px and one under the other on phones; row-always keeps them side by side everywhere.
+- `size` (auto · half · full): auto as tall as its content (default), half of the screen, or as tall as --max-height. Taller content scrolls inside, with the title and the footer staying in place.
+- `expandable` (boolean): Dragging the handle up (or tapping it) unfolds it to --max-height; dragging down folds it again.
+- `no-drag` (boolean): Dragging the handle or the title down does not close it.
+- `placement` (bottom · center): On screens wider than 640px: at the bottom (default) or in the middle like a dialog. On phones it is always at the bottom.
+- `persistent` (boolean): A click outside or dragging it down does not close it.
+- `stay-open` (boolean): Stays open after an action is chosen.
+- `--width` (CSS): Width on wide screens, default 36rem (100vw: the whole width).
+- `--max-height · --min-height · --half` (CSS): Default 90dvh, 0 and 50dvh.
+- `--footer-background` (CSS): Colour of the footer.
+- `value · disabled · variant="danger" · type="checkbox" · checked`: On sav-menu-item.
+
+Slots:
+
+- `(default)`: sav-menu-item, sav-menu-label and sav-divider, or any content.
+- `label`: Rich title
+- `header-actions`: Buttons next to the close button
+- `footer`: Buttons above Cancel
+
+CSS parts:
+
+- `p`: a
+- `h`: a
+- `h`: e
+- `t`: i
+- `c`: l
+- `b`: o
+- `f`: o
+- `c`: a
+
+Events:
+
+- `sav-select`: An action was chosen: detail.item, detail.value, detail.checked (checkbox items). Call event.preventDefault() to keep the sheet open.
+- `change`: With checkbox items: detail.value is the list of checked values.
+- `sav-show · sav-after-show · sav-hide · sav-after-hide`: 
+- `sav-request-close`: Cancelable; detail.source = close-button · cancel · keyboard · overlay · drag · button
+
+Methods:
+
+- `show() · hide()`: 
+- `pick()`: Opens it and resolves with the value of the chosen action, or null.
+- `Sav.actionSheet({ label, items })`: Makes a sheet from a list (label, value, icon, variant, disabled; '-' is a divider, { heading } a small heading), opens it, resolves with the choice and removes it. Takes the attributes too: cancelLabel, noCancel, closeStyle, size…
+- `[data-sav-close]`: Any element inside with this attribute closes it.
+
+Example — Actions with Cancel:
+
+```html
+<sav-button appearance="outline" variant="neutral" icon="more-horizontal" onclick="document.getElementById('demo-sheet').show()">More</sav-button>
+<sav-action-sheet id="demo-sheet" label="More">
+  <sav-menu-item value="theme"><sav-icon slot="prefix" name="palette"></sav-icon>Theme</sav-menu-item>
+  <sav-menu-item value="media"><sav-icon slot="prefix" name="images"></sav-icon>Media</sav-menu-item>
+  <sav-menu-item value="comments"><sav-icon slot="prefix" name="message-square"></sav-icon>Comments</sav-menu-item>
+  <sav-menu-item value="notes"><sav-icon slot="prefix" name="file"></sav-icon>My notes</sav-menu-item>
+  <sav-menu-item value="versions"><sav-icon slot="prefix" name="history"></sav-icon>Versions</sav-menu-item>
+</sav-action-sheet>
+<script>document.getElementById('demo-sheet').addEventListener('sav-select', e => Sav.toast('Chosen: ' + e.detail.value, {variant: 'neutral', duration: 2000}))</script>
+```
+
+Example — Done instead of the ×, groups, no Cancel:
+
+```html
+<sav-button appearance="soft" icon="menu" onclick="document.getElementById('demo-sheet-done').show()">Menu</sav-button>
+<sav-action-sheet id="demo-sheet-done" label="Untitled" close-style="text" no-cancel expandable>
+  <sav-menu-item value="undo"><sav-icon slot="prefix" name="undo-2"></sav-icon>Undo</sav-menu-item>
+  <sav-menu-item value="redo"><sav-icon slot="prefix" name="redo-2"></sav-icon>Redo</sav-menu-item>
+  <sav-menu-item value="present"><sav-icon slot="prefix" name="play"></sav-icon>Present</sav-menu-item>
+  <sav-menu-item value="save"><sav-icon slot="prefix" name="cloud-upload"></sav-icon>Save to the cloud</sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item value="options"><sav-icon slot="prefix" name="settings"></sav-icon>Presentation options</sav-menu-item>
+  <sav-menu-item value="versions"><sav-icon slot="prefix" name="history"></sav-icon>Versions</sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item value="slides"><sav-icon slot="prefix" name="layout-grid"></sav-icon>All the slides</sav-menu-item>
+  <sav-menu-item value="find"><sav-icon slot="prefix" name="search"></sav-icon>Find and replace</sav-menu-item>
+  <sav-menu-item value="delete" variant="danger"><sav-icon slot="prefix" name="trash"></sav-icon>Delete</sav-menu-item>
+</sav-action-sheet>
 ```
 
 ### Dropdown — `<sav-dropdown · sav-menu-item>`

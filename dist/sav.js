@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.2.2 — web components, no dependencies
+ * SavComponents v1.3.0 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.2.2' });
+  const Sav = (window.Sav = { version: '1.3.0' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -42,7 +42,7 @@
     'Hue': 'Tonalità', 'Opacity': 'Opacità', 'Colour code': 'Codice del colore', 'Pick a colour from the screen': 'Prendi un colore dallo schermo',
     'Pick a colour from the screen, with the eyedropper of the system colour picker': 'Prendi un colore dallo schermo, con il contagocce del selettore di sistema', 'Colour': 'Colore',
     'Choose a colour.': 'Scegli un colore.', 'The browser did not allow picking a colour from the screen.': 'Il browser non ha permesso di prendere un colore dallo schermo.',
-    'Done': 'Fine', 'Please choose a value.': 'Scegli un valore.', 'Remove {name}': 'Rimuovi {name}', 'Search': 'Cerca', 'Options': 'Opzioni', 'No results': 'Nessun risultato',
+    'Done': 'Fine', 'Cancel': 'Annulla', 'Please choose a value.': 'Scegli un valore.', 'Remove {name}': 'Rimuovi {name}', 'Search': 'Cerca', 'Options': 'Opzioni', 'No results': 'Nessun risultato',
     'Clear all': 'Deseleziona tutto', 'Select all': 'Seleziona tutto', 'Today': 'Oggi', 'This month': 'Questo mese', 'This year': 'Quest’anno', 'Now': 'Adesso', 'Time': 'Ora',
     'Hours': 'Ore', 'Minutes': 'Minuti', 'Previous': 'Precedente', 'Next': 'Successivo', 'Please select an option.': 'Scegli un’opzione.', 'Start': 'Inizio', 'End': 'Fine',
     'Rating': 'Valutazione', 'Expand': 'Espandi', 'Collapse': 'Riduci', 'More information': 'Più informazioni', 'Enlarge {name}': 'Ingrandisci {name}', 'image': 'immagine',
@@ -3485,7 +3485,7 @@
       this.emit('sav-hide');
       await this.dlg.animate(this.enterFrames().reverse(), { duration: 160 * motion(this), easing: 'ease-in' }).finished.catch(() => {});
       this.dlg.close();
-      if (!document.querySelector('sav-dialog[open], sav-drawer[open]')) document.documentElement.style.overflow = '';
+      if (!document.querySelector('sav-dialog[open], sav-drawer[open], sav-action-sheet[open]')) document.documentElement.style.overflow = '';
       this._prev?.focus?.();
       this.emit('sav-after-hide');
     }
@@ -3530,6 +3530,240 @@
     }
   }
   define('sav-drawer', SavDrawer);
+
+  /* ================================================================== sav-action-sheet */
+
+  /* A list of actions (or any content) that rises from the bottom: a handle to drag it down (and up, with expandable), a title with
+     a close button (an icon or a word), a tinted footer with Cancel and any buttons of your own. On wide screens it stays at the
+     bottom, --width wide, or opens in the middle with placement="center". sheet.pick() and Sav.actionSheet() give the choice back. */
+  class SavActionSheet extends SavModalBase {
+    static styles = [MODAL, `
+      :host { --width: 36rem; --max-height: 90dvh; --min-height: 0px; --half: 50dvh; }
+      dialog { width: var(--width); max-width: 100vw; max-height: var(--max-height); min-height: min(var(--min-height), var(--max-height)); margin: auto auto 0;
+               border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; }
+      ${panelLayer('dialog')}
+      dialog::before { transform: none; border-bottom-width: 0; }
+      dialog::after { display: none; }
+      :host([size="half"]) dialog { height: var(--half); }
+      :host([size="full"]) dialog, :host([expanded]) dialog { height: var(--max-height); }
+      .grab { display: block; flex: none; width: 5.5rem; margin: 0 auto; padding: .55rem 0 .25rem; cursor: grab; touch-action: none; }
+      .grab::before { content: ""; display: block; width: 2.5rem; height: 4px; margin: 0 auto; border-radius: 99px; background: var(--sav-color-border-strong); }
+      :host([no-handle]) .grab, :host([no-drag]:not([expandable])) .grab { cursor: auto; }
+      :host([no-handle]) .grab { display: none; }
+      .head { padding-top: .45rem; touch-action: none; transition: box-shadow calc(.15s * var(--sav-motion, 1)); }
+      :host([no-handle]) .head { padding-top: 1.1rem; }
+      .head.scrolled { box-shadow: 0 var(--sav-border-width) 0 var(--sav-color-border); }
+      .x.text { padding: .35rem .55rem; margin-right: -.55rem; font: inherit; font-weight: var(--sav-font-weight-bold);
+                color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); }
+      .x.text:hover { color: color-mix(in oklab, var(--sav-color-primary) var(--sav-tint, 62%), var(--sav-color-text)); }
+      .x:focus-visible { outline: var(--sav-focus-ring-width, 2px) solid var(--sav-color-focus, var(--sav-color-primary)); outline-offset: 1px; }
+      .body { min-height: 0; overscroll-behavior: contain; }
+      .body.menu { padding: .2rem .45rem .6rem; }
+      ::slotted(sav-menu-item) { --sav-menu-item-padding: .8rem .8rem; }
+      ::slotted(sav-divider) { --spacing: .35rem; }
+      ::slotted(hr) { border: 0; border-top: var(--sav-border-width) solid var(--sav-color-border); margin: .35rem .3rem; }
+      .foot { flex-direction: column; align-items: stretch; justify-content: flex-start; padding: .9rem 1.25rem calc(.9rem + env(safe-area-inset-bottom));
+              background: var(--footer-background, color-mix(in oklab, var(--sav-color-surface-2) 70%, transparent)); }
+      .body:not(.foot-on) { padding-bottom: calc(.6rem + env(safe-area-inset-bottom)); }
+      ::slotted([slot="footer"]) { width: 100%; }
+      /* row: side by side, Cancel first; on phones one under the other again (row-always keeps them side by side) */
+      :host(:is([footer-layout="row"], [footer-layout="row-always"])) .foot { flex-direction: row; }
+      :host(:is([footer-layout="row"], [footer-layout="row-always"])) ::slotted([slot="footer"]),
+      :host(:is([footer-layout="row"], [footer-layout="row-always"])) .cancel { flex: 1 1 0; width: auto; }
+      :host(:is([footer-layout="row"], [footer-layout="row-always"])) .cancel { order: -1; }
+      .cancel[hidden] { display: none; }
+      @media (max-width: 640px) {
+        dialog { width: 100vw; }
+        dialog::before { border-width: var(--sav-border-width) 0 0; }
+        :host([footer-layout="row"]) .foot { flex-direction: column; }
+        :host([footer-layout="row"]) ::slotted([slot="footer"]), :host([footer-layout="row"]) .cancel { flex: none; width: 100%; }
+        :host([footer-layout="row"]) .cancel { order: 0; }
+      }
+      @media (min-width: 641px) {
+        :host([placement="center"]) dialog { margin: auto; max-height: min(var(--max-height), calc(100dvh - 2rem)); max-width: calc(100vw - 2rem); border-radius: var(--sav-radius-lg); }
+        :host([placement="center"]) dialog::before { transform: rotate(${PANEL_TILT}); border-bottom-width: var(--sav-border-width); }
+        :host([placement="center"]) dialog::after { display: var(--sav-panel-back, none); }
+        :host([placement="center"]) .grab { display: none; }
+        :host([placement="center"]) .head { padding-top: 1.1rem; touch-action: auto; }
+        :host([placement="center"]) .foot { border-radius: 0 0 var(--sav-radius-lg) var(--sav-radius-lg); padding-bottom: .9rem; }
+      }
+    `];
+    static get observedAttributes() { return [...super.observedAttributes, 'no-cancel', 'cancel-label', 'close-style', 'close-label', 'close-icon', 'no-close', 'no-header', 'expandable', 'placement', 'size']; }
+    connectedCallback() {
+      const first = !this.shadowRoot.firstChild;
+      super.connectedCallback();
+      if (!first) return;
+      const foot = this.$('.foot');
+      foot.insertAdjacentHTML('beforeend', '<sav-button class="cancel" part="cancel-button" appearance="outline" variant="neutral" block></sav-button>');
+      this.$('.cancel').addEventListener('click', () => this.requestClose('cancel'));
+      const body = this.$('.body');
+      body.addEventListener('scroll', () => this.$('.head').classList.toggle('scrolled', body.scrollTop > 2), { passive: true });
+      this.addEventListener('click', (e) => {
+        const item = e.target.closest?.('sav-menu-item');
+        if (item && item.closest('sav-action-sheet') === this && !item.hasAttribute('disabled') && !item.hasSubmenu) this.choose(item);
+      });
+      this.addEventListener('keydown', (e) => this.onKey(e));
+      this.addEventListener('focusin', (e) => { const i = e.target.closest?.('sav-menu-item'); if (i && this.items.includes(i)) this.rove(i); });
+      for (const el of [this.$('.grab'), this.$('.head')]) el.addEventListener('pointerdown', (e) => this.startDrag(e));
+      this.sync();
+    }
+    get items() { return [...this.querySelectorAll('sav-menu-item')].filter((i) => !i.hasAttribute('disabled') && !i.closest('[hidden]') && i.closest('sav-action-sheet') === this); }
+    get isBottom() { return this.getAttribute('placement') !== 'center' || MOBILE.matches; }
+    sync() {
+      super.sync();
+      const cancel = this.$('.cancel');
+      if (!cancel) return;
+      const style = this.getAttribute('close-style') === 'text' ? 'text' : 'icon';
+      const x = this.$('.x');
+      x.classList.toggle('text', style === 'text');
+      if (style === 'text') { x.textContent = this.getAttribute('close-label') || T(this, 'Done'); x.removeAttribute('aria-label'); }
+      else {
+        const name = this.getAttribute('close-icon');
+        x.innerHTML = name && name !== 'x' ? `<sav-icon name="${esc(name)}"></sav-icon>` : svgIcon('x');
+        x.setAttribute('aria-label', this.getAttribute('close-label') || T(this, 'Close'));
+      }
+      cancel.textContent = this.getAttribute('cancel-label') || T(this, 'Cancel');
+      cancel.hidden = this.hasAttribute('no-cancel');
+      const foot = this.hasSlot('footer') || !cancel.hidden;
+      this.dlg.classList.toggle('has-foot', foot);
+      const body = this.$('.body');
+      body.classList.toggle('foot-on', foot);
+      const menu = !!this.querySelector(':scope > sav-menu-item');
+      body.classList.toggle('menu', menu);
+      if (menu) { body.setAttribute('role', 'menu'); body.setAttribute('aria-labelledby', this.dlg.getAttribute('aria-labelledby')); }
+      else { body.removeAttribute('role'); body.removeAttribute('aria-labelledby'); }
+      const items = this.items;
+      if (items.length && !items.some((i) => i.tabIndex === 0)) this.rove(items[0]);
+    }
+    /** one item at a time is in the Tab order: the one last focused */
+    rove(item) { this.querySelectorAll('sav-menu-item').forEach((i) => { i.tabIndex = i === item ? 0 : -1; }); }
+    enterFrames() {
+      if (!this.isBottom) return [{ opacity: 0, transform: 'translateY(12px) scale(.97)' }, { opacity: 1, transform: 'none' }];
+      return [{ transform: 'translateY(100%)' }, { transform: this._dragFrom || 'none' }];
+    }
+    async show(fromAttr) {
+      const was = this.dlg?.open;
+      const p = super.show(fromAttr);
+      if (fromAttr && !was && this.dlg.open) {
+        this._result = null;
+        this.removeAttribute('expanded');
+        this.$('.body').scrollTop = 0;
+        this.$('.head').classList.remove('scrolled');
+        if (!this.querySelector('[autofocus]')) { const first = this.items[0]; if (first) { this.rove(first); first.focus({ preventScroll: true }); } }
+      }
+      return p;
+    }
+    async hide(fromAttr) {
+      await super.hide(fromAttr);
+      if (fromAttr) { this._dragFrom = ''; Object.assign(this.dlg.style, { transform: '', height: '', transition: '' }); }
+    }
+    /** Opens the sheet and resolves with the value of the chosen item, or null when it closes without a choice. */
+    pick() {
+      return new Promise((resolve) => {
+        this.addEventListener('sav-after-hide', () => resolve(this._result ?? null), { once: true });
+        this.show();
+      });
+    }
+    choose(item) {
+      const check = item.getAttribute('type') === 'checkbox';
+      if (check) item.checked = !item.checked;
+      const go = this.emit('sav-select', { item, value: item.value, checked: check ? item.checked : undefined }, true);
+      if (check) this.emit('change', { value: this.value });
+      if (go && !check && !this.hasAttribute('stay-open')) { this._result = item.value; this.hide(); }
+    }
+    /** Values of the checked items (checkbox items). */
+    get value() { return [...this.querySelectorAll('sav-menu-item[checked]')].map((i) => i.value); }
+    onKey(e) {
+      const items = this.items, cur = items.indexOf(e.target);
+      if (cur < 0) return;
+      let n = null;
+      if (e.key === 'ArrowDown') n = items[(cur + 1) % items.length];
+      else if (e.key === 'ArrowUp') n = items[(cur - 1 + items.length) % items.length];
+      else if (e.key === 'Home') n = items[0];
+      else if (e.key === 'End') n = items[items.length - 1];
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.choose(items[cur]); return; }
+      else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { // type-ahead
+        const k = e.key.toLowerCase();
+        n = items.slice(cur + 1).concat(items.slice(0, cur + 1)).find((i) => i.textContent.trim().toLowerCase().startsWith(k));
+      }
+      if (n) { e.preventDefault(); this.rove(n); n.focus(); }
+    }
+    /* drag the handle or the title: down closes (or folds an expanded sheet), up unfolds it with expandable; a tap on the handle toggles it */
+    startDrag(e) {
+      if (!this.isBottom || e.button > 0) return;
+      if (e.composedPath().some((n) => n.localName === 'button' || n.localName === 'sav-button' || n.localName === 'a' || n.slot === 'header-actions')) return;
+      const canDrag = !this.hasAttribute('no-drag'), canGrow = this.hasAttribute('expandable');
+      if (!canDrag && !canGrow) return;
+      const d = this.dlg, h0 = d.getBoundingClientRect().height, y0 = e.clientY, maxH = Math.min(parseFloat(getComputedStyle(d).maxHeight) || innerHeight, innerHeight);
+      const fromHandle = e.currentTarget === this.$('.grab');
+      let dy = 0, prev = [y0, e.timeStamp], last = prev;
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+      d.style.transition = 'none';
+      const move = (ev) => {
+        dy = ev.clientY - y0; prev = last; last = [ev.clientY, ev.timeStamp];
+        if (dy > 0 && canDrag) { d.style.transform = `translateY(${dy}px)`; d.style.height = ''; }
+        else if (dy < 0 && canGrow && !this.hasAttribute('expanded')) { d.style.transform = ''; d.style.height = `${Math.min(maxH, h0 - dy)}px`; }
+      };
+      const up = () => {
+        removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+        const v = (last[0] - prev[0]) / Math.max(1, last[1] - prev[1]); // px per ms, downwards
+        const t = 200 * motion(this);
+        d.style.transition = `transform ${t}ms var(--sav-easing), height ${t}ms var(--sav-easing)`;
+        const settle = (st) => requestAnimationFrame(() => Object.assign(d.style, st));
+        const expanded = this.hasAttribute('expanded');
+        if (Math.abs(dy) < 4) { // a tap
+          if (fromHandle && canGrow) { d.style.height = `${h0}px`; this.toggleAttribute('expanded', !expanded); settle({ height: '' }); }
+          else settle({ transform: '' });
+          return;
+        }
+        if (dy > 0 && canDrag) {
+          const far = dy > h0 * 0.3 || v > 0.6;
+          if (expanded && !(dy > h0 * 0.55 || v > 1)) { this.removeAttribute('expanded'); settle({ transform: '' }); return; }
+          if (far && !this.hasAttribute('persistent')) {
+            this._dragFrom = `translateY(${dy}px)`;
+            d.style.transition = '';
+            this.requestClose('drag');
+            if (this.open) { this._dragFrom = ''; d.style.transition = `transform ${t}ms var(--sav-easing)`; settle({ transform: '' }); }
+            return;
+          }
+          settle({ transform: '' });
+          return;
+        }
+        if (dy < 0 && canGrow && !expanded) { if (-dy > 40 || v < -0.4) this.setAttribute('expanded', ''); settle({ height: '' }); return; }
+        settle({ transform: '', height: '' });
+      };
+      addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    }
+  }
+  props(SavActionSheet, { placement: String, size: String, expandable: Boolean });
+  define('sav-action-sheet', SavActionSheet);
+
+  /**
+   * Sav.actionSheet({ label: 'Share', items: [{ label: 'Copy link', value: 'link', icon: 'link' }, '-', { label: 'Delete', variant: 'danger' }] })
+   * Opens a sheet made from the list and resolves with the chosen value (the label when an item has no value), or null.
+   * '-' is a divider, { heading: 'Text' } a small heading. Other options: cancelLabel, noCancel, noClose, closeStyle, closeLabel,
+   * placement, size, expandable, persistent, footerLayout.
+   */
+  Sav.actionSheet = (opts = {}) => {
+    const s = document.createElement('sav-action-sheet');
+    if (opts.label) s.setAttribute('label', opts.label);
+    for (const k of ['noCancel', 'noClose', 'noHeader', 'noHandle', 'noDrag', 'persistent', 'expandable']) if (opts[k]) s.setAttribute(k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()), '');
+    for (const k of ['cancelLabel', 'closeStyle', 'closeLabel', 'closeIcon', 'placement', 'size', 'footerLayout']) if (opts[k]) s.setAttribute(k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()), opts[k]);
+    for (const it of opts.items || []) {
+      if (it === '-' || it?.divider) { s.append(document.createElement('sav-divider')); continue; }
+      if (it?.heading) { const l = document.createElement('sav-menu-label'); l.textContent = it.heading; s.append(l); continue; }
+      const o = typeof it === 'string' ? { label: it } : it;
+      const m = document.createElement('sav-menu-item');
+      m.setAttribute('value', o.value ?? o.label);
+      if (o.variant) m.setAttribute('variant', o.variant);
+      if (o.disabled) m.setAttribute('disabled', '');
+      if (o.icon) { const i = document.createElement('sav-icon'); i.slot = 'prefix'; i.setAttribute('name', o.icon); m.append(i); }
+      m.append(document.createTextNode(o.label));
+      s.append(m);
+    }
+    document.body.append(s);
+    return s.pick().then((v) => { s.remove(); return v; });
+  };
 
   /* ================================================================== sav-tabs / sav-tab */
 

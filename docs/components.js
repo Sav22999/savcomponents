@@ -1096,6 +1096,67 @@ window.SAVC_DOCS = [
     events: [['sav-show · sav-hide', 'Starts to open or to close.'], ['sav-after-show · sav-after-hide', 'Finished opening or closing (after the animation).'], ['sav-request-close', 'Esc, the backdrop or the × asks to close: call event.preventDefault() to keep it open.']],
   },
   {
+    builtFrom: ['dialog', 'dropdown'],
+    id: 'action-sheet', name: 'Action sheet', tag: 'sav-action-sheet · sav-menu-item', group: 'Overlays', icon: 'panel-bottom',
+    desc: 'A list of actions that rises from the bottom of the screen, as on phones: a handle to drag it down, a title with a close button (an icon or a word such as Done), the actions, and a tinted footer with Cancel and any buttons of your own. On wide screens it stays at the bottom, as wide as <code>--width</code>, or opens in the middle with <code>placement="center"</code>. It can hold any content too, and scrolls inside when it is taller than the screen. <code>pick()</code> and <code>Sav.actionSheet()</code> give back the chosen action.',
+    demos: [
+      { title: 'Actions with Cancel', html: `<sav-button appearance="outline" variant="neutral" icon="more-horizontal" onclick="document.getElementById('demo-sheet').show()">More</sav-button>
+<sav-action-sheet id="demo-sheet" label="More">
+  <sav-menu-item value="theme"><sav-icon slot="prefix" name="palette"></sav-icon>Theme</sav-menu-item>
+  <sav-menu-item value="media"><sav-icon slot="prefix" name="images"></sav-icon>Media</sav-menu-item>
+  <sav-menu-item value="comments"><sav-icon slot="prefix" name="message-square"></sav-icon>Comments</sav-menu-item>
+  <sav-menu-item value="notes"><sav-icon slot="prefix" name="file"></sav-icon>My notes</sav-menu-item>
+  <sav-menu-item value="versions"><sav-icon slot="prefix" name="history"></sav-icon>Versions</sav-menu-item>
+</sav-action-sheet>
+<script>document.getElementById('demo-sheet').addEventListener('sav-select', e => Sav.toast('Chosen: ' + e.detail.value, {variant: 'neutral', duration: 2000}))</script>` },
+      { title: 'Done instead of the ×, groups, no Cancel', html: `<sav-button appearance="soft" icon="menu" onclick="document.getElementById('demo-sheet-done').show()">Menu</sav-button>
+<sav-action-sheet id="demo-sheet-done" label="Untitled" close-style="text" no-cancel expandable>
+  <sav-menu-item value="undo"><sav-icon slot="prefix" name="undo-2"></sav-icon>Undo</sav-menu-item>
+  <sav-menu-item value="redo"><sav-icon slot="prefix" name="redo-2"></sav-icon>Redo</sav-menu-item>
+  <sav-menu-item value="present"><sav-icon slot="prefix" name="play"></sav-icon>Present</sav-menu-item>
+  <sav-menu-item value="save"><sav-icon slot="prefix" name="cloud-upload"></sav-icon>Save to the cloud</sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item value="options"><sav-icon slot="prefix" name="settings"></sav-icon>Presentation options</sav-menu-item>
+  <sav-menu-item value="versions"><sav-icon slot="prefix" name="history"></sav-icon>Versions</sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item value="slides"><sav-icon slot="prefix" name="layout-grid"></sav-icon>All the slides</sav-menu-item>
+  <sav-menu-item value="find"><sav-icon slot="prefix" name="search"></sav-icon>Find and replace</sav-menu-item>
+  <sav-menu-item value="delete" variant="danger"><sav-icon slot="prefix" name="trash"></sav-icon>Delete</sav-menu-item>
+</sav-action-sheet>` },
+      { title: 'From script, with your own buttons', html: `<sav-button appearance="outline" icon="share" onclick="Sav.actionSheet({ label: 'Share', items: [{ label: 'Copy link', value: 'link', icon: 'link' }, { label: 'Email', value: 'email', icon: 'mail' }, { label: 'Message', value: 'message', icon: 'message-circle' }] }).then(v => Sav.toast(v ? 'Chosen: ' + v : 'Nothing chosen', {variant: 'neutral', duration: 2000}))">Sav.actionSheet()</sav-button>
+<sav-button appearance="outline" variant="neutral" onclick="document.getElementById('demo-sheet-form').show()">Content and two buttons</sav-button>
+<sav-action-sheet id="demo-sheet-form" label="Filters" size="half" footer-layout="row" cancel-label="Reset" close-icon="chevron-down">
+  <div class="stack">
+    <sav-checkbox checked>In stock</sav-checkbox>
+    <sav-checkbox>Free shipping</sav-checkbox>
+    <sav-range label="Max price" value="60" show-value unit=" €"></sav-range>
+  </div>
+  <sav-button slot="footer" data-sav-close>Apply</sav-button>
+</sav-action-sheet>` },
+      { title: 'In the middle on wide screens', html: `<sav-button appearance="outline" variant="neutral" onclick="document.getElementById('demo-sheet-center').show()">In the middle</sav-button>
+<sav-action-sheet id="demo-sheet-center" label="Photo" placement="center" style="--width: 24rem">
+  <sav-menu-item value="download"><sav-icon slot="prefix" name="download"></sav-icon>Download</sav-menu-item>
+  <sav-menu-item value="share"><sav-icon slot="prefix" name="share"></sav-icon>Share</sav-menu-item>
+  <sav-menu-item value="delete" variant="danger"><sav-icon slot="prefix" name="trash"></sav-icon>Delete</sav-menu-item>
+</sav-action-sheet>` },
+    ],
+    attrs: [['open', 'boolean', 'Shows the sheet.'], ['label', 'string', 'Title (also the name of the sheet and of its list for screen readers).'],
+      ['close-style', 'icon · text', 'The button at the top right: an icon (default ×) or a word (default “Done”, in the language of the page).'], ['close-label', 'string', 'The word of the text button, or the name of the icon button for screen readers (default “Close”).'],
+      ['close-icon', 'icon name', 'Another icon instead of the × (chevron-down, for example).'], ['no-close · no-header · no-handle', 'boolean', 'Hide the button at the top, the whole title row, or the handle.'],
+      ['no-cancel · cancel-label', 'boolean · string', 'Without the Cancel button in the footer, or with another word on it.'], ['footer-layout', 'stack · row · row-always', 'Footer buttons one under the other at full width (default); row puts them side by side on screens wider than 640px and one under the other on phones; row-always keeps them side by side everywhere.'],
+      ['size', 'auto · half · full', 'auto as tall as its content (default), half of the screen, or as tall as --max-height. Taller content scrolls inside, with the title and the footer staying in place.'],
+      ['expandable', 'boolean', 'Dragging the handle up (or tapping it) unfolds it to --max-height; dragging down folds it again.'], ['no-drag', 'boolean', 'Dragging the handle or the title down does not close it.'],
+      ['placement', 'bottom · center', 'On screens wider than 640px: at the bottom (default) or in the middle like a dialog. On phones it is always at the bottom.'],
+      ['persistent', 'boolean', 'A click outside or dragging it down does not close it.'], ['stay-open', 'boolean', 'Stays open after an action is chosen.'],
+      ['--width', 'CSS', 'Width on wide screens, default 36rem (100vw: the whole width).'], ['--max-height · --min-height · --half', 'CSS', 'Default 90dvh, 0 and 50dvh.'], ['--footer-background', 'CSS', 'Colour of the footer.'],
+      ['value · disabled · variant="danger" · type="checkbox" · checked', '', 'On sav-menu-item.']],
+    slots: [['(default)', 'sav-menu-item, sav-menu-label and sav-divider, or any content.'], ['label', 'Rich title'], ['header-actions', 'Buttons next to the close button'], ['footer', 'Buttons above Cancel']],
+    events: [['sav-select', 'An action was chosen: detail.item, detail.value, detail.checked (checkbox items). Call event.preventDefault() to keep the sheet open.'], ['change', 'With checkbox items: detail.value is the list of checked values.'],
+      ['sav-show · sav-after-show · sav-hide · sav-after-hide', ''], ['sav-request-close', 'Cancelable; detail.source = close-button · cancel · keyboard · overlay · drag · button']],
+    methods: [['show() · hide()', ''], ['pick()', 'Opens it and resolves with the value of the chosen action, or null.'], ['Sav.actionSheet({ label, items })', 'Makes a sheet from a list (label, value, icon, variant, disabled; \'-\' is a divider, { heading } a small heading), opens it, resolves with the choice and removes it. Takes the attributes too: cancelLabel, noCancel, closeStyle, size…'], ['[data-sav-close]', 'Any element inside with this attribute closes it.']],
+    parts: ['panel', 'handle', 'header', 'title', 'close-button', 'body', 'footer', 'cancel-button'],
+  },
+  {
     id: 'dropdown', name: 'Dropdown', tag: 'sav-dropdown · sav-menu-item', group: 'Overlays', icon: 'chevron-down',
     desc: 'A menu that opens from a trigger. Arrow keys, type-ahead, Esc; closes when clicking outside.',
     demos: [{ title: 'Basic', html: `<sav-dropdown id="demo-dd">

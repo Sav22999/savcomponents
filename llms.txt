@@ -1,17 +1,17 @@
 # SavComponents
 
-> SavComponents (www.savcomponents.com) is a free, open-source (MIT) library of 82 web components for websites and web apps, by Saverio Morelli: buttons, fields, pickers, dialogs, tabs, tables, charts and more, written as plain HTML tags (<sav-button>, <sav-input>, <sav-dialog>…). No framework and no build step: one stylesheet and one script. Themes with CSS custom properties, light and dark modes and five styles (Soft, Tilt, Sharp, Brutal, Glass). Accessible (keyboard, screen readers), English and Italian built in.
+> SavComponents (www.savcomponents.com) is a free, open-source (MIT) library of 83 web components for websites and web apps, by Saverio Morelli: buttons, fields, pickers, dialogs, tabs, tables, charts and more, written as plain HTML tags (<sav-button>, <sav-input>, <sav-dialog>…). No framework and no build step: one stylesheet and one script. Themes with CSS custom properties, light and dark modes and five styles (Soft, Tilt, Sharp, Brutal, Glass). Accessible (keyboard, screen readers), English and Italian built in.
 
 ## Use it on any site
 
 ```html
-<link rel="stylesheet" href="https://www.savcomponents.com/v/1.2.2/sav.css">
-<script src="https://www.savcomponents.com/v/1.2.2/sav.js" defer></script>
+<link rel="stylesheet" href="https://www.savcomponents.com/v/1.3.0/sav.css">
+<script src="https://www.savcomponents.com/v/1.3.0/sav.js" defer></script>
 
 <sav-button>Hello</sav-button>
 ```
 
-- The address contains the version (1.2.2 is the latest): a site keeps working the same way when a newer release comes out.
+- The address contains the version (1.3.0 is the latest): a site keeps working the same way when a newer release comes out.
 - Styles: add a class to <html>: sav-style-tilt, sav-style-sharp, sav-style-brutal or sav-style-glass (Soft is the default). Modes: sav-theme-light, sav-theme-dark or sav-theme-auto.
 - Theming: override CSS custom properties such as --sav-color-primary, --sav-color-bg, --sav-radius, --sav-font after sav.css; the customiser on the site exports them, and a theme saved with an account has its own link (/theme/<id>.css).
 - Languages: the words the components write follow <html lang>; add one with Sav.addStrings(lang, {English: translation}).
@@ -95,6 +95,7 @@
 
 - [Dialog](https://www.savcomponents.com/#dialog): `<sav-dialog>` A modal window built on the native <dialog>: focus trap, Esc and click outside to close. With sheet-on-mobile it becomes an action sheet on phones (the first demo has it: try it at phone width).
 - [Drawer](https://www.savcomponents.com/#drawer): `<sav-drawer>` A panel that slides in from an edge. Same API as the dialog.
+- [Action sheet](https://www.savcomponents.com/#action-sheet): `<sav-action-sheet · sav-menu-item>` A list of actions that rises from the bottom of the screen, as on phones: a handle to drag it down, a title with a close button (an icon or a word such as Done), the actions, and a tinted footer with Cancel and any buttons of your own. On wide screens it stays at the bottom, as wide as --width, or opens in the middle with placement="center". It can hold any content too, and scrolls inside when it is taller than the screen. pick() and Sav.actionSheet() give back the chosen action.
 - [Dropdown](https://www.savcomponents.com/#dropdown): `<sav-dropdown · sav-menu-item>` A menu that opens from a trigger. Arrow keys, type-ahead, Esc; closes when clicking outside.
 - [Context menu](https://www.savcomponents.com/#context-menu): `<sav-context-menu · sav-menu-item>` Your own menu for the right click on an area of the page, instead of the browser’s. It also opens with a long press on phones and tablets, and with the menu key or Shift F10 on the focused area. It opens at the pointer and turns to another corner near the edges of the window; items can hold submenus that fly out to the side. Same items as the dropdown; in text fields the browser’s menu stays, for copy and paste, and an element inside the area that answers the right click itself (preventDefault) keeps it. Opened with the pointer it leaves the focus where it was, so a text field keeps its caret.
 - [Info tip](https://www.savcomponents.com/#info-tip): `<sav-info-tip>` A small button (an icon, or an icon with text) that opens a box of information when pressed: for help next to a field, a title or a setting. Unlike the tooltip it opens on click, so it works on phones and can hold links.
