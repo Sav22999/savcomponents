@@ -1098,7 +1098,7 @@ window.SAVC_DOCS = [
   {
     builtFrom: ['dialog', 'dropdown'],
     id: 'action-sheet', name: 'Action sheet', tag: 'sav-action-sheet · sav-menu-item', group: 'Overlays', icon: 'panel-bottom',
-    desc: 'A list of actions that rises from the bottom of the screen, as on phones: a handle to drag it down, a title with a close button (an icon or a word such as Done), the actions, and a tinted footer with Cancel and any buttons of your own. On wide screens it stays at the bottom, as wide as <code>--width</code>, or opens in the middle with <code>placement="center"</code>. It can hold any content too, and scrolls inside when it is taller than the screen. <code>pick()</code> and <code>Sav.actionSheet()</code> give back the chosen action.',
+    desc: 'A list of actions that rises from the bottom of the screen, as on phones: a handle to drag it down, a title with a close button (an icon or a word such as Done), the actions, and a tinted footer with Cancel and any buttons of your own. On wide screens it stays at the bottom, as wide as <code>--width</code>: for a menu that opens next to its button there and becomes a sheet only on phones, use the dropdown with <code>sheet-on-mobile</code>; for a window in the middle, the dialog. It can hold any content too, and scrolls inside when it is taller than the screen. <code>pick()</code> and <code>Sav.actionSheet()</code> give back the chosen action.',
     demos: [
       { title: 'Actions with Cancel', html: `<sav-button appearance="outline" variant="neutral" icon="more-horizontal" onclick="document.getElementById('demo-sheet').show()">More</sav-button>
 <sav-action-sheet id="demo-sheet" label="More">
@@ -1133,12 +1133,6 @@ window.SAVC_DOCS = [
   </div>
   <sav-button slot="footer" data-sav-close>Apply</sav-button>
 </sav-action-sheet>` },
-      { title: 'In the middle on wide screens', html: `<sav-button appearance="outline" variant="neutral" onclick="document.getElementById('demo-sheet-center').show()">In the middle</sav-button>
-<sav-action-sheet id="demo-sheet-center" label="Photo" placement="center" style="--width: 24rem">
-  <sav-menu-item value="download"><sav-icon slot="prefix" name="download"></sav-icon>Download</sav-menu-item>
-  <sav-menu-item value="share"><sav-icon slot="prefix" name="share"></sav-icon>Share</sav-menu-item>
-  <sav-menu-item value="delete" variant="danger"><sav-icon slot="prefix" name="trash"></sav-icon>Delete</sav-menu-item>
-</sav-action-sheet>` },
     ],
     attrs: [['open', 'boolean', 'Shows the sheet.'], ['label', 'string', 'Title (also the name of the sheet and of its list for screen readers).'],
       ['close-style', 'icon · text', 'The button at the top right: an icon (default ×) or a word (default “Done”, in the language of the page).'], ['close-label', 'string', 'The word of the text button, or the name of the icon button for screen readers (default “Close”).'],
@@ -1146,7 +1140,6 @@ window.SAVC_DOCS = [
       ['no-cancel · cancel-label', 'boolean · string', 'Without the Cancel button in the footer, or with another word on it.'], ['footer-layout', 'stack · row · row-always', 'Footer buttons one under the other at full width (default); row puts them side by side on screens wider than 640px and one under the other on phones; row-always keeps them side by side everywhere.'],
       ['size', 'auto · half · full', 'auto as tall as its content (default), half of the screen, or as tall as --max-height. Taller content scrolls inside, with the title and the footer staying in place.'],
       ['expandable', 'boolean', 'Dragging the handle up (or tapping it) unfolds it to --max-height; dragging down folds it again.'], ['no-drag', 'boolean', 'Dragging the handle or the title down does not close it.'],
-      ['placement', 'bottom · center', 'On screens wider than 640px: at the bottom (default) or in the middle like a dialog. On phones it is always at the bottom.'],
       ['persistent', 'boolean', 'A click outside or dragging it down does not close it.'], ['stay-open', 'boolean', 'Stays open after an action is chosen.'],
       ['--width', 'CSS', 'Width on wide screens, default 36rem (100vw: the whole width).'], ['--max-height · --min-height · --half', 'CSS', 'Default 90dvh, 0 and 50dvh.'], ['--footer-background', 'CSS', 'Colour of the footer.'],
       ['value · disabled · variant="danger" · type="checkbox" · checked', '', 'On sav-menu-item.']],

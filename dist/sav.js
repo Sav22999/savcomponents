@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.3.0 — web components, no dependencies
+ * SavComponents v1.3.1 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.3.0' });
+  const Sav = (window.Sav = { version: '1.3.1' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -3535,7 +3535,8 @@
 
   /* A list of actions (or any content) that rises from the bottom: a handle to drag it down (and up, with expandable), a title with
      a close button (an icon or a word), a tinted footer with Cancel and any buttons of your own. On wide screens it stays at the
-     bottom, --width wide, or opens in the middle with placement="center". sheet.pick() and Sav.actionSheet() give the choice back. */
+     bottom, --width wide (for a menu next to its button on wide screens use sav-dropdown sheet-on-mobile). sheet.pick() and Sav.actionSheet()
+     give the choice back. */
   class SavActionSheet extends SavModalBase {
     static styles = [MODAL, `
       :host { --width: 36rem; --max-height: 90dvh; --min-height: 0px; --half: 50dvh; }
@@ -3579,16 +3580,8 @@
         :host([footer-layout="row"]) ::slotted([slot="footer"]), :host([footer-layout="row"]) .cancel { flex: none; width: 100%; }
         :host([footer-layout="row"]) .cancel { order: 0; }
       }
-      @media (min-width: 641px) {
-        :host([placement="center"]) dialog { margin: auto; max-height: min(var(--max-height), calc(100dvh - 2rem)); max-width: calc(100vw - 2rem); border-radius: var(--sav-radius-lg); }
-        :host([placement="center"]) dialog::before { transform: rotate(${PANEL_TILT}); border-bottom-width: var(--sav-border-width); }
-        :host([placement="center"]) dialog::after { display: var(--sav-panel-back, none); }
-        :host([placement="center"]) .grab { display: none; }
-        :host([placement="center"]) .head { padding-top: 1.1rem; touch-action: auto; }
-        :host([placement="center"]) .foot { border-radius: 0 0 var(--sav-radius-lg) var(--sav-radius-lg); padding-bottom: .9rem; }
-      }
     `];
-    static get observedAttributes() { return [...super.observedAttributes, 'no-cancel', 'cancel-label', 'close-style', 'close-label', 'close-icon', 'no-close', 'no-header', 'expandable', 'placement', 'size']; }
+    static get observedAttributes() { return [...super.observedAttributes, 'no-cancel', 'cancel-label', 'close-style', 'close-label', 'close-icon', 'no-close', 'no-header', 'expandable', 'size']; }
     connectedCallback() {
       const first = !this.shadowRoot.firstChild;
       super.connectedCallback();
@@ -3608,7 +3601,6 @@
       this.sync();
     }
     get items() { return [...this.querySelectorAll('sav-menu-item')].filter((i) => !i.hasAttribute('disabled') && !i.closest('[hidden]') && i.closest('sav-action-sheet') === this); }
-    get isBottom() { return this.getAttribute('placement') !== 'center' || MOBILE.matches; }
     sync() {
       super.sync();
       const cancel = this.$('.cancel');
@@ -3638,7 +3630,6 @@
     /** one item at a time is in the Tab order: the one last focused */
     rove(item) { this.querySelectorAll('sav-menu-item').forEach((i) => { i.tabIndex = i === item ? 0 : -1; }); }
     enterFrames() {
-      if (!this.isBottom) return [{ opacity: 0, transform: 'translateY(12px) scale(.97)' }, { opacity: 1, transform: 'none' }];
       return [{ transform: 'translateY(100%)' }, { transform: this._dragFrom || 'none' }];
     }
     async show(fromAttr) {
@@ -3690,7 +3681,7 @@
     }
     /* drag the handle or the title: down closes (or folds an expanded sheet), up unfolds it with expandable; a tap on the handle toggles it */
     startDrag(e) {
-      if (!this.isBottom || e.button > 0) return;
+      if (e.button > 0) return;
       if (e.composedPath().some((n) => n.localName === 'button' || n.localName === 'sav-button' || n.localName === 'a' || n.slot === 'header-actions')) return;
       const canDrag = !this.hasAttribute('no-drag'), canGrow = this.hasAttribute('expandable');
       if (!canDrag && !canGrow) return;
@@ -3735,20 +3726,20 @@
       addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
     }
   }
-  props(SavActionSheet, { placement: String, size: String, expandable: Boolean });
+  props(SavActionSheet, { size: String, expandable: Boolean });
   define('sav-action-sheet', SavActionSheet);
 
   /**
    * Sav.actionSheet({ label: 'Share', items: [{ label: 'Copy link', value: 'link', icon: 'link' }, '-', { label: 'Delete', variant: 'danger' }] })
    * Opens a sheet made from the list and resolves with the chosen value (the label when an item has no value), or null.
    * '-' is a divider, { heading: 'Text' } a small heading. Other options: cancelLabel, noCancel, noClose, closeStyle, closeLabel,
-   * placement, size, expandable, persistent, footerLayout.
+   * size, expandable, persistent, footerLayout.
    */
   Sav.actionSheet = (opts = {}) => {
     const s = document.createElement('sav-action-sheet');
     if (opts.label) s.setAttribute('label', opts.label);
     for (const k of ['noCancel', 'noClose', 'noHeader', 'noHandle', 'noDrag', 'persistent', 'expandable']) if (opts[k]) s.setAttribute(k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()), '');
-    for (const k of ['cancelLabel', 'closeStyle', 'closeLabel', 'closeIcon', 'placement', 'size', 'footerLayout']) if (opts[k]) s.setAttribute(k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()), opts[k]);
+    for (const k of ['cancelLabel', 'closeStyle', 'closeLabel', 'closeIcon', 'size', 'footerLayout']) if (opts[k]) s.setAttribute(k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()), opts[k]);
     for (const it of opts.items || []) {
       if (it === '-' || it?.divider) { s.append(document.createElement('sav-divider')); continue; }
       if (it?.heading) { const l = document.createElement('sav-menu-label'); l.textContent = it.heading; s.append(l); continue; }

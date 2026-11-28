@@ -2,6 +2,16 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.3.1 — 2026-11-28
+
+- Action sheet: `footer-layout="row"` puts the footer buttons side by side only on screens wider than 640px; on phones they go
+  one under the other again, at full width, with Cancel at the bottom. The new `footer-layout="row-always"` keeps them side by
+  side everywhere.
+- Action sheet: `placement="center"` is gone. In the middle of a wide screen the sheet was a dialog with menu items: for that use
+  `sav-dialog`, and for a menu that opens next to its button on wide screens and rises from the bottom on phones use
+  `sav-dropdown sheet-on-mobile`. The sheet now always rises from the bottom; a page that still sets the attribute gets the sheet
+  at the bottom. Sites that load `v/1.3.0/` keep the old behaviour.
+
 ## 1.3.0 — 2026-11-28
 
 - New component: action sheet (`sav-action-sheet`). A list of actions, or any content, that rises from the bottom of the screen:
