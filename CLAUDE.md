@@ -2,12 +2,19 @@
 
 ## Versions
 
-- **The library** (`dist/sav.css`, `dist/sav.js`) is released with `sh tools/release.sh`.
-  - It copies only those two files into `v/<Sav.version>/`.
-  - A released folder never changes: for a new release, bump `Sav.version` in `dist/sav.js` first.
-  - The header comments of both files carry the version too.
-  - Pushing a new `v/<version>/` to main publishes it as a GitHub release (tag `v<version>`, a zip, the notes from `CHANGELOG.md`):
-    `.github/workflows/release.yml` runs `tools/github-release.sh`. `DRY_RUN=1 sh tools/github-release.sh` shows what it would do.
+- **The library** (`dist/sav.css`, `dist/sav.js`) is released by itself when it reaches main with a new version:
+  - bump `Sav.version` in `dist/sav.js` and the header comments of both files, and add the `## x.y.z — YYYY-MM-DD` section to
+    `CHANGELOG.md`; then push to main.
+  - `.github/workflows/release.yml` runs `tools/auto-release.sh`: when `Sav.version` is newer than every `v/<version>/`, it does
+    what `tools/release.sh` does (copies only those two files into `v/<Sav.version>/`, the version menu, llms.txt, sitemap.xml)
+    and commits it on main as `github-actions[bot]`. Without the changelog section or the headers it stops and says why.
+  - Then `tools/github-release.sh` makes the GitHub release (tag `v<version>`, a zip, the notes from `CHANGELOG.md`).
+    `DRY_RUN=1` before either script shows what it would do.
+  - After such a push, pull main: the release commit is on GitHub only.
+  - By hand it still works: `sh tools/release.sh` (then the workflow only makes the GitHub release).
+  - A released folder never changes: for a new release, bump `Sav.version` first.
+  - The copy of `sav.css` for the accounts API is made only by `tools/release.sh` on this computer: after an automatic release,
+    copy `dist/sav.css` to the API's `lib/sav.css` by hand.
 - **The icons have their own version**, separate from the library, so they are not copied into every library version.
   - They live once in `icons/<iconsVersion>/`: the SVG files, `index.json` (names and search words), `aliases.json` (old names) and the Lucide licence.
   - `Sav.iconsVersion` in `dist/sav.js` says which set a library version uses.

@@ -1,16 +1,21 @@
-# Every version released with tools/release.sh (a new v/<version>/ folder) becomes a GitHub release when it reaches main:
-# the tag v<version>, a zip of the library and its notes from CHANGELOG.md. Versions already released are left alone.
+# Releases the library by itself. After every push to main:
+#   1. tools/auto-release.sh: when dist/sav.js carries a version newer than every v/<version>/ (Sav.version bumped, its section in
+#      CHANGELOG.md written), it does what tools/release.sh does — v/<version>/, the version menu, llms.txt, sitemap.xml — and
+#      commits that on main (a push made here starts no new run);
+#   2. tools/github-release.sh: every v/<version>/ with no GitHub release yet gets one — the tag v<version>, a zip of the library
+#      and its notes from CHANGELOG.md. Versions already released are left alone.
+# A version released by hand with tools/release.sh still works: step 1 then has nothing to do.
 # Free on a public repository. It can also be started by hand from the Actions tab (Run workflow).
 name: Release
 
 on:
   push:
     branches: [main]
-    paths: ['v/**', 'tools/github-release.sh', '.github/workflows/release.yml']
+    paths: ['dist/sav.js', 'dist/sav.css', 'CHANGELOG.md', 'v/**', 'tools/release.sh', 'tools/auto-release.sh', 'tools/github-release.sh', 'tools/seo.mjs', '.github/workflows/release.yml']
   workflow_dispatch:
 
 permissions:
-  contents: write   # create tags and releases
+  contents: write   # commit the released version, create tags and releases
 
 concurrency:
   group: release
@@ -23,6 +28,11 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0   # the whole history: each tag points at the last commit that changed its v/<version>/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22   # tools/seo.mjs (llms.txt, sitemap.xml, index.html)
+      - name: Release a new version of dist/ (when Sav.version is newer than every v/<version>/)
+        run: sh tools/auto-release.sh
       - name: Publish the versions that have no release yet
         run: sh tools/github-release.sh
         env:
