@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----------------------------------------------------------------------------
-Third-party material
-
-Most icons in icons/<version>/ (the icon sets shared by every library version) come from Lucide
-(https://lucide.dev), released under the ISC License: see
-icons/<version>/LICENSE-lucide.txt. The font fonts/stack-sans-notch.ttf (Stack Sans Notch,
-https://github.com/DylanYoungKoto/Stack-Sans) is used only for the author's signature and keeps its own licence,
-the SIL Open Font License 1.1: see fonts/OFL.txt.
-
-Flags in flags/<version>/ come from flag-icons (https://github.com/lipis/flag-icons), MIT License: see
-flags/<version>/LICENSE-flag-icons.txt. The world map in maps/<version>/ is derived from world-atlas
-(https://github.com/topojson/world-atlas, built from Natural Earth data, which is in the public domain), ISC License: see maps/<version>/LICENSE-world-atlas.txt.

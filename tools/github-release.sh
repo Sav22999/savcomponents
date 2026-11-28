@@ -1,6 +1,6 @@
 #!/bin/sh
 # SavComponents — publishes every released version (v/<version>/) as a GitHub release: the tag v<version>, a zip of the library
-# (sav.css, sav.js, LICENSE, README.md) and the notes of that version from CHANGELOG.md. A version that already has a release is
+# (sav.css, sav.js, LICENSE, NOTICE, README.md) and the notes of that version from CHANGELOG.md. A version that already has a release is
 # skipped, so it can run again and again. The tag and the zip use the last commit that changed v/<version>/: the files as the
 # site serves them (some early versions were fixed after their first commit), not the newest commit of the repository.
 #   sh tools/github-release.sh            run by .github/workflows/release.yml after every push to main that touches v/
@@ -22,12 +22,12 @@ for VERSION in $VERSIONS; do
   COMMIT=$(git log --format=%H -1 -- "v/$VERSION")
   [ -n "$COMMIT" ] || { echo "skip $VERSION: v/$VERSION is not committed yet"; continue; }
 
-  # the zip: the two files of the library as the site serves them, with the licence and the readme
+  # the zip: the two files of the library as the site serves them, with the licence, the notices and the readme
   DIR="$OUT/savcomponents-$VERSION"
   mkdir -p "$DIR"
   git show "$COMMIT:v/$VERSION/sav.css" > "$DIR/sav.css"
   git show "$COMMIT:v/$VERSION/sav.js" > "$DIR/sav.js"
-  cp LICENSE README.md "$DIR/"
+  cp LICENSE NOTICE README.md "$DIR/"
   ZIP="$OUT/savcomponents-$VERSION.zip"
   (cd "$OUT" && zip -qr "savcomponents-$VERSION.zip" "savcomponents-$VERSION")
 

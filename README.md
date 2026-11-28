@@ -58,4 +58,4 @@ Accounts (favourites, saved themes and components, master admin) use the API on 
 
 ## Licence
 
-MIT © 2026 Saverio Morelli. Most icons come from [Lucide](https://lucide.dev) (ISC licence, see `icons/1.0.0/LICENSE-lucide.txt`).
+MIT © 2026 Saverio Morelli. Most icons come from [Lucide](https://lucide.dev) (ISC licence, see `icons/1.0.0/LICENSE-lucide.txt`). Flags, the world map and fonts keep their own licences: see [NOTICE](NOTICE).
