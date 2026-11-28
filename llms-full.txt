@@ -1,17 +1,17 @@
-# SavComponents 1.3.1
+# SavComponents 1.3.2
 
 > SavComponents (www.savcomponents.com) is a free, open-source (MIT) library of 83 web components for websites and web apps, by Saverio Morelli: buttons, fields, pickers, dialogs, tabs, tables, charts and more, written as plain HTML tags (<sav-button>, <sav-input>, <sav-dialog>…). No framework and no build step: one stylesheet and one script. Themes with CSS custom properties, light and dark modes and five styles (Soft, Tilt, Sharp, Brutal, Glass). Accessible (keyboard, screen readers), English and Italian built in.
 
 ## Use it on any site
 
 ```html
-<link rel="stylesheet" href="https://www.savcomponents.com/v/1.3.1/sav.css">
-<script src="https://www.savcomponents.com/v/1.3.1/sav.js" defer></script>
+<link rel="stylesheet" href="https://www.savcomponents.com/v/1.3.2/sav.css">
+<script src="https://www.savcomponents.com/v/1.3.2/sav.js" defer></script>
 
 <sav-button>Hello</sav-button>
 ```
 
-- The address contains the version (1.3.1 is the latest): a site keeps working the same way when a newer release comes out.
+- The address contains the version (1.3.2 is the latest): a site keeps working the same way when a newer release comes out.
 - Styles: add a class to <html>: sav-style-tilt, sav-style-sharp, sav-style-brutal or sav-style-glass (Soft is the default). Modes: sav-theme-light, sav-theme-dark or sav-theme-auto.
 - Theming: override CSS custom properties such as --sav-color-primary, --sav-color-bg, --sav-radius, --sav-font after sav.css; the customiser on the site exports them, and a theme saved with an account has its own link (/theme/<id>.css).
 - Languages: the words the components write follow <html lang>; add one with Sav.addStrings(lang, {English: translation}).
@@ -1913,8 +1913,8 @@ Example — History, with avatars and relative times:
 
 ```html
 <sav-timeline style="max-width: 26rem">
-  <sav-timeline-item heading="Ada changed the title" icon="pencil"><sav-relative-time datetime="2026-11-28T03:53:44.928Z"></sav-relative-time></sav-timeline-item>
-  <sav-timeline-item heading="Alan left a comment" icon="message-circle">“Looks good to me.” · <sav-relative-time datetime="2026-11-28T00:58:44.934Z"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Ada changed the title" icon="pencil"><sav-relative-time datetime="2026-11-28T03:56:57.354Z"></sav-relative-time></sav-timeline-item>
+  <sav-timeline-item heading="Alan left a comment" icon="message-circle">“Looks good to me.” · <sav-relative-time datetime="2026-11-28T01:01:57.361Z"></sav-relative-time></sav-timeline-item>
   <sav-timeline-item heading="Build failed" variant="danger" icon="x">2 tests did not pass · yesterday</sav-timeline-item>
 </sav-timeline>
 ```
@@ -1963,11 +1963,11 @@ Example — Past, future, and dates:
 
 ```html
 <ul style="margin: 0; line-height: 1.9">
-  <li>Saved <sav-relative-time datetime="2026-11-28T03:58:24.935Z"></sav-relative-time></li>
-  <li>Edited <sav-relative-time datetime="2026-11-28T03:16:44.935Z"></sav-relative-time></li>
-  <li>Created <sav-relative-time datetime="2026-11-27T03:58:44.935Z"></sav-relative-time></li>
-  <li>Renews <sav-relative-time datetime="2026-12-10T03:58:44.935Z"></sav-relative-time></li>
-  <li>In Italian: <sav-relative-time locale="it" datetime="2026-11-28T00:58:44.935Z"></sav-relative-time></li>
+  <li>Saved <sav-relative-time datetime="2026-11-28T04:01:37.362Z"></sav-relative-time></li>
+  <li>Edited <sav-relative-time datetime="2026-11-28T03:19:57.362Z"></sav-relative-time></li>
+  <li>Created <sav-relative-time datetime="2026-11-27T04:01:57.362Z"></sav-relative-time></li>
+  <li>Renews <sav-relative-time datetime="2026-12-10T04:01:57.362Z"></sav-relative-time></li>
+  <li>In Italian: <sav-relative-time locale="it" datetime="2026-11-28T01:01:57.362Z"></sav-relative-time></li>
   <li>As a date: <sav-relative-time format="date" datetime="2026-11-01T09:00"></sav-relative-time></li>
 </ul>
 ```

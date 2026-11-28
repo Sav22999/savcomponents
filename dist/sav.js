@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.3.1 — web components, no dependencies
+ * SavComponents v1.3.2 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.3.1' });
+  const Sav = (window.Sav = { version: '1.3.2' });
 
   /* ------------------------------------------------------------------ helpers */
 

@@ -2,6 +2,32 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.3.2 — 2026-11-28
+
+- Sheets on phones (`sheet-on-mobile`, still opt-in: without it nothing changes): the dropdown, the context menu, the info tip,
+  the popover and the dialog open in a real `sav-action-sheet` instead of a sheet of their own, with its handle (drag it down to
+  close), title, close button, overlay and focus trap. The dropdown and the context menu also get Cancel (Done with `multiple` or
+  `stay-open`); submenus of the context menu open in place under their item; the buttons of the dialog go one under the other,
+  the main one on top. The focus goes back to the trigger when the sheet closes, also inside another component.
+- The select, the language and country choices, the date and time pickers keep a sheet of their own (search, calendar, columns):
+  its panel now clips what is inside and its header reaches the edges (no box around it, most visible in Glass); the search of
+  the select spans the whole sheet.
+- Colour picker: `sheet-on-mobile` opens the panel as a sheet from the bottom on phones, with a bigger area, sliders and buttons
+  for a finger, the name of the field and Done, the suggested colours inside it; drag the handle down or tap outside to close it.
+- Theme choice: `sheet-on-mobile` opens its menu as an action sheet on phones. A choice now sends a single `change` (with the
+  theme); the inner menu's own `change` and `sav-select` no longer leave the component.
+- Time picker: the AM/PM column has a header, so its rows line up with the hours; with no time yet the period of the current
+  time is already chosen, and pressing AM or PM no longer sets 12:00. The column headers sit above the columns, with no
+  background of their own; Hour and Min are translated.
+- Bottom navigation: with more than `max-items` (default 5) destinations, the first four stay and a fifth, More (three dots;
+  `more-label`, `more-icon`), opens an action sheet with the others. More is marked when the current page is inside it and
+  shows a dot when one of them has a badge. Avoid it if you can: keep the bar to 3–5 destinations.
+- Toasts on phones: across the screen whatever the corner, clear of the notch and the home bar, three at most at a time; a swipe
+  to the side closes one; touching it pauses it, and a tap no longer leaves its timer paused for good; a bigger close button.
+  Toasts at the top come in from above.
+- Docs: an "On phones" section for the select, the pickers, the language, country and theme choices, the colour picker, the
+  dropdown, the context menu, the popover and the dialog.
+
 ## 1.3.1 — 2026-11-28
 
 - Action sheet: `footer-layout="row"` puts the footer buttons side by side only on screens wider than 640px; on phones they go
