@@ -213,7 +213,7 @@
   function pageCode() {
     const cls = [`sav-theme-${S.mode}`, S.style !== 'soft' ? `sav-style-${S.style}` : ''].filter(Boolean).join(' ');
     const js = S.events.length ? `\n  <script>\n${jsCode().split('\n').map((l) => (l ? '    ' + l : l)).join('\n')}\n  </script>` : '';
-    return `<!doctype html>\n<html lang="en" class="${cls}">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>My ${cur.name.toLowerCase()}</title>\n  <link rel="stylesheet" href="${D().libUrl}/sav.css">\n  <script src="${D().libUrl}/sav.js" defer></script>\n</head>\n<body class="sav-base" style="padding: 2rem">\n${markup(true, '  ')}${js}\n</body>\n</html>\n`;
+    return `<!doctype html>\n<html lang="en" class="${cls}">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>My ${cur.name.toLowerCase()}</title>\n  <link rel="stylesheet" href="${D().libUrl}/sav.css"${D().sriAttr('sav.css')}>\n  <script src="${D().libUrl}/sav.js" defer${D().sriAttr('sav.js')}></script>\n</head>\n<body class="sav-base" style="padding: 2rem">\n${markup(true, '  ')}${js}\n</body>\n</html>\n`;
   }
   const TABS = [['html', 'HTML', 'html'], ['js', 'JavaScript', 'js'], ['ts', 'TypeScript', 'ts'], ['react', 'React', 'jsx'], ['vue', 'Vue', 'vue'], ['page', 'Whole page', 'html']];
   const codeFor = (k) => ({ html: () => styleNote() + markup(), js: () => jsCode(), ts: () => jsCode(true), react: reactCode, vue: vueCode, page: pageCode }[k]());
@@ -256,7 +256,7 @@
         </div>
         <div class="bld-code layered">
           <div class="bld-code-head"><b id="bldTitle"></b><span class="row"><a class="muted small" id="bldDocs" href="#">Documentation</a><sav-button size="sm" appearance="ghost" variant="neutral" id="bldSaveNew" hidden>Save as new</sav-button><sav-button size="sm" appearance="soft" icon="save" id="playSave" hidden>Save to my components</sav-button><sav-button size="sm" appearance="outline" variant="neutral" id="bldDownload"><sav-icon slot="prefix" name="download"></sav-icon>Download page</sav-button></span></div>
-          <sav-alert variant="neutral" class="bld-setup">Once per page, before the components: <code>&lt;link rel="stylesheet" href="${esc(D().libUrl)}/sav.css"&gt;</code> and <code>&lt;script src="${esc(D().libUrl)}/sav.js" defer&gt;&lt;/script&gt;</code>. The “Whole page” tab has them already.</sav-alert>
+          <sav-alert variant="neutral" class="bld-setup">Once per page, before the components: <code>&lt;link rel="stylesheet" href="${esc(D().libUrl)}/sav.css"${esc(D().sriAttr('sav.css'))}&gt;</code> and <code>&lt;script src="${esc(D().libUrl)}/sav.js" defer${esc(D().sriAttr('sav.js'))}&gt;&lt;/script&gt;</code>. The “Whole page” tab has them already.</sav-alert>
           <sav-tabs class="code-tabs boxed" id="bldTabs">${TABS.map(([k, l]) => `<sav-tab label="${l}" name="${k}"><div data-code="${k}"></div></sav-tab>`).join('')}</sav-tabs>
         </div>
       </div>`;

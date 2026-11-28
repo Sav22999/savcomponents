@@ -15,6 +15,11 @@ fi
 rm -rf "$DEST"
 mkdir -p "$DEST"
 cp dist/sav.css dist/sav.js "$DEST/"
+# Subresource Integrity: hashes of the two frozen files, so a site that embeds this release can pin the exact bytes
+#   <script src=".../sav.js" integrity="sha384-…" crossorigin="anonymous">
+JS_SRI="sha384-$(openssl dgst -sha384 -binary "$DEST/sav.js" | openssl base64 -A)"
+CSS_SRI="sha384-$(openssl dgst -sha384 -binary "$DEST/sav.css" | openssl base64 -A)"
+printf '{\n  "sav.js": "%s",\n  "sav.css": "%s"\n}\n' "$JS_SRI" "$CSS_SRI" > "$DEST/integrity.json"
 echo "released $DEST"
 # the version menu of the site lists every release (window.SAVC_RELEASES in index.html, newest first)
 if ! grep -q "SAVC_RELEASES = \[.*'$VERSION'" index.html; then

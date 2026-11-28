@@ -27,6 +27,9 @@ Every version is published at `https://savcomponents.com/v/<version>/` and never
   Toasts at the top come in from above.
 - Docs: an "On phones" section for the select, the pickers, the language, country and theme choices, the colour picker, the
   dropdown, the context menu, the popover and the dialog.
+- Subresource Integrity: every release carries `v/<version>/integrity.json` with the `sha384` hashes of its `sav.js` and
+  `sav.css` (backfilled for the earlier releases too), and the copy-paste snippet now includes `integrity` and
+  `crossorigin="anonymous"` so a site that embeds a frozen release can pin the exact bytes.
 
 ## 1.3.1 — 2026-11-28
 

@@ -31,6 +31,15 @@ for VERSION in $VERSIONS; do
   ZIP="$OUT/savcomponents-$VERSION.zip"
   (cd "$OUT" && zip -qr "savcomponents-$VERSION.zip" "savcomponents-$VERSION")
 
+  # the Subresource Integrity hashes of this release (v/<version>/integrity.json), so the snippet can pin the exact bytes;
+  # a release frozen before integrity.json existed has none, and the snippet is then shown without integrity
+  CSS_INT=''; JS_INT=''
+  SRI=$(git show "$COMMIT:v/$VERSION/integrity.json" 2>/dev/null || true)
+  CSS_SRI=$(printf '%s' "$SRI" | sed -n 's/.*"sav.css": *"\([^"]*\)".*/\1/p')
+  JS_SRI=$(printf '%s' "$SRI" | sed -n 's/.*"sav.js": *"\([^"]*\)".*/\1/p')
+  [ -n "$CSS_SRI" ] && CSS_INT=" integrity=\"$CSS_SRI\" crossorigin=\"anonymous\""
+  [ -n "$JS_SRI" ] && JS_INT=" integrity=\"$JS_SRI\" crossorigin=\"anonymous\""
+
   # the notes: the section "## <version> — <date>" of CHANGELOG.md, then how to use it
   NOTES="$OUT/notes-$VERSION.md"
   awk -v v="$VERSION" '/^## / { if (on) exit; on = (index($0, "## " v " ") == 1); next } on' CHANGELOG.md > "$NOTES"
@@ -42,8 +51,8 @@ for VERSION in $VERSIONS; do
 From the site (this address never changes):
 
 \`\`\`html
-<link rel="stylesheet" href="$SITE/v/$VERSION/sav.css">
-<script src="$SITE/v/$VERSION/sav.js" defer></script>
+<link rel="stylesheet" href="$SITE/v/$VERSION/sav.css"$CSS_INT>
+<script src="$SITE/v/$VERSION/sav.js" defer$JS_INT></script>
 \`\`\`
 
 Or host the two files of \`savcomponents-$VERSION.zip\` yourself. Icons, flags and maps still come from savcomponents.com,
