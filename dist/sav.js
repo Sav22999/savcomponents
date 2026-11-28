@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.1.3 — web components, no dependencies
+ * SavComponents v1.2.0 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.1.3' });
+  const Sav = (window.Sav = { version: '1.2.0' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -3893,7 +3893,11 @@
       :host([data-bar]) .i { margin: 0; }
       :host([data-bar]) .sub, :host([data-rail]) .sub, :host([data-in-flyout]) .sub { position: absolute; z-index: 60; }
       :host([data-bar]) .sub { top: calc(100% + .3rem); left: 0; }
-      :host([data-rail]) .sub, :host([data-in-flyout]) .sub { top: -.35rem; left: calc(100% + .2rem); }
+      :host([data-rail]) .sub, :host([data-in-flyout]) .sub { top: calc(-.35rem + var(--_sub-dy, 0px)); left: calc(100% + .2rem); }
+      /* a flyout with no room on the right opens on the left (context menu); --_sub-dy moves it up to stay on screen */
+      :host { --_sub-dy: 0px; }
+      :host([data-in-flyout][data-flip]) .sub { left: auto; right: calc(100% + .2rem); }
+      :host([data-in-flyout][open]) > .i { background: var(--sav-color-surface-2); }
       /* rail: icons only, the label becomes the tooltip */
       :host([data-rail]) .i { justify-content: center; padding: .6rem; }
       :host([data-rail]) .lab, :host([data-rail]) ::slotted([slot="suffix"]), :host([data-rail]) .arr { display: none; }
@@ -3925,7 +3929,8 @@
       if (this.getAttribute('type') === 'checkbox') this.setAttribute('aria-checked', String(this.checked));
       const sub = this.hasSubmenu;
       this.toggleAttribute('data-sub', sub);
-      this.toggleAttribute('data-in-flyout', !!this.closest('sav-menu')?.hasAttribute('data-flyout'));
+      const box = this.parentElement?.closest('sav-menu, sav-context-menu');
+      this.toggleAttribute('data-in-flyout', !!box && (box.localName === 'sav-context-menu' || box.hasAttribute('data-flyout')));
       if (sub) { this.setAttribute('aria-haspopup', 'menu'); this.setAttribute('aria-expanded', String(this.open)); } else { this.removeAttribute('aria-haspopup'); this.removeAttribute('aria-expanded'); }
       // in a rail only the icon shows: the label is the tooltip and the accessible name
       const label = [...this.childNodes].filter((n) => n.nodeType === 3 || (n.nodeType === 1 && !n.slot)).map((n) => n.textContent).join('').trim();
@@ -4056,6 +4061,310 @@
   }
   props(SavDropdown, { placement: String, disabled: Boolean, label: String });
   define('sav-dropdown', SavDropdown);
+
+  /* ================================================================== sav-context-menu */
+
+  /** Where the browser's own menu stays (copy, paste, spelling): text fields and editable text. */
+  const EDITABLE = 'input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="reset"], [type="range"], [type="color"], [type="file"], [type="image"]), textarea, [contenteditable]:not([contenteditable="false"])';
+
+  class SavContextMenu extends SavDropdown {
+    /* The menu of a right click on an area of the page, also opened by a long press on touch screens and by the menu key or
+       Shift F10 on the focused area. for="id" names the area; without it, the area goes inside with slot="target".
+       Same items as the dropdown, plus submenus that fly out: <sav-menu-item>Share <sav-menu slot="submenu">…</sav-menu></sav-menu-item>.
+       The panel is the popup panel of every style (it leans in Tilt, is frosted in Glass, inked in Brutal…), and so are its submenus. */
+    static styles = [...SavDropdown.styles, `
+      :host { display: contents; }
+      ::slotted([slot="target"]) { -webkit-touch-callout: none; }
+      /* it grows from the corner at the pointer */
+      .menu { transform-origin: var(--_ox, left) var(--_oy, top); }
+      .menu:popover-open, .menu.open { animation-name: sav-ctx; }
+      @keyframes sav-ctx { from { opacity: 0; transform: scale(.96); } }
+      @media (prefers-reduced-motion: reduce) { .menu:popover-open, .menu.open { animation: none; } }
+      /* with submenus nothing may clip them: the panel grows with its items instead of scrolling */
+      :host([data-has-sub]) .menu { max-height: none; }
+      :host([data-has-sub]) .items { overflow: visible; }
+    `];
+    connectedCallback() {
+      if (!this.shadowRoot.firstChild) {
+        this.shadowRoot.innerHTML = `<slot name="target" part="target"></slot><div class="menu float" part="panel" role="menu" ${supportsPopover ? 'popover="manual"' : ''}><div class="sheet-head"><span class="sheet-title"></span><button class="done" type="button">${esc(T(this, 'Done'))}</button></div><div class="items"><slot></slot></div></div>`;
+        const menu = (this.menu = this.$('.menu'));
+        tiltWatch(menu);
+        this.$('.done').addEventListener('click', () => this.hide());
+        menu.addEventListener('toggle', (e) => { if (e.newState === 'closed') this.afterHide(); });
+        menu.addEventListener('keydown', (e) => this.onKey(e));
+        menu.addEventListener('click', (e) => {
+          const path = e.composedPath(), item = path.find((n) => n.localName === 'sav-menu-item');
+          // a click on the padding, a label or a divider of a submenu belongs to no item
+          if (!item || item.hasAttribute('disabled') || path.slice(0, path.indexOf(item)).some((n) => n.localName === 'sav-menu')) return;
+          this.choose(item);
+        });
+        // only a real move counts: a menu that opens under a pointer at rest does not take the item from the arrow keys
+        menu.addEventListener('pointermove', (e) => this.hover(e));
+        menu.addEventListener('contextmenu', (e) => e.preventDefault());
+        // pressing an item does not move the focus: a text field that has it keeps it (and its caret) after the choice
+        menu.addEventListener('mousedown', (e) => e.preventDefault());
+        // a submenu opened from the keyboard inside another submenu (sav-menu) is placed too
+        this.addEventListener('sav-toggle', (e) => { const i = e.detail?.item; if (i?.open && this.contains(i)) this.placeSub(i); });
+        this.$('slot:not([name])').addEventListener('slotchange', () => this.sync());
+        this._ctx = (e) => this.onContext(e);
+        this._press = (e) => this.onPress(e);
+        this._keys = (e) => this.onAreaKey(e);
+        this._keep = (e) => this.onDown(e);
+        this._docKey = (e) => this.onDocKey(e);
+        // a press outside, a scroll, a resize or leaving the window closes it (a manual popover: the right click must not close it again)
+        this._outside = (e) => { if (!e.composedPath().includes(this.menu)) this.hide(); };
+        this._away = () => { if (!this.sheet) this.hide(); };
+      }
+      this.attach();
+    }
+    disconnectedCallback() { this.detach(); if (this.open) { this.hide(); this.afterHide(); } }
+    changed(name) { if (name === 'for') { this._retried = false; this.attach(); } }
+    get sheet() { return this.hasAttribute('sheet-on-mobile') && MOBILE.matches; }
+    /** The area whose right click opens the menu: set from script, or named by for, or the elements inside with slot="target". */
+    get target() {
+      if (this._target) return this._target;
+      const id = this.getAttribute('for');
+      return id ? this.getRootNode().getElementById?.(id) || document.getElementById(id) : this.querySelector(':scope > [slot="target"]');
+    }
+    set target(el) { this._target = el || null; this.attach(); }
+    attach() {
+      if (!this.isConnected) return;
+      const el = this._target || (this.getAttribute('for') ? this.target : this);
+      if (el === this._on) return;
+      this.detach();
+      if (!el) { // the element named by for may come later in the page: looked for once more
+        if (this._retried) return;
+        this._retried = true;
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => this.attach(), { once: true });
+        else requestAnimationFrame(() => this.attach());
+        return;
+      }
+      this._on = el;
+      el.addEventListener('contextmenu', this._ctx);
+      el.addEventListener('pointerdown', this._press);
+      el.addEventListener('keydown', this._keys);
+      el.addEventListener('mousedown', this._keep);
+    }
+    detach() {
+      this._on?.removeEventListener('contextmenu', this._ctx);
+      this._on?.removeEventListener('pointerdown', this._press);
+      this._on?.removeEventListener('keydown', this._keys);
+      this._on?.removeEventListener('mousedown', this._keep);
+      this._on = null;
+    }
+    /** True when the focus is on an item of the menu (not on the area inside it with slot="target"). */
+    ownsFocus() { const a = document.activeElement; return !!a && [...this.children].some((c) => c.slot !== 'target' && c.contains(a)); }
+    /** True when the event started in a text field of the area: there the browser's menu stays. */
+    inField(e) { const path = e.composedPath(), end = path.indexOf(this._on); return path.slice(0, end < 0 ? path.length : end).some((n) => n.matches?.(EDITABLE)); }
+    /** The right click must not move the focus (the browser would give it to the area, or take it away): a text field elsewhere
+        keeps it, with its caret and its selection, as with the menu of the system. */
+    onDown(e) {
+      const ctx = e.button === 2 || (e.button === 0 && e.ctrlKey && /Mac/i.test(navigator.platform));
+      if (ctx && !this.disabled && !this.inField(e) && !e.composedPath().includes(this.menu)) e.preventDefault();
+    }
+    onContext(e) {
+      if (e.__savContext) return; // a context menu inside this area already answered (or let the browser's menu show)
+      if (e.composedPath().includes(this.menu)) { e.preventDefault(); return; }
+      if (this.disabled || this.inField(e)) return;
+      e.__savContext = true;
+      // the menu key and Shift F10 open it under the focused element instead of at the pointer
+      const keyboard = e.pointerType === '' || e.mozInputSource === 6 || (!e.clientX && !e.clientY);
+      // already opened by the long press or by the keys (onAreaKey): the browser's event that follows only keeps its menu away
+      if (this.open && (keyboard || e.pointerType === 'touch')) { e.preventDefault(); return; }
+      let x = e.clientX, y = e.clientY;
+      if (keyboard) [x, y] = this.under();
+      if (this.show(x, y, e.target, keyboard)) e.preventDefault();
+    }
+    /** Shift F10 and the menu key, also in browsers that send no contextmenu event for them (Safari). */
+    onAreaKey(e) {
+      if (!((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu') || e.defaultPrevented) return;
+      if (this.disabled || this.inField(e) || e.composedPath().includes(this.menu)) return;
+      const [x, y] = this.under();
+      if (this.show(x, y, e.target, true)) e.preventDefault();
+    }
+    /** Touch screens: a long press opens it (iPhone and iPad have no contextmenu event); moving the finger cancels it. */
+    onPress(e) {
+      if (e.pointerType !== 'touch' || !e.isPrimary || this.disabled || this.inField(e) || e.composedPath().includes(this.menu)) return;
+      const on = this._on, x = e.clientX, y = e.clientY, target = e.target;
+      const stop = () => { clearTimeout(t); on.removeEventListener('pointermove', move); on.removeEventListener('pointerup', stop); on.removeEventListener('pointercancel', stop); };
+      const move = (m) => { if (Math.hypot(m.clientX - x, m.clientY - y) > 10) stop(); };
+      const t = setTimeout(() => {
+        stop();
+        if (this.open || !this.show(x, y, target)) return;
+        // lifting the finger must not also click what is under it (a link, a button)
+        const eat = (c) => { c.preventDefault(); c.stopPropagation(); };
+        on.addEventListener('click', eat, { capture: true, once: true });
+        setTimeout(() => on.removeEventListener('click', eat, true), 800);
+      }, 500);
+      on.addEventListener('pointermove', move);
+      on.addEventListener('pointerup', stop);
+      on.addEventListener('pointercancel', stop);
+    }
+    /** The point under the focused element of the area (or under the area). */
+    under() {
+      const f = document.activeElement, area = this.target || this;
+      const a = f && f !== document.body && (this._on?.contains(f) || area.contains?.(f)) ? f : area;
+      const r = a.getBoundingClientRect();
+      return [r.left + Math.min(16, r.width / 2), r.bottom];
+    }
+    /** Opens the menu at a point of the window (clientX, clientY), leaving the focus where it is; without a point it opens under
+        the area and the focus moves into it, as from the keyboard. */
+    show(x, y, target = null, focus = false) {
+      if (this.disabled) return false;
+      if (typeof x !== 'number' || typeof y !== 'number') { [x, y] = this.under(); focus = true; }
+      if (!this.emit('sav-show', { target, x, y }, true)) return false;
+      const again = this.open;
+      if (!again) this._back = document.activeElement;
+      this.contextTarget = target;
+      this._hovered = null;
+      this.sync();
+      this.querySelectorAll('sav-menu-item[open]').forEach((i) => (i.open = false));
+      const label = this.getAttribute('label');
+      label ? this.menu.setAttribute('aria-label', label) : this.menu.removeAttribute('aria-label');
+      this.$('.sheet-title').textContent = label || '';
+      showPop(this.menu);
+      this.setAttribute('open', '');
+      if (!this.sheet) this.placeAt(x, y);
+      if (!again) {
+        document.addEventListener('pointerdown', this._outside, true);
+        addEventListener('scroll', this._away, true);
+        addEventListener('resize', this._away);
+        addEventListener('blur', this._away);
+        document.addEventListener('keydown', this._docKey, true);
+      }
+      // from the keyboard the first item takes the focus; after a right click or a long press the focus stays where it was
+      // (onDocKey still lets the arrows reach the menu)
+      if (focus) this.items[0]?.focus({ preventScroll: true });
+      else if (this.ownsFocus()) this._back?.focus?.({ preventScroll: true });
+      return true;
+    }
+    /** Puts the top-left corner at the point, or another corner when there is no room on that side. */
+    placeAt(x, y) {
+      const el = this.menu, w = el.offsetWidth, h = el.offsetHeight, m = 8;
+      const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      const left = x + w > vw - m && x - w >= m, up = y + h > vh - m && y - h >= m;
+      el.style.left = `${Math.round(Math.max(m, Math.min(left ? x - w : x, vw - w - m)))}px`;
+      el.style.top = `${Math.round(Math.max(m, Math.min(up ? y - h : y, vh - h - m)))}px`;
+      el.style.setProperty('--_ox', left ? 'right' : 'left');
+      el.style.setProperty('--_oy', up ? 'bottom' : 'top');
+    }
+    /** A submenu flies out on the right, or on the left when there is no room; it moves up to stay on screen. */
+    placeSub(item) {
+      const sub = item.shadowRoot?.querySelector('.sub');
+      if (!sub) return;
+      const m = 8, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      item.removeAttribute('data-flip');
+      item.style.setProperty('--_sub-dy', '0px');
+      let r = sub.getBoundingClientRect();
+      if (r.right > vw - m) {
+        const room = item.getBoundingClientRect().left;
+        if (room - r.width >= m || room > vw - r.left) item.setAttribute('data-flip', '');
+      }
+      r = sub.getBoundingClientRect();
+      if (r.bottom > vh - m) item.style.setProperty('--_sub-dy', `${Math.round(Math.max(m - r.top, vh - m - r.bottom))}px`);
+    }
+    hide() {
+      this._restore = this.ownsFocus(); // the focus is given back only if the menu had taken it
+      hidePop(this.menu);
+      if (!supportsPopover) this.afterHide();
+    }
+    /** Opened by the pointer, the focus stays outside (a text field keeps its caret) but the keys still work: the arrows, Home,
+        End and a letter move the focus into the menu, Enter chooses the item under the pointer, Escape closes it. */
+    onDocKey(e) {
+      if (this.ownsFocus() || e.ctrlKey || e.metaKey || e.altKey) return; // the focus is in the menu: onKey
+      const items = this.items, n = items.length, cur = items.indexOf(this._hovered);
+      const done = () => { e.preventDefault(); e.stopPropagation(); };
+      let to = null;
+      if (e.key === 'ArrowDown') to = items[(cur + 1) % n];
+      else if (e.key === 'ArrowUp') to = items[cur < 0 ? n - 1 : (cur - 1 + n) % n];
+      else if (e.key === 'Home') to = items[0];
+      else if (e.key === 'End') to = items[n - 1];
+      else if (e.key === 'Escape') { done(); this.hide(); return; }
+      else if (e.key === 'Tab') { this.hide(); return; }
+      else if (e.key === 'Enter' || e.key === ' ') { done(); const h = this._hovered; if (h?.isConnected && !h.hasAttribute('disabled') && this.contains(h)) h.click(); return; }
+      else if (e.key.length === 1) { done(); const k = e.key.toLowerCase(); to = items.find((i) => i.textContent.trim().toLowerCase().startsWith(k)); }
+      else return;
+      if (!to) return;
+      done();
+      to.focus({ preventScroll: true }); // from here the menu has the focus, and gives it back when it closes
+    }
+    afterHide() {
+      // a right click while it is open closes it and opens it again at once: then nothing is closed
+      if (!this.open || (supportsPopover && this.menu.matches(':popover-open'))) return;
+      this.removeAttribute('open');
+      this.querySelectorAll('sav-menu-item[open]').forEach((i) => (i.open = false));
+      clearTimeout(this._hoverT);
+      document.removeEventListener('pointerdown', this._outside, true);
+      removeEventListener('scroll', this._away, true);
+      removeEventListener('resize', this._away);
+      removeEventListener('blur', this._away);
+      document.removeEventListener('keydown', this._docKey, true);
+      // if the menu had the focus, it goes back where it was, unless the chosen action moved it somewhere else (a dialog)
+      const a = document.activeElement;
+      if (this._restore && this._back?.isConnected && (!a || a === document.body || this.ownsFocus())) this._back.focus?.({ preventScroll: true });
+      this._back = null;
+      this._restore = false;
+      this.emit('sav-hide');
+    }
+    /** Submenus inside get the panel of the context menu; the items learn that their submenus fly out. */
+    sync() {
+      const subs = this.querySelectorAll(':scope > sav-menu-item sav-menu[slot="submenu"]');
+      subs.forEach((m) => { m.setAttribute('data-nested', ''); m.setAttribute('data-flyout', ''); m.setAttribute('data-context', ''); });
+      subs.forEach((m) => m.sync?.());
+      this.querySelectorAll(':scope > sav-menu-item, :scope > sav-menu-item sav-menu-item').forEach((i) => i.sync?.());
+      this.toggleAttribute('data-has-sub', subs.length > 0);
+    }
+    /** The items of the first level that can take the focus. */
+    get items() { return [...this.children].filter((c) => c.localName === 'sav-menu-item' && !c.hasAttribute('disabled') && !c.hidden); }
+    /** The items next to this one (same menu or submenu). */
+    level(item) { const p = item.parentElement; return p ? [...p.children].filter((c) => c.localName === 'sav-menu-item') : []; }
+    openSub(item) {
+      for (const s of this.level(item)) if (s !== item) s.open = false;
+      item.open = true;
+      this.placeSub(item);
+    }
+    /** Like the menus of the system: the pointer highlights an item (and moves the focus, if the menu has it), and resting on an
+        item opens its submenu (and closes the others). */
+    hover(e) {
+      if (e.pointerType === 'touch') return;
+      const item = e.composedPath().find((n) => n.localName === 'sav-menu-item');
+      if (!item || item === this._hovered) return;
+      this._hovered = item;
+      clearTimeout(this._hoverT);
+      const off = item.hasAttribute('disabled');
+      if (!off && this.ownsFocus()) item.focus({ preventScroll: true });
+      this._hoverT = setTimeout(() => {
+        for (const s of this.level(item)) if (s !== item && s.open) s.open = false;
+        if (!off && item.hasSubmenu && !item.open) this.openSub(item);
+      }, 160);
+    }
+    choose(item) {
+      if (item.hasSubmenu) { if (!item.open) this.openSub(item); return; }
+      const check = item.getAttribute('type') === 'checkbox';
+      if (check) item.checked = !item.checked;
+      const detail = { item, value: item.value, checked: check ? item.checked : undefined, target: this.contextTarget };
+      // closed first, so an action that opens a dialog or moves the focus keeps it
+      if (!this.hasAttribute('stay-open')) this.hide();
+      this.emit('sav-select', detail);
+      if (check) this.emit('change', { value: this.value });
+    }
+    onKey(e) {
+      if (e.defaultPrevented) return; // a submenu (sav-menu) already moved or went back
+      const it = e.target.closest?.('sav-menu-item');
+      if (e.key === 'Tab') { e.preventDefault(); this.hide(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); if (it?.open) it.open = false; else this.hide(); return; }
+      if (it && it.parentElement !== this) return; // inside a submenu: sav-menu handles the arrows
+      if (it?.hasSubmenu && (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        this.openSub(it);
+        it.firstSubItem()?.focus(); // at once: a frame may come late in a page in the background
+        return;
+      }
+      super.onKey(e);
+    }
+  }
+  props(SavContextMenu, { for: String });
+  define('sav-context-menu', SavContextMenu);
 
   /* ================================================================== sav-info-tip */
 
@@ -5393,6 +5702,12 @@
       .play { position: absolute; inset: 0; margin: auto; width: 4.4rem; height: 4.4rem; border: 0; border-radius: var(--sav-knob-radius, 50%); background: var(--sav-color-primary); color: var(--sav-color-on-primary);
               display: grid; place-items: center; cursor: pointer; box-shadow: 0 8px 24px rgb(0 0 0 / .35); transform: rotate(var(--sav-knob-tilt, 0deg)); transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing), opacity calc(.2s * var(--sav-motion, 1)); z-index: 2; }
       .play:hover { transform: rotate(var(--sav-knob-tilt, 0deg)) scale(1.06); }
+      /* waiting for the video (a jump to a part not loaded yet, a slow connection): a spinner in the middle, after a moment so a
+         short wait does not flash it */
+      .wait { position: absolute; inset: 0; margin: auto; z-index: 1; width: 3.6rem; height: 3.6rem; display: grid; place-items: center; border-radius: var(--sav-knob-radius, 50%); background: rgb(0 0 0 / .5);
+              color: #fff; font-size: 1.9rem; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity calc(.2s * var(--sav-motion, 1)) var(--sav-easing), visibility 0s linear calc(.2s * var(--sav-motion, 1)); }
+      .fr.waiting .wait { opacity: 1; visibility: visible; transition: opacity calc(.2s * var(--sav-motion, 1)) var(--sav-easing) .25s, visibility 0s linear .25s; }
+      .fr.waiting .play { opacity: 0; pointer-events: none; }
       .play svg { width: 1.8rem; height: 1.8rem; margin-left: 3px; transform: rotate(calc(var(--sav-knob-tilt, 0deg) * -1)); }
       .play svg * { fill: currentColor; }
       .started .play { opacity: 0; pointer-events: none; }
@@ -5436,7 +5751,7 @@
       if (this.shadowRoot.firstChild) return;
       const ic = (n) => `<sav-icon name="${n}"></sav-icon>`;
       this.shadowRoot.innerHTML = `<figure part="base"><div class="fr" part="frame" tabindex="-1"><video part="video" preload="metadata" playsinline><slot></slot></video>
-        <button type="button" class="play" part="play-button">${svgIcon('play')}</button><span class="again" part="replay-label" aria-hidden="true"></span>
+        <button type="button" class="play" part="play-button">${svgIcon('play')}</button><span class="wait" part="loading" role="status" aria-label="${esc(T(this, 'Loading'))}" aria-hidden="true"><sav-spinner variant="current" aria-hidden="true"></sav-spinner></span><span class="again" part="replay-label" aria-hidden="true"></span>
         <div class="bar" part="controls">
           <button type="button" class="pp" aria-label="${esc(T(this, 'Play'))}">${svgIcon('play')}</button>
           <button type="button" class="skip back" aria-label="${esc(T(this, 'Back 10 seconds'))}">${svgIcon('rewind')}<span class="sn" aria-hidden="true">10</span></button>
@@ -5501,6 +5816,12 @@
       });
       v.addEventListener('play', () => { if (fr.classList.contains('done')) { fr.classList.remove('done'); $('.play').innerHTML = svgIcon('play'); this.sync(); } });
       v.addEventListener('volumechange', paint);
+      // waiting for data: the spinner shows (until the video plays again, is paused, ends or fails)
+      const wait = (on) => { fr.classList.toggle('waiting', on); $('.wait').setAttribute('aria-hidden', String(!on)); };
+      v.addEventListener('waiting', () => wait(true));
+      v.addEventListener('seeking', () => { if (v.readyState < 3) wait(true); });
+      v.addEventListener('stalled', () => { if (!v.paused && v.readyState < 3) wait(true); });
+      for (const ev of ['playing', 'canplay', 'canplaythrough', 'seeked', 'pause', 'ended', 'error', 'emptied']) v.addEventListener(ev, () => { if (ev !== 'seeked' || v.readyState >= 3) wait(false); });
       v.addEventListener('loadedmetadata', () => {
         $('.dur').textContent = fmtTime(v.duration); seek.max = v.duration || 100;
         this._has = { captions: !!v.textTracks.length, pip: !!document.pictureInPictureEnabled && !v.disablePictureInPicture };
@@ -5757,6 +6078,9 @@
       .tog svg { width: 1.1em; height: 1.1em; flex: none; transition: transform calc(.2s * var(--sav-motion, 1)) var(--sav-easing); }
       :host([collapsed]) .tog { justify-content: center; } :host([collapsed]) .tog svg { transform: scaleX(-1); } :host([collapsed]) .tog span { display: none; }
       :host(:not([collapsible])) .tog { display: none; }
+      /* a submenu of sav-context-menu: the same panel as the menu it flies out of */
+      :host([data-context]) .m { position: relative; gap: 0; padding: .3rem 0; min-width: var(--min-width, 12rem); }
+      ${panelLayer(':host([data-context]) .m')}
     `;
     static get observedAttributes() { return ['collapsed', 'orientation', 'label', 'auto-text']; }
     connectedCallback() {
@@ -5768,6 +6092,7 @@
       this.$('slot').addEventListener('slotchange', () => this.sync());
       this.addEventListener('keydown', (e) => this.key(e));
       this.addEventListener('click', (e) => {
+        if (this.hasAttribute('data-context')) return; // a submenu of sav-context-menu: the context menu chooses
         const item = e.target.closest('sav-menu-item'); if (!item || item.closest('sav-menu') !== this || item.hasAttribute('disabled')) return;
         const path = e.composedPath(); if (path.slice(0, path.indexOf(item)).some((n) => n.slot === 'submenu')) return; // a click inside the item's own submenu
         if (item.hasSubmenu) { this.openItem(item, !item.open); return; }
@@ -5798,6 +6123,7 @@
       own.forEach((i) => { const sub = i.querySelector(':scope > sav-menu[slot="submenu"]'); if (!sub) return;
         sub.setAttribute('data-nested', ''); const fly = bar || rail || this.hasAttribute('data-flyout'); sub.toggleAttribute('data-flyout', fly); sub.sync?.(); i.sync?.(); });
       if (rail) own.forEach((i) => i.close?.());
+      if (this.hasAttribute('data-context')) tiltWatch(this.$('.m'));
     }
     /** Items that can take the focus at this level (not those inside submenus, not disabled). */
     get items() { return [...this.querySelectorAll('sav-menu-item:not([disabled])')].filter((i) => i.closest('sav-menu') === this); }

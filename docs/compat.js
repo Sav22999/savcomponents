@@ -46,6 +46,7 @@
     'date-picker': [POPOVER, NATIVE_MOBILE, ['Names of days and months', 'ok', 'From the browser (Intl), in the language of the page.']],
     'time-picker': [POPOVER, NATIVE_MOBILE],
     dropdown: [POPOVER], tooltip: [POPOVER, ['Touch screens', 'differs', 'No hover on phones and tablets: the tooltip shows when its element gets the focus (a tap on a button or a field), or on a tap with trigger="click".']],
+    'context-menu': [POPOVER, ['Long press', 'differs', 'Phones and tablets have no right click: a long press opens it (iPhone and iPad too, where the library times the press itself).'], ['Text fields', 'ok', 'Inside text fields the browser’s menu stays, for copy, paste and spelling.']],
     'info-tip': [POPOVER], popover: [POPOVER], search: [POPOVER], 'chip-input': [POPOVER],
     dialog: [['Modal', 'ok', 'Built on the native <dialog>: focus trap and Escape in every browser.'], MOTION],
     drawer: [['Modal', 'ok', 'Built on the native <dialog>.'], MOTION],

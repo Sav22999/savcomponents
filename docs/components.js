@@ -1133,6 +1133,57 @@ window.SAVC_DOCS = [
     methods: [['show() · hide()', ''], ['value', 'The checked values (array).']],
   },
   {
+    builtFrom: ['dropdown', 'menu'],
+    id: 'context-menu', name: 'Context menu', tag: 'sav-context-menu · sav-menu-item', group: 'Overlays', icon: 'mouse-right',
+    desc: 'Your own menu for the right click on an area of the page, instead of the browser’s. It also opens with a long press on phones and tablets, and with the menu key or Shift F10 on the focused area. It opens at the pointer and turns to another corner near the edges of the window; items can hold submenus that fly out to the side. Same items as the dropdown; in text fields the browser’s menu stays, for copy and paste. Opened with the pointer it leaves the focus where it was, so a text field keeps its caret.',
+    notice: { variant: 'neutral', heading: 'Not the only way', text: 'Many people never right-click, and on touch screens a long press is hard to guess: put the same actions somewhere visible too (a button, a dropdown).' },
+    demos: [{ title: 'Right click on an area', html: `<sav-context-menu id="demo-ctx" label="Photo">
+  <sav-card slot="target" tabindex="0" style="flex: 1 1 100%; text-align: center; cursor: context-menu">
+    <sav-icon name="mouse-right" style="font-size: 2rem"></sav-icon>
+    <p>Right-click here, long-press on a phone, or focus it and press Shift F10.</p>
+  </sav-card>
+  <sav-menu-item value="open"><sav-icon slot="prefix" name="external-link"></sav-icon>Open</sav-menu-item>
+  <sav-menu-item value="rename"><sav-icon slot="prefix" name="pencil"></sav-icon>Rename<sav-kbd slot="suffix" size="sm">F2</sav-kbd></sav-menu-item>
+  <sav-menu-item value="duplicate"><sav-icon slot="prefix" name="copy"></sav-icon>Duplicate<sav-kbd slot="suffix" size="sm">mod+D</sav-kbd></sav-menu-item>
+  <sav-menu-item><sav-icon slot="prefix" name="share"></sav-icon>Share
+    <sav-menu slot="submenu">
+      <sav-menu-item value="link"><sav-icon slot="prefix" name="link"></sav-icon>Copy link</sav-menu-item>
+      <sav-menu-item value="email"><sav-icon slot="prefix" name="mail"></sav-icon>Email</sav-menu-item>
+      <sav-menu-item value="message"><sav-icon slot="prefix" name="message-circle"></sav-icon>Message</sav-menu-item>
+    </sav-menu>
+  </sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item type="checkbox" checked value="favourite">Favourite</sav-menu-item>
+  <sav-menu-item value="print" disabled><sav-icon slot="prefix" name="printer"></sav-icon>Print</sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item value="delete" variant="danger"><sav-icon slot="prefix" name="trash"></sav-icon>Delete<sav-kbd slot="suffix" size="sm">Del</sav-kbd></sav-menu-item>
+</sav-context-menu>
+<script>document.getElementById('demo-ctx').addEventListener('sav-select', e => Sav.toast('Chosen: ' + e.detail.value, {variant: 'neutral', duration: 2000}))</script>` },
+      { title: 'One menu for many rows', html: `<sav-list id="demo-files" style="flex: 1 1 100%">
+  <sav-list-item button description="48 KB · today"><sav-icon slot="prefix" name="file-text"></sav-icon>Notes.txt</sav-list-item>
+  <sav-list-item button description="2.4 MB · yesterday"><sav-icon slot="prefix" name="file-spreadsheet"></sav-icon>Budget 2027.xlsx</sav-list-item>
+  <sav-list-item button description="3.1 MB · last week"><sav-icon slot="prefix" name="image"></sav-icon>Holiday.jpg</sav-list-item>
+</sav-list>
+<sav-context-menu for="demo-files" id="demo-ctx-files" label="File">
+  <sav-menu-item value="Open">Open</sav-menu-item>
+  <sav-menu-item value="Download"><sav-icon slot="prefix" name="download"></sav-icon>Download</sav-menu-item>
+  <sav-menu-item value="Starred"><sav-icon slot="prefix" name="star"></sav-icon>Add to starred</sav-menu-item>
+  <sav-divider></sav-divider>
+  <sav-menu-item value="Deleted" variant="danger"><sav-icon slot="prefix" name="trash"></sav-icon>Delete</sav-menu-item>
+</sav-context-menu>
+<script>
+// between the rows the browser's own menu stays
+document.getElementById('demo-ctx-files').addEventListener('sav-show', e => { if (!e.detail.target?.closest('sav-list-item')) e.preventDefault(); });
+document.getElementById('demo-ctx-files').addEventListener('sav-select', e => Sav.toast(e.detail.value + ': ' + e.detail.target.closest('sav-list-item').textContent.trim(), {variant: 'neutral', duration: 2000}));
+</script>` }],
+    attrs: [['for', 'id', 'The element whose right click opens the menu. Without it, the elements inside with slot="target" are the area.'], ['label', 'string', 'Name of the menu for screen readers, and title of the sheet on phones.'],
+      ['sheet-on-mobile', 'boolean', 'On phones the menu rises from the bottom.'], ['stay-open', 'boolean', 'Keeps it open after a choice.'], ['disabled', 'boolean', 'The browser’s own menu shows again.'], ['--min-width · --max-height', 'CSS', ''],
+      ['value · disabled · variant="danger" · type="checkbox" · checked', '', 'On sav-menu-item.'], ['<sav-menu slot="submenu">', '', 'Inside a sav-menu-item: a submenu that flies out to the side (on the left when there is no room on the right).']],
+    slots: [['target', 'The area that opens the menu, when for is not used.'], ['(default)', 'sav-menu-item, sav-menu-label and sav-divider.']],
+    events: [['sav-show', 'Before it opens: detail.target is the element right-clicked, detail.x and detail.y the point. Call event.preventDefault() to let the browser’s menu show instead.'], ['sav-select', 'detail.item, detail.value, detail.checked (checkbox items), detail.target'], ['change', 'With checkbox items: detail.value is the list of checked values.'], ['sav-hide', '']],
+    methods: [['show(x, y) · hide()', 'show() with a point of the window (clientX, clientY) leaves the focus where it is; without one it opens under the area and the focus moves into the menu, as from the keyboard.'], ['target', 'The area; set it to an element from script.'], ['contextTarget', 'The element right-clicked the last time.']],
+  },
+  {
     id: 'info-tip', name: 'Info tip', play: { tag: 'sav-info-tip', attrs: { content: 'A short explanation of this field.' } }, tag: 'sav-info-tip', group: 'Overlays', icon: 'circle-help',
     desc: 'A small button (an icon, or an icon with text) that opens a box of information when pressed: for help next to a field, a title or a setting. Unlike the tooltip it opens on click, so it works on phones and can hold links.',
     demos: [

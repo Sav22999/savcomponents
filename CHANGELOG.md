@@ -2,6 +2,29 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.2.0 — 2026-11-28
+
+- New component: context menu (`sav-context-menu`). Your own menu for the right click on an area of the page, instead of the
+  browser's: `for="id"` names the area, or the area goes inside it with `slot="target"`. It also opens with a long press on phones
+  and tablets (iPhone and iPad too) and with the menu key or Shift F10 on the focused area, under the focused element. It opens at
+  the pointer and turns to another corner near the edges of the window. Same items as the dropdown (`sav-menu-item`,
+  `sav-menu-label`, `sav-divider`, checkbox and danger items, shortcuts in the `suffix` slot), and submenus that fly out to the side
+  (`<sav-menu slot="submenu">` inside an item), on the left when there is no room on the right; resting the pointer on an item opens
+  its submenu, like the menus of the system. The panel and its submenus are the popup panel of every style: the leaning plate of
+  Tilt, the offset block of Sharp, the ink of Brutal, the frosted glass of Glass. `sav-show` tells which element was right-clicked
+  (`detail.target`, also in `sav-select`) and `preventDefault()` on it lets the browser's menu show instead; in text fields the
+  browser's menu always stays, for copy and paste. Keyboard: arrows, Home, End, type-ahead, Enter, → into a submenu, ← or Escape
+  back, Tab closes; the focus returns where it was. A right click or a long press does not move the focus, as with the menu of
+  the system: a text field elsewhere on the page keeps it, with its caret and selection (no blur, so no "required" error appears),
+  choosing an item with the pointer does not take it either, and the arrow keys or a letter still move into the menu.
+
+## 1.1.4 — 2026-11-28
+
+- Video: a spinner in the middle of the player while the video waits for its data (a jump to a part not loaded yet, a slow
+  connection), so it no longer looks frozen. It shows after a quarter of a second, so a short wait does not flash it, and goes
+  away as soon as the video plays again, is paused, ends or fails. Screen readers hear "Loading" (`role="status"`); its part is
+  `loading`.
+
 ## 1.1.3 — 2026-11-27
 
 - Themes: the text on the primary colour follows it. A site that sets only `--sav-color-primary` used to keep the dark text made

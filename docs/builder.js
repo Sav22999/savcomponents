@@ -293,7 +293,7 @@
     timeline: [KK('sav-timeline-item', 'Event', [KF('@heading', 'Heading'), KF('@time', 'Time'), KF('text', 'Text'), KF('icon@icon', 'Icon'), KF('enum@variant:primary|neutral|success|warning|danger', 'Colour')])],
     list: [KK('sav-list-item', 'Item', [KF('text', 'Text'), KF('@description', 'Description'), KF('pre-icon', 'Icon'), KF('@href', 'Link')])],
     carousel: [KK('sav-slide', 'Slide', [KF('@alt', 'Description of the image'), KF('@src', 'Image address'), KF('@heading', 'Heading'), KF('@text', 'Text')])],
-    dropdown: MENU, menu: MENU,
+    dropdown: MENU, menu: MENU, 'context-menu': [KK('[slot="target"]', 'Area', [KF('text', 'Text')], { fixed: true }), ...MENU.slice(1)],
     tabs: [KK('sav-tab', 'Tab', [KF('@label', 'Label'), KF('icon@icon', 'Icon'), KF('text', 'Content'), KF('?active', 'Open at first', true), KF('?disabled', 'Disabled')])],
     accordion: [KK('sav-details', 'Section', [KF('@summary', 'Title'), KF('text', 'Content'), KF('?open', 'Open'), KF('?disabled', 'Disabled')])],
     'bottom-nav': [KK('sav-bottom-nav-item', 'Item', [KF('@label', 'Label'), KF('icon@icon', 'Icon'), KF('@href', 'Link'), KF('@badge', 'Badge'), KF('?current', 'Current page', true)])],
