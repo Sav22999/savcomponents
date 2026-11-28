@@ -2,6 +2,12 @@
 
 Every version is published at `https://savcomponents.com/v/<version>/` and never changes afterwards.
 
+## 1.2.2 — 2026-11-28
+
+- Sheets on phones (`sheet-on-mobile` of the dialog, the dropdown, the popover and the select): the panel reaches the edges of the
+  screen. The panel kept a transparent border of its own and its surface was drawn inside it, so a thin strip of the backdrop
+  showed along the sides and the rounded top corners of the two did not match. The line of the sheet is now on its top edge only.
+
 ## 1.2.1 — 2026-11-28
 
 - Context menu: a right click that something inside the area already answered (`preventDefault()` in its own `contextmenu`

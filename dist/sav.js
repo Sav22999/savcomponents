@@ -1,12 +1,12 @@
 /*!
- * SavComponents v1.2.1 — web components, no dependencies
+ * SavComponents v1.2.2 — web components, no dependencies
  * Load dist/sav.css first: every component reads its --sav-* custom properties.
  */
 (() => {
   'use strict';
   if (window.Sav && window.Sav.version) return;
 
-  const Sav = (window.Sav = { version: '1.2.1' });
+  const Sav = (window.Sav = { version: '1.2.2' });
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -1970,8 +1970,8 @@
     /* sheet-on-mobile: on small screens the popup rises from the bottom, full width */
     @media (max-width: 640px) {
       :host([sheet-on-mobile]) .pop { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; min-width: 0; max-height: 85dvh; margin: 0;
-             border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .6rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
-      :host([sheet-on-mobile]) .pop::before { transform: none; border-bottom: 0; }
+             border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .6rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); border: 0; }
+      :host([sheet-on-mobile]) .pop::before { transform: none; border-width: var(--sav-border-width) 0 0; }
       :host([sheet-on-mobile]) .pop::after { display: none; }
       :host([sheet-on-mobile]) .pop::backdrop { background: var(--sav-color-overlay); }
       :host([sheet-on-mobile]) .sheet-head { display: flex; align-items: center; gap: .5rem; position: sticky; top: 0; z-index: 2; padding: .9rem .4rem .6rem; background: var(--sav-color-surface); }
@@ -3500,8 +3500,8 @@
       .grab { display: none; }
       /* sheet-on-mobile: on small screens the dialog becomes an action sheet that rises from the bottom */
       @media (max-width: 640px) {
-        :host([sheet-on-mobile]) dialog { width: 100vw; max-width: 100vw; max-height: 92dvh; margin: auto 0 0; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
-        :host([sheet-on-mobile]) dialog::before { transform: none; border-bottom: 0; }
+        :host([sheet-on-mobile]) dialog { width: 100vw; max-width: 100vw; max-height: 92dvh; margin: auto 0 0; border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; border: 0; padding-bottom: env(safe-area-inset-bottom); }
+        :host([sheet-on-mobile]) dialog::before { transform: none; border-width: var(--sav-border-width) 0 0; }
         :host([sheet-on-mobile]) dialog::after { display: none; }
         :host([sheet-on-mobile]) .grab { display: block; width: 2.5rem; height: 4px; margin: .55rem auto 0; border-radius: 99px; background: var(--sav-color-border-strong); flex: none; }
         :host([sheet-on-mobile]) .head { padding-top: .6rem; }
@@ -3964,8 +3964,8 @@
       .sheet-head { display: none; }
       @media (max-width: 640px) {
         :host([sheet-on-mobile]) .menu { position: fixed; inset: auto 0 0 0 !important; width: 100%; max-width: 100%; min-width: 0; max-height: 85dvh; margin: 0;
-          border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .3rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); }
-        :host([sheet-on-mobile]) .menu::before { transform: none; border-bottom: 0; }
+          border-radius: var(--sav-radius-lg) var(--sav-radius-lg) 0 0; padding: 0 .3rem calc(.8rem + env(safe-area-inset-bottom)); animation: sav-sheet calc(.25s * var(--sav-motion, 1)) var(--sav-easing); border: 0; }
+        :host([sheet-on-mobile]) .menu::before { transform: none; border-width: var(--sav-border-width) 0 0; }
         :host([sheet-on-mobile]) .menu::after { display: none; }
         :host([sheet-on-mobile]) .menu::backdrop { background: var(--sav-color-overlay); }
         :host([sheet-on-mobile]) .sheet-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1; padding: 1rem .8rem .5rem; background: var(--sav-color-surface); font-weight: var(--sav-font-weight-bold); }

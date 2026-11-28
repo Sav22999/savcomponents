@@ -5,13 +5,13 @@
 ## Use it on any site
 
 ```html
-<link rel="stylesheet" href="https://www.savcomponents.com/v/1.2.1/sav.css">
-<script src="https://www.savcomponents.com/v/1.2.1/sav.js" defer></script>
+<link rel="stylesheet" href="https://www.savcomponents.com/v/1.2.2/sav.css">
+<script src="https://www.savcomponents.com/v/1.2.2/sav.js" defer></script>
 
 <sav-button>Hello</sav-button>
 ```
 
-- The address contains the version (1.2.1 is the latest): a site keeps working the same way when a newer release comes out.
+- The address contains the version (1.2.2 is the latest): a site keeps working the same way when a newer release comes out.
 - Styles: add a class to <html>: sav-style-tilt, sav-style-sharp, sav-style-brutal or sav-style-glass (Soft is the default). Modes: sav-theme-light, sav-theme-dark or sav-theme-auto.
 - Theming: override CSS custom properties such as --sav-color-primary, --sav-color-bg, --sav-radius, --sav-font after sav.css; the customiser on the site exports them, and a theme saved with an account has its own link (/theme/<id>.css).
 - Languages: the words the components write follow <html lang>; add one with Sav.addStrings(lang, {English: translation}).
@@ -96,7 +96,7 @@
 - [Dialog](https://www.savcomponents.com/#dialog): `<sav-dialog>` A modal window built on the native <dialog>: focus trap, Esc and click outside to close. With sheet-on-mobile it becomes an action sheet on phones (the first demo has it: try it at phone width).
 - [Drawer](https://www.savcomponents.com/#drawer): `<sav-drawer>` A panel that slides in from an edge. Same API as the dialog.
 - [Dropdown](https://www.savcomponents.com/#dropdown): `<sav-dropdown · sav-menu-item>` A menu that opens from a trigger. Arrow keys, type-ahead, Esc; closes when clicking outside.
-- [Context menu](https://www.savcomponents.com/#context-menu): `<sav-context-menu · sav-menu-item>` Your own menu for the right click on an area of the page, instead of the browser’s. It also opens with a long press on phones and tablets, and with the menu key or Shift F10 on the focused area. It opens at the pointer and turns to another corner near the edges of the window; items can hold submenus that fly out to the side. Same items as the dropdown; in text fields the browser’s menu stays, for copy and paste. Opened with the pointer it leaves the focus where it was, so a text field keeps its caret.
+- [Context menu](https://www.savcomponents.com/#context-menu): `<sav-context-menu · sav-menu-item>` Your own menu for the right click on an area of the page, instead of the browser’s. It also opens with a long press on phones and tablets, and with the menu key or Shift F10 on the focused area. It opens at the pointer and turns to another corner near the edges of the window; items can hold submenus that fly out to the side. Same items as the dropdown; in text fields the browser’s menu stays, for copy and paste, and an element inside the area that answers the right click itself (preventDefault) keeps it. Opened with the pointer it leaves the focus where it was, so a text field keeps its caret.
 - [Info tip](https://www.savcomponents.com/#info-tip): `<sav-info-tip>` A small button (an icon, or an icon with text) that opens a box of information when pressed: for help next to a field, a title or a setting. Unlike the tooltip it opens on click, so it works on phones and can hold links.
 - [Tooltip](https://www.savcomponents.com/#tooltip): `<sav-tooltip>` A short hint on hover or focus. It flips when there is no room.
 - [Popover](https://www.savcomponents.com/#popover): `<sav-popover>` A panel next to a button with anything inside — text, a small form, a list. A click on the trigger opens it, Esc or a click outside closes it, and the focus goes into the panel and back. Bigger than a tooltip or an info tip, lighter than a dialog; it leans in Tilt and turns to glass in Glass.
